@@ -104,9 +104,11 @@ def _mixers(c, n_layers):
     kind = full
     if any(a.lower().startswith("longcat") for a in c.get("architectures") or []) and n_layers:
         return Counter({kind if not c.get("index_topk") else "DSA": 2 * n_layers})  # two attention sublayers per layer
-    if c.get("compress_ratios"):  # DeepSeek V4: compressed KV + sliding window
-        kind = "compressed"
-    elif isinstance(c.get("sparse_attention_config"), dict) and c["sparse_attention_config"].get("use_sparse_attention"):
+    if isinstance(c.get("compress_ratios"), list) and n_layers:
+        # DeepSeek V4: 0 = sliding window only, otherwise sliding window + compressed KV (CSA / HCA).
+        ratios = c["compress_ratios"][:n_layers]  # trailing entries are MTP layers
+        return Counter(sliding=sum(1 for r in ratios if not r), compressed=sum(1 for r in ratios if r))
+    if isinstance(c.get("sparse_attention_config"), dict) and c["sparse_attention_config"].get("use_sparse_attention"):
         kind = "sparse"
     elif c.get("index_topk") or c.get("index_n_heads"):
         kind = "DSA"
@@ -115,8 +117,6 @@ def _mixers(c, n_layers):
 
 def _kv_bytes_per_global_layer(c):
     """bf16 KV-cache bytes one global-attention layer stores per token."""
-    if c.get("compress_ratios"):
-        return None  # DeepSeek V4 compresses KV per layer; not modelled here
     if c.get("kv_lora_rank"):  # MLA caches the compressed latent plus the RoPE key
         return (c["kv_lora_rank"] + (c.get("qk_rope_head_dim") or 64)) * 2
     n_heads = c.get("num_attention_heads") or c.get("n_heads")
@@ -134,6 +134,14 @@ def _kv_bytes_per_global_layer(c):
     if not kv or not k_dim:
         return None
     return kv * (k_dim + v_dim) * 2
+
+
+def _compressed_kv_bytes(c, n_layers):
+    """DeepSeek V4: one shared K=V entry per `ratio` tokens in each compressed layer."""
+    ratios = [r for r in c["compress_ratios"][:n_layers] if r]
+    if not ratios or min(ratios) < 4 or not c.get("head_dim"):
+        return None  # V4.1 switched to a different encoding; don't guess
+    return sum(c["head_dim"] * 2 / r for r in ratios)
 
 
 def _moe_layers(c, n_layers):
@@ -204,10 +212,15 @@ def parse(raw):
     out["mixer_layers"] = n_mix or None
     out["global_attn_frac"] = round(100 * n_global / n_mix, 1) if n_mix else None
     out["aspect"] = round(out["d_model"] / n_mix, 1) if n_mix and out["d_model"] else None
-    per_layer_kv = _kv_bytes_per_global_layer(c)
-    out["kv_kib_per_token"] = round(n_global * per_layer_kv / 1024, 1) if per_layer_kv and n_global else None
+    if c.get("compress_ratios"):
+        kv_bytes = _compressed_kv_bytes(c, out["layers"])
+    else:
+        per_layer_kv = _kv_bytes_per_global_layer(c)
+        kv_bytes = n_global * per_layer_kv if per_layer_kv else None
+    out["kv_kib_per_token"] = round(kv_bytes / 1024, 1) if kv_bytes else None
     local = sum(v for k, v in mixers.items() if k in LOCAL)
-    out["window"] = (c.get("sliding_window") or c.get("sliding_window_size")) if local else None
+    has_window = local or c.get("compress_ratios")  # every DeepSeek V4 layer keeps a sliding window
+    out["window"] = (c.get("sliding_window") or c.get("sliding_window_size")) if has_window else None
     out["mla"] = bool(c.get("kv_lora_rank"))
     out["kv_heads"] = None if out["mla"] else (c.get("num_key_value_heads") or c.get("n_kv_heads"))
     out["head_dim"] = c.get("head_dim") or c.get("attention_head_dim")

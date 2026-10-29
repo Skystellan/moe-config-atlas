@@ -106,7 +106,7 @@
       <dt>G</dt><dd>2d / d<sub>expert</sub>，d 是隐藏维度。和标准 FFN 宽度 8d/3 比，G≈2.7 相当于"一个专家 = 一个 dense FFN"。</dd>
       <dt>d/L</dt><dd>隐藏维度除以 token mixer 层数（注意力、线性注意力或 Mamba 层）。LongCat 每层有两个注意力子层，按两层计。</dd>
       <dt>全局注意力层占比</dt><dd>KV 缓存随上下文增长的层（full、MLA、DSA、稀疏或压缩注意力）占全部 token mixer 层的比例。线性注意力、Mamba 的状态大小固定，滑窗层只缓存窗口内的 token。</dd>
-      <dt>KV cache / token</dt><dd>上下文足够长时每多一个 token 要多存的 bf16 KV：全局层数 × 每层每 token 的 K、V 维度 × 2 字节。MLA 按 kv_lora_rank + RoPE 维度算；不含线性层状态、滑窗缓存和 DSA 索引键；DeepSeek V4 的压缩注意力未计算。</dd>
+      <dt>KV cache / token</dt><dd>上下文足够长时每多一个 token 要多存的 bf16 KV：全局层数 × 每层每 token 的 K、V 维度 × 2 字节。MLA 按 kv_lora_rank + RoPE 维度算；DeepSeek V4 的压缩层按压缩率摊到每个 token（CSA 每 4 个 token 存一条，HCA 每 128 个）。不含线性层状态、滑窗缓存和稀疏注意力的索引键；DeepSeek V4.1 改了压缩配置的写法，暂不计算。</dd>
       <dt>注意力</dt><dd>按 config.json 里的层类型字段推断（layer_types、kda_layers、full_attention_interval 等），只数 token mixer 的种类和层数，细节以技术报告为准。</dd>
       <dt>档位</dt><dd>按总参数：小 ≤ 50B，中 50–500B，大 ≥ 500B。</dd>
       <dt>收录范围</dt><dd>2025 年及以后首次上传的开源 MoE；只改了后训练、注意力或量化而 MoE 配置不变的版本合并为一行。</dd>
