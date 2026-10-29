@@ -5,9 +5,10 @@ const TIERS = [
   { id: "M", label: "中（50–500B）" },
   { id: "L", label: "大（≥500B）" },
 ];
-const state = { q: "", tiers: new Set(), years: new Set(), vendor: "", sort: { key: "latest", dir: -1 } };
+const state = { q: "", tiers: new Set(), years: new Set(), vendor: "", group: "sparsity", sort: { key: "latest", dir: -1 } };
 let DATA = [];
 const charts = [];
+const multCharts = [];
 
 const $ = (sel) => document.querySelector(sel);
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -21,6 +22,11 @@ function fmtParams(b) {
 function fmtConfig(m) {
   if (!m.E) return "–";
   return `${m.per_layer ? "≈" : ""}${m.E}/${m.k}${m.s ? `+${m.s}` : ""}`;
+}
+function fmtCtx(n) {
+  if (!n) return "–";
+  if (n >= 1 << 20) return `${+(n / (1 << 20)).toFixed(1)}M`;
+  return `${Math.round(n / 1024)}K`;
 }
 function median(xs) {
   const v = xs.filter((x) => x != null).sort((a, b) => a - b);
@@ -111,7 +117,9 @@ function tooltip() {
         `总 / 激活：${fmtParams(m.total)} / ${fmtParams(m.active)}（${num(m.param_activation)}%）<br>` +
         (m.latest_name !== m.repo.split("/").pop() ? `最近版本：${esc(m.latest_name)}（${m.latest ?? "–"}）<br>` : "") +
         `配置：${fmtConfig(m)}，E/k = ${num(m.E_over_k)}，A = ${num(m.expert_activation)}%` +
-        (m.granularity ? `，G = ${num(m.granularity)}` : "");
+        (m.granularity ? `，G = ${num(m.granularity)}` : "") +
+        (m.aspect ? `<br>d/L = ${num(m.aspect)}，全局注意力 ${num(m.global_attn_frac)}%` +
+          (m.kv_kib_per_token ? `，KV ${num(m.kv_kib_per_token)} KiB/token` : "") + `，上下文 ${fmtCtx(m.context)}` : "");
     },
   };
 }
@@ -135,12 +143,18 @@ function scatterSeries(rows, xf, yf) {
   }));
 }
 
-function chart(id) {
+function chart(id, list = charts) {
   const el = document.getElementById(id);
   let c = echarts.getInstanceByDom(el);
-  if (!c) { c = echarts.init(el, null, { renderer: "svg" }); charts.push(c); }
+  if (!c) { c = echarts.init(el, null, { renderer: "svg" }); list.push(c); }
   return c;
 }
+
+const releaseTime = (m) => Date.parse(m.released + "-01");
+const timeAxis = (extra) => baseAxis(Object.assign({
+  type: "time", min: Date.UTC(2025, 0, 1),
+  axisLabel: { color: css("--muted"), fontSize: 11, formatter: (t) => { const d = new Date(t); return `${d.getUTCFullYear()}.${d.getUTCMonth() + 1}`; } },
+}, extra));
 
 const grid = { left: 48, right: 16, top: 16, bottom: 40 };
 const sizeAxis = (name) => baseAxis({
@@ -184,20 +198,50 @@ function renderCharts(rows) {
     series: scatterSeries(rows, (m) => m.total, (m) => m.granularity),
   }, true);
 
-  $("#legend").innerHTML = TIERS.map((t) => `<span><i style="background:${tierColor(t.id)}"></i>${t.label}</span>`).join("") +
+  chart("c-aspect").setOption({
+    grid, tooltip: tooltip(),
+    xAxis: baseAxis({ type: "log", name: "激活参数", nameLocation: "middle", nameGap: 26, min: 1, max: 128,
+      axisLabel: { color: css("--muted"), fontSize: 11, formatter: (v) => fmtParams(v) } }),
+    yAxis: baseAxis({ type: "value", min: 0 }),
+    series: scatterSeries(rows, (m) => m.active, (m) => m.aspect),
+  }, true);
+
+  chart("c-global").setOption({
+    grid, tooltip: tooltip(),
+    xAxis: timeAxis(),
+    yAxis: baseAxis({ type: "value", min: 0, max: 100, axisLabel: { color: css("--muted"), fontSize: 11, formatter: "{value}%" } }),
+    series: scatterSeries(rows, releaseTime, (m) => m.global_attn_frac),
+  }, true);
+
+  chart("c-kv").setOption({
+    grid, tooltip: tooltip(),
+    xAxis: sizeAxis("总参数"),
+    yAxis: baseAxis({ type: "log", logBase: 2, min: 4, max: 512, axisLabel: { color: css("--muted"), fontSize: 11, formatter: "{value} KiB" } }),
+    series: scatterSeries(rows, (m) => m.total, (m) => m.kv_kib_per_token),
+  }, true);
+
+  chart("c-ctx").setOption({
+    grid, tooltip: tooltip(),
+    xAxis: timeAxis(),
+    yAxis: baseAxis({ type: "log", logBase: 4, min: 4096, max: 16 * (1 << 20), axisLabel: { color: css("--muted"), fontSize: 11, formatter: fmtCtx } }),
+    series: scatterSeries(rows, releaseTime, (m) => m.context),
+  }, true);
+
+  const legend = TIERS.map((t) => `<span><i style="background:${tierColor(t.id)}"></i>${t.label}</span>`).join("") +
     `<span><i style="background:${css("--ink-2")}"></i>实心 2026 年首发</span><span><i class="hollow"></i>空心 2025 年首发</span>`;
+  document.querySelectorAll("#legend, .legend-copy").forEach((el) => { el.innerHTML = legend; });
 }
 
 function renderMultiples(rows) {
   const box = $("#multiples");
-  for (const c of charts.splice(4)) c.dispose();
+  for (const c of multCharts.splice(0)) c.dispose();
   const vendors = [...new Set(rows.map((m) => m.vendor))].sort();
   box.innerHTML = vendors.map((v, i) => `<div class="mult"><h4>${esc(v)}</h4><div class="m" id="mult-${i}"></div></div>`).join("");
   const minT = Date.UTC(2025, 0, 1);
   const maxT = Math.max(...DATA.map((m) => Date.parse(m.released + "-01"))) + 40 * 864e5;
   vendors.forEach((v, i) => {
     const ms = rows.filter((m) => m.vendor === v && m.E_over_k).sort((a, b) => a.released.localeCompare(b.released));
-    const c = chart(`mult-${i}`);
+    const c = chart(`mult-${i}`, multCharts);
     c.setOption({
       grid: { left: 30, right: 10, top: 10, bottom: 22 },
       tooltip: tooltip(),
@@ -217,23 +261,40 @@ function renderMultiples(rows) {
 
 /* ---------- table ---------- */
 
-const COLS = [
+const BASE_COLS = [
   { key: "vendor", label: "厂家", l: true, f: (m) => `<span class="tier-dot" style="background:${tierColor(m.tier)}"></span>${esc(m.vendor)}` },
   { key: "name", label: "型号", l: true, f: nameCell },
   { key: "released", label: "首发", title: "这个 MoE 配置第一次上传 HF 的年月" },
   { key: "latest", label: "最近上传", title: "同配置各版本里最近一次上传 HF 的日期", f: (m) => m.latest ?? "–" },
   { key: "total", label: "总参数", f: (m) => fmtParams(m.total) },
   { key: "active", label: "激活", f: (m) => fmtParams(m.active) },
-  { key: "E", label: "E/k+s", f: fmtConfig },
-  { key: "E_over_k", label: "E/k", f: (m) => num(m.E_over_k) },
-  { key: "expert_activation", label: "A", title: "专家激活比 (k+s)/(E+s)", f: (m) => `${num(m.expert_activation)}%` },
-  { key: "param_activation", label: "激活比", title: "激活参数 / 总参数", f: (m) => `${num(m.param_activation)}%` },
-  { key: "granularity", label: "G", title: "专家粒度 2d/d_expert", f: (m) => num(m.granularity) },
-  { key: "layers", label: "层（MoE）", f: (m) => m.layers ? `${m.layers}（${m.moe_layers ?? "–"}）` : "–" },
-  { key: "d_model", label: "d", f: (m) => m.d_model ?? "–" },
-  { key: "d_expert", label: "d_expert", f: (m) => m.d_expert ?? "–" },
-  { key: "attention", label: "注意力", title: "按 config.json 字段推断的层类型", l: true, f: (m) => esc(m.attention ?? "–") },
 ];
+const COL_GROUPS = {
+  sparsity: { label: "稀疏度", cols: [
+    { key: "E", label: "E/k+s", f: fmtConfig },
+    { key: "E_over_k", label: "E/k", f: (m) => num(m.E_over_k) },
+    { key: "expert_activation", label: "A", title: "专家激活比 (k+s)/(E+s)", f: (m) => `${num(m.expert_activation)}%` },
+    { key: "param_activation", label: "激活比", title: "激活参数 / 总参数", f: (m) => `${num(m.param_activation)}%` },
+    { key: "granularity", label: "G", title: "专家粒度 2d/d_expert", f: (m) => num(m.granularity) },
+  ] },
+  shape: { label: "形状", cols: [
+    { key: "layers", label: "层（MoE）", f: (m) => m.layers ? `${m.layers}（${m.moe_layers ?? "–"}）` : "–" },
+    { key: "d_model", label: "d", f: (m) => m.d_model ?? "–" },
+    { key: "d_expert", label: "d_expert", f: (m) => m.d_expert ?? "–" },
+    { key: "aspect", label: "d/L", title: "隐藏维度 / token mixer 层数", f: (m) => num(m.aspect) },
+    { key: "vocab", label: "词表", f: (m) => m.vocab ? `${Math.round(m.vocab / 1000)}K` : "–" },
+    { key: "mtp", label: "MTP", title: "多 token 预测层数", f: (m) => m.mtp ?? "–" },
+  ] },
+  attention: { label: "注意力", cols: [
+    { key: "attention", label: "层构成", title: "按 config.json 字段推断的层类型", l: true, f: (m) => esc(m.attention ?? "–") },
+    { key: "global_attn_frac", label: "全局层", title: "全局注意力层占 token mixer 层的比例", f: (m) => m.global_attn_frac == null ? "–" : `${num(m.global_attn_frac)}%` },
+    { key: "kv_kib_per_token", label: "KV/token", title: "长上下文下每 token 的 bf16 KV 缓存", f: (m) => m.kv_kib_per_token == null ? "–" : `${num(m.kv_kib_per_token)} KiB` },
+    { key: "kv_heads", label: "KV 头", title: "GQA 的 KV 头数；MLA 缓存的是压缩潜向量，没有独立 KV 头", f: (m) => m.mla ? "MLA" : (m.kv_heads ?? "–") },
+    { key: "window", label: "滑窗", f: (m) => m.window ?? "–" },
+    { key: "context", label: "上下文", f: (m) => fmtCtx(m.context) },
+  ] },
+};
+const cols = () => BASE_COLS.concat(COL_GROUPS[state.group].cols);
 
 // Model name plus the newest same-config versions, so a fresh post-training
 // release (e.g. a -1017 checkpoint) is visible without expanding the row.
@@ -245,7 +306,16 @@ function nameCell(m) {
   return `${esc(m.name)}<div class="vers">同配置：${shown}${more}</div>`;
 }
 
+function renderColGroups() {
+  const box = $("#col-groups");
+  box.innerHTML = "";
+  for (const [id, g] of Object.entries(COL_GROUPS)) {
+    box.append(chip(g.label, state.group === id, () => { state.group = id; renderColGroups(); renderTable(filtered()); }));
+  }
+}
+
 function renderTable(rows) {
+  const COLS = cols();
   const head = $("#table thead tr");
   head.innerHTML = COLS.map((c) => {
     const sort = state.sort.key === c.key ? (state.sort.dir > 0 ? "ascending" : "descending") : "none";
@@ -304,6 +374,7 @@ function update() {
   renderTiles(rows);
   renderCharts(rows);
   renderMultiples(rows);
+  renderColGroups();
   renderTable(rows);
 }
 
@@ -331,7 +402,7 @@ async function main() {
   $("#q").oninput = (e) => { state.q = e.target.value; update(); };
   initTheme();
   update();
-  addEventListener("resize", () => charts.forEach((c) => c.resize()));
+  addEventListener("resize", () => charts.concat(multCharts).forEach((c) => c.resize()));
 }
 
 main().catch((e) => { $("#meta").textContent = `数据加载失败：${e.message}`; });

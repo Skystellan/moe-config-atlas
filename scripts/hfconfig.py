@@ -58,15 +58,21 @@ def _get(c, field):
     return None, False
 
 
-def _mix(**counts):
+# Token-mixer layer types, grouped by how their state grows with context.
+GLOBAL = {"full", "MLA", "attention", "DSA", "compressed", "sparse"}  # cache grows with every token
+LOCAL = {"sliding"}  # bounded by the window
+LINEAR = {"linear", "KDA", "mamba"}  # constant-size recurrent state
+
+
+def _summary(counts):
     counts = {k: v for k, v in counts.items() if v}
     if len(counts) == 1:
         return next(iter(counts))
     return " + ".join(f"{k}×{v}" for k, v in sorted(counts.items(), key=lambda kv: -kv[1]))
 
 
-def _attention(c, n_layers):
-    """Summarize the attention / mixer layout as e.g. 'linear×36 + full×12'."""
+def _mixers(c, n_layers):
+    """Count token-mixer layers by type, e.g. Counter(linear=36, full=12)."""
     full = "MLA" if c.get("kv_lora_rank") else "full"
     types = c.get("layer_types") or c.get("layers_block_type")
     pattern = c.get("hybrid_override_pattern")
@@ -74,33 +80,60 @@ def _attention(c, n_layers):
         names = {"M": "mamba", "*": "attention"}
         types = [names[ch] for ch in pattern if ch in names]
     if isinstance(types, list) and types:
+        if c.get("layer_types") and n_layers:
+            types = types[:n_layers]  # some configs append MTP layers
         types = [t for t in types if t not in ("moe", "mlp", "dense")]
         short = {"linear_attention": "linear", "full_attention": "full",
                  "sliding_attention": "sliding", "deepseek_sparse_attention": "DSA"}
-        return _mix(**Counter(short.get(t, t) for t in types))
+        return Counter(short.get(t, t) for t in types)
     if isinstance(c.get("hybrid_layer_pattern"), list):  # MiMo: 1 = sliding window
         hp = c["hybrid_layer_pattern"]
-        return _mix(sliding=sum(1 for x in hp if x), full=sum(1 for x in hp if not x))
+        return Counter(sliding=sum(1 for x in hp if x), full=sum(1 for x in hp if not x))
     if isinstance(c.get("attn_type_list"), list):  # MiniMax: 0 = lightning (linear)
         at = c["attn_type_list"]
-        return _mix(linear=sum(1 for x in at if not x), full=sum(1 for x in at if x))
+        return Counter(linear=sum(1 for x in at if not x), full=sum(1 for x in at if x))
     if c.get("full_attention_interval") and n_layers:  # Qwen3-Next
         n_full = n_layers // c["full_attention_interval"]
-        return _mix(linear=n_layers - n_full, full=n_full)
+        return Counter(linear=n_layers - n_full, full=n_full)
     lac = c.get("linear_attn_config")
     if isinstance(lac, dict) and lac.get("kda_layers") is not None:  # Kimi Linear / K3
-        return _mix(KDA=len(lac["kda_layers"]), **{full: len(lac.get("full_attn_layers") or [])})
+        return Counter(KDA=len(lac["kda_layers"]), **{full: len(lac.get("full_attn_layers") or [])})
     if c.get("layer_group_size") and any(k.startswith("kda") for k in c) and n_layers:  # Ling 3
         n_full = n_layers // c["layer_group_size"]
-        return _mix(KDA=n_layers - n_full, **{full: n_full})
+        return Counter(KDA=n_layers - n_full, **{full: n_full})
+    kind = full
+    if any(a.lower().startswith("longcat") for a in c.get("architectures") or []) and n_layers:
+        return Counter({kind if not c.get("index_topk") else "DSA": 2 * n_layers})  # two attention sublayers per layer
     if c.get("compress_ratios"):  # DeepSeek V4: compressed KV + sliding window
-        return "compressed"
-    sac = c.get("sparse_attention_config")
-    if isinstance(sac, dict) and sac.get("use_sparse_attention"):
-        return "sparse"
-    if c.get("index_topk") or c.get("index_n_heads"):
-        return "DSA"
-    return full
+        kind = "compressed"
+    elif isinstance(c.get("sparse_attention_config"), dict) and c["sparse_attention_config"].get("use_sparse_attention"):
+        kind = "sparse"
+    elif c.get("index_topk") or c.get("index_n_heads"):
+        kind = "DSA"
+    return Counter({kind: n_layers or 0})
+
+
+def _kv_bytes_per_global_layer(c):
+    """bf16 KV-cache bytes one global-attention layer stores per token."""
+    if c.get("compress_ratios"):
+        return None  # DeepSeek V4 compresses KV per layer; not modelled here
+    if c.get("kv_lora_rank"):  # MLA caches the compressed latent plus the RoPE key
+        return (c["kv_lora_rank"] + (c.get("qk_rope_head_dim") or 64)) * 2
+    n_heads = c.get("num_attention_heads") or c.get("n_heads")
+    d = c.get("hidden_size") or c.get("dim")
+    if c.get("global_head_dim"):  # Gemma 4 global layers
+        kv = c.get("num_global_key_value_heads") or c.get("num_key_value_heads")
+        k_dim = c["global_head_dim"]
+        v_dim = 0 if c.get("attention_k_eq_v") else k_dim
+    else:
+        kv = (c.get("num_attention_groups_full_attention") or c.get("num_key_value_heads")
+              or c.get("n_kv_heads") or c.get("num_attention_groups") or n_heads)
+        k_dim = (c.get("head_dim_full_attention") or c.get("head_dim") or c.get("attention_head_dim")
+                 or (d // n_heads if d and n_heads else None))
+        v_dim = c.get("v_head_dim") or k_dim
+    if not kv or not k_dim:
+        return None
+    return kv * (k_dim + v_dim) * 2
 
 
 def _moe_layers(c, n_layers):
@@ -164,7 +197,23 @@ def parse(raw):
     if not out["layers"] and isinstance(c.get("layers_block_type"), list):
         out["layers"] = len(c["layers_block_type"])
     out["moe_layers"] = _moe_layers(c, out["layers"])
-    out["attention"] = _attention(c, out["layers"])
+    mixers = _mixers(c, out["layers"])
+    out["attention"] = _summary(mixers)
+    n_mix = sum(mixers.values())
+    n_global = sum(v for k, v in mixers.items() if k in GLOBAL)
+    out["mixer_layers"] = n_mix or None
+    out["global_attn_frac"] = round(100 * n_global / n_mix, 1) if n_mix else None
+    out["aspect"] = round(out["d_model"] / n_mix, 1) if n_mix and out["d_model"] else None
+    per_layer_kv = _kv_bytes_per_global_layer(c)
+    out["kv_kib_per_token"] = round(n_global * per_layer_kv / 1024, 1) if per_layer_kv and n_global else None
+    local = sum(v for k, v in mixers.items() if k in LOCAL)
+    out["window"] = (c.get("sliding_window") or c.get("sliding_window_size")) if local else None
+    out["mla"] = bool(c.get("kv_lora_rank"))
+    out["kv_heads"] = None if out["mla"] else (c.get("num_key_value_heads") or c.get("n_kv_heads"))
+    out["head_dim"] = c.get("head_dim") or c.get("attention_head_dim")
+    out["context"] = c.get("max_position_embeddings") or c.get("max_position_embedding")
+    out["mtp"] = next((c[k] for k in ("num_nextn_predict_layers", "mtp_num_hidden_layers", "mtp_num_layers",
+                                      "num_mtp_modules") if isinstance(c.get(k), int)), 0)
     out["model_type"] = c.get("model_type") or raw.get("model_type")
     out["per_layer"] = per_layer
     return out

@@ -36,6 +36,7 @@
 
   <section class="tiles" id="tiles" aria-label="分档统计"></section>
 
+  <h2 class="sec">稀疏度</h2>
   <section class="charts">
     <figure class="card">
       <figcaption><b>参数激活比</b><span>激活参数 / 总参数，横轴为总参数（对数）</span></figcaption>
@@ -56,6 +57,27 @@
   </section>
   <p class="legend-note" id="legend"></p>
 
+  <h2 class="sec">形状与注意力</h2>
+  <section class="charts">
+    <figure class="card">
+      <figcaption><b>宽深比 d/L</b><span>隐藏维度 / token mixer 层数，横轴为激活参数（对数）</span></figcaption>
+      <div class="chart" id="c-aspect"></div>
+    </figure>
+    <figure class="card">
+      <figcaption><b>全局注意力层占比</b><span>其余是线性、Mamba 或滑窗层；横轴为首发时间</span></figcaption>
+      <div class="chart" id="c-global"></div>
+    </figure>
+    <figure class="card">
+      <figcaption><b>长上下文 KV cache</b><span>每 token 的 bf16 KV 缓存（KiB），只计全局注意力层</span></figcaption>
+      <div class="chart" id="c-kv"></div>
+    </figure>
+    <figure class="card">
+      <figcaption><b>最大上下文</b><span>config 里的 max_position_embeddings；横轴为首发时间</span></figcaption>
+      <div class="chart" id="c-ctx"></div>
+    </figure>
+  </section>
+  <p class="legend-note legend-copy"></p>
+
   <section class="card">
     <h2>各厂家的演化</h2>
     <p class="sub">纵轴 E/k（对数），横轴首发时间；同一档位的型号连成一条线，颜色同上。</p>
@@ -65,6 +87,7 @@
   <section class="card">
     <h2>全表</h2>
     <p class="sub">默认按最近上传排序；型号下面的小字是同配置的后续版本（只换了后训练、注意力或量化）。点列名排序，点一行看全部版本和备注。</p>
+    <div class="chips col-groups" id="col-groups" role="group" aria-label="列分组"></div>
     <div class="table-wrap">
       <table id="table">
         <thead><tr></tr></thead>
@@ -81,6 +104,9 @@
       <dt>专家激活比 A</dt><dd>(k + s) / (E + s)，把共享专家也算进去。</dd>
       <dt>参数激活比</dt><dd>激活参数 / 总参数，两者取自模型卡或技术报告（config 里没有）。</dd>
       <dt>G</dt><dd>2d / d<sub>expert</sub>，d 是隐藏维度。和标准 FFN 宽度 8d/3 比，G≈2.7 相当于"一个专家 = 一个 dense FFN"。</dd>
+      <dt>d/L</dt><dd>隐藏维度除以 token mixer 层数（注意力、线性注意力或 Mamba 层）。LongCat 每层有两个注意力子层，按两层计。</dd>
+      <dt>全局注意力层占比</dt><dd>KV 缓存随上下文增长的层（full、MLA、DSA、稀疏或压缩注意力）占全部 token mixer 层的比例。线性注意力、Mamba 的状态大小固定，滑窗层只缓存窗口内的 token。</dd>
+      <dt>KV cache / token</dt><dd>上下文足够长时每多一个 token 要多存的 bf16 KV：全局层数 × 每层每 token 的 K、V 维度 × 2 字节。MLA 按 kv_lora_rank + RoPE 维度算；不含线性层状态、滑窗缓存和 DSA 索引键；DeepSeek V4 的压缩注意力未计算。</dd>
       <dt>注意力</dt><dd>按 config.json 里的层类型字段推断（layer_types、kda_layers、full_attention_interval 等），只数 token mixer 的种类和层数，细节以技术报告为准。</dd>
       <dt>档位</dt><dd>按总参数：小 ≤ 50B，中 50–500B，大 ≥ 500B。</dd>
       <dt>收录范围</dt><dd>2025 年及以后首次上传的开源 MoE；只改了后训练、注意力或量化而 MoE 配置不变的版本合并为一行。</dd>
