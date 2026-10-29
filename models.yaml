@@ -70,7 +70,8 @@
 - vendor: Kimi
   name: Kimi K3
   repo: moonshotai/Kimi-K3
-  variants: [K3.1 Pro]
+  variants:
+  - {name: K3.1 Pro, released: 2026-10-23, note: 10 月 23 日上线 API，权重 11 月 4 日前放出}
   released: 2026-06
   total: 2780
   active: 104

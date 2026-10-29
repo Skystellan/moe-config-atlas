@@ -88,7 +88,7 @@ def main():
     shapes = {}
     for m in models:
         known[m["repo"]] = m
-        known.update({v: m for v in m.get("variants") or [] if "/" in v})
+        known.update({v: m for v in m.get("variants") or [] if isinstance(v, str) and "/" in v})
         raw = None
         cache = ROOT / ".cache" / (m["repo"].replace("/", "__") + ".config.json")
         if cache.exists():

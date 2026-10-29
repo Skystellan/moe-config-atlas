@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 04:28 UTC",
+ "generated": "2026-10-29 05:10 UTC",
  "count": 58,
  "models": [
   {
@@ -42,6 +42,65 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-12-01",
+   "latest": "2025-12-01",
+   "latest_name": "DeepSeek-V3.2",
+   "versions": [
+    {
+     "name": "DeepSeek-V3.2",
+     "repo": "deepseek-ai/DeepSeek-V3.2",
+     "created": "2025-12-01"
+    },
+    {
+     "name": "DeepSeek-V3.2-Speciale",
+     "repo": "deepseek-ai/DeepSeek-V3.2-Speciale",
+     "created": "2025-11-28"
+    },
+    {
+     "name": "DeepSeek-Math-V2",
+     "repo": "deepseek-ai/DeepSeek-Math-V2",
+     "created": "2025-11-27"
+    },
+    {
+     "name": "DeepSeek-V3.2-Exp",
+     "repo": "deepseek-ai/DeepSeek-V3.2-Exp",
+     "created": "2025-09-29"
+    },
+    {
+     "name": "DeepSeek-V3.1-Terminus",
+     "repo": "deepseek-ai/DeepSeek-V3.1-Terminus",
+     "created": "2025-09-22"
+    },
+    {
+     "name": "DeepSeek-V3.1",
+     "repo": "deepseek-ai/DeepSeek-V3.1",
+     "created": "2025-08-21"
+    },
+    {
+     "name": "DeepSeek-R1-0528",
+     "repo": "deepseek-ai/DeepSeek-R1-0528",
+     "created": "2025-05-28"
+    },
+    {
+     "name": "DeepSeek-Prover-V2-671B",
+     "repo": "deepseek-ai/DeepSeek-Prover-V2-671B",
+     "created": "2025-04-30"
+    },
+    {
+     "name": "DeepSeek-V3-0324",
+     "repo": "deepseek-ai/DeepSeek-V3-0324",
+     "created": "2025-03-24"
+    },
+    {
+     "name": "DeepSeek-R1-Zero",
+     "repo": "deepseek-ai/DeepSeek-R1-Zero",
+     "created": "2025-01-20"
+    },
+    {
+     "name": "DeepSeek-R1",
+     "repo": "deepseek-ai/DeepSeek-R1",
+     "created": "2025-01-20"
+    }
+   ],
    "hf_params": 685.4,
    "license": "mit",
    "notes": null
@@ -79,6 +138,30 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-04-22",
+   "latest": "2026-08-31",
+   "latest_name": "DeepSeek-V4-Flash-Vision-Exp",
+   "versions": [
+    {
+     "name": "DeepSeek-V4-Flash-Vision-Exp",
+     "repo": "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp",
+     "created": "2026-08-31"
+    },
+    {
+     "name": "DeepSeek-V4-Flash-0731",
+     "repo": "deepseek-ai/DeepSeek-V4-Flash-0731",
+     "created": "2026-07-31"
+    },
+    {
+     "name": "DeepSeek-V4-Flash-DSpark",
+     "repo": "deepseek-ai/DeepSeek-V4-Flash-DSpark",
+     "created": "2026-06-27"
+    },
+    {
+     "name": "DeepSeek-V4-Flash",
+     "repo": "deepseek-ai/DeepSeek-V4-Flash",
+     "created": "2026-04-22"
+    }
+   ],
    "hf_params": 290.9,
    "license": "mit",
    "notes": null
@@ -115,6 +198,25 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-04-22",
+   "latest": "2026-08-13",
+   "latest_name": "DeepSeek-V4-Pro-0813",
+   "versions": [
+    {
+     "name": "DeepSeek-V4-Pro-0813",
+     "repo": "deepseek-ai/DeepSeek-V4-Pro-0813",
+     "created": "2026-08-13"
+    },
+    {
+     "name": "DeepSeek-V4-Pro-DSpark",
+     "repo": "deepseek-ai/DeepSeek-V4-Pro-DSpark",
+     "created": "2026-06-27"
+    },
+    {
+     "name": "DeepSeek-V4-Pro",
+     "repo": "deepseek-ai/DeepSeek-V4-Pro",
+     "created": "2026-04-22"
+    }
+   ],
    "hf_params": 1598.8,
    "license": "mit",
    "notes": null
@@ -150,6 +252,20 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-09-10",
+   "latest": "2026-10-17",
+   "latest_name": "DeepSeek-V4.1-Flash-1017",
+   "versions": [
+    {
+     "name": "DeepSeek-V4.1-Flash-1017",
+     "repo": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+     "created": "2026-10-17"
+    },
+    {
+     "name": "DeepSeek-V4.1-Flash",
+     "repo": "deepseek-ai/DeepSeek-V4.1-Flash",
+     "created": "2026-09-10"
+    }
+   ],
    "hf_params": 763.2,
    "license": "mit",
    "notes": "另有 196B Engram；激活取 decode 的 16B（prefill 8B）。"
@@ -185,6 +301,20 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-06-28",
+   "latest": "2025-09-08",
+   "latest_name": "ERNIE-4.5-21B-A3B-Thinking",
+   "versions": [
+    {
+     "name": "ERNIE-4.5-21B-A3B-Thinking",
+     "repo": "baidu/ERNIE-4.5-21B-A3B-Thinking",
+     "created": "2025-09-08"
+    },
+    {
+     "name": "ERNIE-4.5-21B-A3B-PT",
+     "repo": "baidu/ERNIE-4.5-21B-A3B-PT",
+     "created": "2025-06-28"
+    }
+   ],
    "hf_params": 21.9,
    "license": "apache-2.0",
    "notes": null
@@ -218,6 +348,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-06-28",
+   "latest": "2025-06-28",
+   "latest_name": "ERNIE-4.5-300B-A47B-PT",
+   "versions": [
+    {
+     "name": "ERNIE-4.5-300B-A47B-PT",
+     "repo": "baidu/ERNIE-4.5-300B-A47B-PT",
+     "created": "2025-06-28"
+    }
+   ],
    "hf_params": 300.5,
    "license": "apache-2.0",
    "notes": null
@@ -254,6 +393,25 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-07-20",
+   "latest": "2025-12-07",
+   "latest_name": "GLM-4.6V",
+   "versions": [
+    {
+     "name": "GLM-4.6V",
+     "repo": "zai-org/GLM-4.6V",
+     "created": "2025-12-07"
+    },
+    {
+     "name": "GLM-4.5V",
+     "repo": "zai-org/GLM-4.5V",
+     "created": "2025-08-10"
+    },
+    {
+     "name": "GLM-4.5-Air",
+     "repo": "zai-org/GLM-4.5-Air",
+     "created": "2025-07-20"
+    }
+   ],
    "hf_params": 110.5,
    "license": "mit",
    "notes": null
@@ -290,6 +448,25 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-07-20",
+   "latest": "2025-12-22",
+   "latest_name": "GLM-4.7",
+   "versions": [
+    {
+     "name": "GLM-4.7",
+     "repo": "zai-org/GLM-4.7",
+     "created": "2025-12-22"
+    },
+    {
+     "name": "GLM-4.6",
+     "repo": "zai-org/GLM-4.6",
+     "created": "2025-09-29"
+    },
+    {
+     "name": "GLM-4.5",
+     "repo": "zai-org/GLM-4.5",
+     "created": "2025-07-20"
+    }
+   ],
    "hf_params": 358.3,
    "license": "mit",
    "notes": null
@@ -323,6 +500,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-01-19",
+   "latest": "2026-01-19",
+   "latest_name": "GLM-4.7-Flash",
+   "versions": [
+    {
+     "name": "GLM-4.7-Flash",
+     "repo": "zai-org/GLM-4.7-Flash",
+     "created": "2026-01-19"
+    }
+   ],
    "hf_params": 31.2,
    "license": "mit",
    "notes": null
@@ -361,6 +547,35 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-02-11",
+   "latest": "2026-08-25",
+   "latest_name": "GLM-5.3",
+   "versions": [
+    {
+     "name": "GLM-5.3",
+     "repo": "zai-org/GLM-5.3",
+     "created": "2026-08-25"
+    },
+    {
+     "name": "GLM-5.3-BF16",
+     "repo": "zai-org/GLM-5.3-BF16",
+     "created": "2026-08-25"
+    },
+    {
+     "name": "GLM-5.2",
+     "repo": "zai-org/GLM-5.2",
+     "created": "2026-06-16"
+    },
+    {
+     "name": "GLM-5.1",
+     "repo": "zai-org/GLM-5.1",
+     "created": "2026-04-03"
+    },
+    {
+     "name": "GLM-5",
+     "repo": "zai-org/GLM-5",
+     "created": "2026-02-11"
+    }
+   ],
    "hf_params": 753.9,
    "license": "mit",
    "notes": null
@@ -396,6 +611,20 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-08-25",
+   "latest": "2026-08-25",
+   "latest_name": "GLM-5.3-Flash",
+   "versions": [
+    {
+     "name": "GLM-5.3-Flash",
+     "repo": "zai-org/GLM-5.3-Flash",
+     "created": "2026-08-25"
+    },
+    {
+     "name": "GLM-5.3-Flash-BF16",
+     "repo": "zai-org/GLM-5.3-Flash-BF16",
+     "created": "2026-08-25"
+    }
+   ],
    "hf_params": 321.3,
    "license": "mit",
    "notes": null
@@ -432,6 +661,25 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-03-11",
+   "latest": "2026-04-29",
+   "latest_name": "gemma-4-26B-A4B-it-qat-q4_0-unquantized",
+   "versions": [
+    {
+     "name": "gemma-4-26B-A4B-it-qat-q4_0-unquantized",
+     "repo": "google/gemma-4-26B-A4B-it-qat-q4_0-unquantized",
+     "created": "2026-04-29"
+    },
+    {
+     "name": "gemma-4-26B-A4B",
+     "repo": "google/gemma-4-26B-A4B",
+     "created": "2026-03-12"
+    },
+    {
+     "name": "gemma-4-26B-A4B-it",
+     "repo": "google/gemma-4-26B-A4B-it",
+     "created": "2026-03-11"
+    }
+   ],
    "hf_params": 25.8,
    "license": "apache-2.0",
    "notes": null
@@ -465,6 +713,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-06-25",
+   "latest": "2025-06-25",
+   "latest_name": "Hunyuan-A13B-Instruct",
+   "versions": [
+    {
+     "name": "Hunyuan-A13B-Instruct",
+     "repo": "tencent/Hunyuan-A13B-Instruct",
+     "created": "2025-06-25"
+    }
+   ],
    "hf_params": 80.4,
    "license": "other",
    "notes": null
@@ -500,6 +757,20 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-07-02",
+   "latest": "2026-07-02",
+   "latest_name": "Hy3",
+   "versions": [
+    {
+     "name": "Hy3",
+     "repo": "tencent/Hy3",
+     "created": "2026-07-02"
+    },
+    {
+     "name": "Hy3-preview",
+     "repo": "tencent/Hy3-preview",
+     "created": "2026-04-13"
+    }
+   ],
    "hf_params": 298.8,
    "license": "apache-2.0",
    "notes": null
@@ -535,6 +806,20 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-05-11",
+   "latest": "2026-10-15",
+   "latest_name": "Hy-Memory-30B-A3B",
+   "versions": [
+    {
+     "name": "Hy-Memory-30B-A3B",
+     "repo": "tencent/Hy-Memory-30B-A3B",
+     "created": "2026-10-15"
+    },
+    {
+     "name": "Hy-MT2-30B-A3B",
+     "repo": "tencent/Hy-MT2-30B-A3B",
+     "created": "2026-05-11"
+    }
+   ],
    "hf_params": 30.1,
    "license": "apache-2.0",
    "notes": "翻译专用模型；Hy-Memory 是同一配置的记忆写入模型。"
@@ -568,6 +853,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-08-27",
+   "latest": "2026-08-27",
+   "latest_name": "Hy4-preview",
+   "versions": [
+    {
+     "name": "Hy4-preview",
+     "repo": "tencent/Hy4-preview",
+     "created": "2026-08-27"
+    }
+   ],
    "hf_params": 780.0,
    "license": "apache-2.0",
    "notes": null
@@ -606,6 +900,35 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-02-22",
+   "latest": "2025-06-21",
+   "latest_name": "Kimi-VL-A3B-Thinking-2506",
+   "versions": [
+    {
+     "name": "Kimi-VL-A3B-Thinking-2506",
+     "repo": "moonshotai/Kimi-VL-A3B-Thinking-2506",
+     "created": "2025-06-21"
+    },
+    {
+     "name": "Kimi-VL-A3B-Instruct",
+     "repo": "moonshotai/Kimi-VL-A3B-Instruct",
+     "created": "2025-04-09"
+    },
+    {
+     "name": "Kimi-VL-A3B-Thinking",
+     "repo": "moonshotai/Kimi-VL-A3B-Thinking",
+     "created": "2025-04-09"
+    },
+    {
+     "name": "Moonlight-16B-A3B",
+     "repo": "moonshotai/Moonlight-16B-A3B",
+     "created": "2025-02-22"
+    },
+    {
+     "name": "Moonlight-16B-A3B-Instruct",
+     "repo": "moonshotai/Moonlight-16B-A3B-Instruct",
+     "created": "2025-02-22"
+    }
+   ],
    "hf_params": 16.0,
    "license": "mit",
    "notes": "Muon 优化器的验证模型。"
@@ -645,6 +968,40 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-07-11",
+   "latest": "2026-06-11",
+   "latest_name": "Kimi-K2.7-Code",
+   "versions": [
+    {
+     "name": "Kimi-K2.7-Code",
+     "repo": "moonshotai/Kimi-K2.7-Code",
+     "created": "2026-06-11"
+    },
+    {
+     "name": "Kimi-K2.6",
+     "repo": "moonshotai/Kimi-K2.6",
+     "created": "2026-04-14"
+    },
+    {
+     "name": "Kimi-K2.5",
+     "repo": "moonshotai/Kimi-K2.5",
+     "created": "2026-01-01"
+    },
+    {
+     "name": "Kimi-K2-Thinking",
+     "repo": "moonshotai/Kimi-K2-Thinking",
+     "created": "2025-11-04"
+    },
+    {
+     "name": "Kimi-K2-Instruct-0905",
+     "repo": "moonshotai/Kimi-K2-Instruct-0905",
+     "created": "2025-09-03"
+    },
+    {
+     "name": "Kimi-K2-Instruct",
+     "repo": "moonshotai/Kimi-K2-Instruct",
+     "created": "2025-07-11"
+    }
+   ],
    "hf_params": 1026.4,
    "license": "other",
    "notes": null
@@ -678,6 +1035,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-10-30",
+   "latest": "2025-10-30",
+   "latest_name": "Kimi-Linear-48B-A3B-Instruct",
+   "versions": [
+    {
+     "name": "Kimi-Linear-48B-A3B-Instruct",
+     "repo": "moonshotai/Kimi-Linear-48B-A3B-Instruct",
+     "created": "2025-10-30"
+    }
+   ],
    "hf_params": 49.1,
    "license": "mit",
    "notes": null
@@ -713,6 +1079,21 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-06-13",
+   "latest": "2026-10-23",
+   "latest_name": "K3.1 Pro",
+   "versions": [
+    {
+     "name": "K3.1 Pro",
+     "repo": null,
+     "created": "2026-10-23",
+     "note": "10 月 23 日上线 API，权重 11 月 4 日前放出"
+    },
+    {
+     "name": "Kimi-K3",
+     "repo": "moonshotai/Kimi-K3",
+     "created": "2026-06-13"
+    }
+   ],
    "hf_params": 2779.9,
    "license": "other",
    "notes": "K3.1 Pro 是 K3 的后训练版本，权重未放出，按 K3 计。"
@@ -760,6 +1141,80 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-02-28",
+   "latest": "2025-09-30",
+   "latest_name": "Ming-UniVision-16B-A3B",
+   "versions": [
+    {
+     "name": "Ming-UniVision-16B-A3B",
+     "repo": "inclusionAI/Ming-UniVision-16B-A3B",
+     "created": "2025-09-30"
+    },
+    {
+     "name": "Ling-lite-1.5-2507",
+     "repo": "inclusionAI/Ling-lite-1.5-2507",
+     "created": "2025-08-08"
+    },
+    {
+     "name": "Ring-lite-2506",
+     "repo": "inclusionAI/Ring-lite-2506",
+     "created": "2025-08-06"
+    },
+    {
+     "name": "Ring-lite-2507",
+     "repo": "inclusionAI/Ring-lite-2507",
+     "created": "2025-08-01"
+    },
+    {
+     "name": "Ling-lite-1.5-2506",
+     "repo": "inclusionAI/Ling-lite-1.5-2506",
+     "created": "2025-07-23"
+    },
+    {
+     "name": "Ming-Lite-Omni-1.5",
+     "repo": "inclusionAI/Ming-Lite-Omni-1.5",
+     "created": "2025-07-15"
+    },
+    {
+     "name": "Ring-lite",
+     "repo": "inclusionAI/Ring-lite",
+     "created": "2025-06-17"
+    },
+    {
+     "name": "Ling-lite-1.5",
+     "repo": "inclusionAI/Ling-lite-1.5",
+     "created": "2025-05-11"
+    },
+    {
+     "name": "Ming-Lite-Omni",
+     "repo": "inclusionAI/Ming-Lite-Omni",
+     "created": "2025-05-02"
+    },
+    {
+     "name": "Ring-lite-linear-preview",
+     "repo": "inclusionAI/Ring-lite-linear-preview",
+     "created": "2025-04-24"
+    },
+    {
+     "name": "Ring-lite-distill-preview",
+     "repo": "inclusionAI/Ring-lite-distill-preview",
+     "created": "2025-03-29"
+    },
+    {
+     "name": "Ling-Coder-lite",
+     "repo": "inclusionAI/Ling-Coder-lite",
+     "created": "2025-03-08"
+    },
+    {
+     "name": "Ling-lite-base",
+     "repo": "inclusionAI/Ling-lite-base",
+     "created": "2025-02-28"
+    },
+    {
+     "name": "Ling-lite",
+     "repo": "inclusionAI/Ling-lite",
+     "created": "2025-02-28"
+    }
+   ],
    "hf_params": 16.8,
    "license": "mit",
    "notes": null
@@ -795,6 +1250,20 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-02-28",
+   "latest": "2025-02-28",
+   "latest_name": "Ling-plus-base",
+   "versions": [
+    {
+     "name": "Ling-plus-base",
+     "repo": "inclusionAI/Ling-plus-base",
+     "created": "2025-02-28"
+    },
+    {
+     "name": "Ling-plus",
+     "repo": "inclusionAI/Ling-plus",
+     "created": "2025-02-28"
+    }
+   ],
    "hf_params": 292.5,
    "license": "mit",
    "notes": null
@@ -832,6 +1301,30 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-09-08",
+   "latest": "2025-10-14",
+   "latest_name": "Ring-mini-sparse-2.0-exp",
+   "versions": [
+    {
+     "name": "Ring-mini-sparse-2.0-exp",
+     "repo": "inclusionAI/Ring-mini-sparse-2.0-exp",
+     "created": "2025-10-14"
+    },
+    {
+     "name": "Ring-mini-linear-2.0",
+     "repo": "inclusionAI/Ring-mini-linear-2.0",
+     "created": "2025-09-24"
+    },
+    {
+     "name": "Ling-mini-2.0",
+     "repo": "inclusionAI/Ling-mini-2.0",
+     "created": "2025-09-08"
+    },
+    {
+     "name": "Ring-mini-2.0",
+     "repo": "inclusionAI/Ring-mini-2.0",
+     "created": "2025-09-08"
+    }
+   ],
    "hf_params": 16.3,
    "license": "mit",
    "notes": null
@@ -872,6 +1365,45 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-09-17",
+   "latest": "2026-04-28",
+   "latest_name": "Ling-2.6-flash",
+   "versions": [
+    {
+     "name": "Ling-2.6-flash",
+     "repo": "inclusionAI/Ling-2.6-flash",
+     "created": "2026-04-28"
+    },
+    {
+     "name": "Ming-flash-omni-2.0",
+     "repo": "inclusionAI/Ming-flash-omni-2.0",
+     "created": "2026-02-10"
+    },
+    {
+     "name": "Ring-flash-linear-2.0-128k",
+     "repo": "inclusionAI/Ring-flash-linear-2.0-128k",
+     "created": "2025-10-21"
+    },
+    {
+     "name": "Ming-flash-omni-Preview",
+     "repo": "inclusionAI/Ming-flash-omni-Preview",
+     "created": "2025-10-14"
+    },
+    {
+     "name": "Ring-flash-linear-2.0",
+     "repo": "inclusionAI/Ring-flash-linear-2.0",
+     "created": "2025-09-25"
+    },
+    {
+     "name": "Ring-flash-2.0",
+     "repo": "inclusionAI/Ring-flash-2.0",
+     "created": "2025-09-19"
+    },
+    {
+     "name": "Ling-flash-2.0",
+     "repo": "inclusionAI/Ling-flash-2.0",
+     "created": "2025-09-17"
+    }
+   ],
    "hf_params": 102.9,
    "license": "mit",
    "notes": null
@@ -911,6 +1443,40 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-10-02",
+   "latest": "2026-05-14",
+   "latest_name": "Ring-2.6-1T",
+   "versions": [
+    {
+     "name": "Ring-2.6-1T",
+     "repo": "inclusionAI/Ring-2.6-1T",
+     "created": "2026-05-14"
+    },
+    {
+     "name": "Ling-2.6-1T",
+     "repo": "inclusionAI/Ling-2.6-1T",
+     "created": "2026-04-29"
+    },
+    {
+     "name": "Ling-2.5-1T",
+     "repo": "inclusionAI/Ling-2.5-1T",
+     "created": "2026-02-14"
+    },
+    {
+     "name": "Ring-2.5-1T",
+     "repo": "inclusionAI/Ring-2.5-1T",
+     "created": "2026-02-10"
+    },
+    {
+     "name": "Ring-1T",
+     "repo": "inclusionAI/Ring-1T",
+     "created": "2025-10-10"
+    },
+    {
+     "name": "Ling-1T",
+     "repo": "inclusionAI/Ling-1T",
+     "created": "2025-10-02"
+    }
+   ],
    "hf_params": 999.7,
    "license": "mit",
    "notes": null
@@ -944,6 +1510,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-08-10",
+   "latest": "2026-08-10",
+   "latest_name": "Ling-3.0-tiny",
+   "versions": [
+    {
+     "name": "Ling-3.0-tiny",
+     "repo": "inclusionAI/Ling-3.0-tiny",
+     "created": "2026-08-10"
+    }
+   ],
    "hf_params": 7.9,
    "license": "mit",
    "notes": null
@@ -981,6 +1556,30 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-08-02",
+   "latest": "2026-10-19",
+   "latest_name": "Ling-3.0-flash-Sante",
+   "versions": [
+    {
+     "name": "Ling-3.0-flash-Sante",
+     "repo": "inclusionAI/Ling-3.0-flash-Sante",
+     "created": "2026-10-19"
+    },
+    {
+     "name": "Ling-3.0-flash-VL",
+     "repo": "inclusionAI/Ling-3.0-flash-VL",
+     "created": "2026-09-04"
+    },
+    {
+     "name": "Ling-3.0-flash-Fin",
+     "repo": "inclusionAI/Ling-3.0-flash-Fin",
+     "created": "2026-09-03"
+    },
+    {
+     "name": "Ling-3.0-flash",
+     "repo": "inclusionAI/Ling-3.0-flash",
+     "created": "2026-08-02"
+    }
+   ],
    "hf_params": 127.5,
    "license": "mit",
    "notes": null
@@ -1016,6 +1615,20 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-10-13",
+   "latest": "2026-10-27",
+   "latest_name": "Ling-3.1-flash-1019",
+   "versions": [
+    {
+     "name": "Ling-3.1-flash-1019",
+     "repo": "inclusionAI/Ling-3.1-flash-1019",
+     "created": "2026-10-27"
+    },
+    {
+     "name": "Ling-3.1-flash",
+     "repo": "inclusionAI/Ling-3.1-flash",
+     "created": "2026-10-13"
+    }
+   ],
    "hf_params": 572.1,
    "license": "mit",
    "notes": null
@@ -1056,6 +1669,45 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-08-29",
+   "latest": "2026-03-20",
+   "latest_name": "LongCat-Flash-Prover",
+   "versions": [
+    {
+     "name": "LongCat-Flash-Prover",
+     "repo": "meituan-longcat/LongCat-Flash-Prover",
+     "created": "2026-03-20"
+    },
+    {
+     "name": "LongCat-Flash-Thinking-ZigZag",
+     "repo": "meituan-longcat/LongCat-Flash-Thinking-ZigZag",
+     "created": "2026-01-23"
+    },
+    {
+     "name": "LongCat-Flash-Thinking-2601",
+     "repo": "meituan-longcat/LongCat-Flash-Thinking-2601",
+     "created": "2026-01-14"
+    },
+    {
+     "name": "LongCat-HeavyMode-Summary",
+     "repo": "meituan-longcat/LongCat-HeavyMode-Summary",
+     "created": "2026-01-14"
+    },
+    {
+     "name": "LongCat-Flash-Omni",
+     "repo": "meituan-longcat/LongCat-Flash-Omni",
+     "created": "2025-10-23"
+    },
+    {
+     "name": "LongCat-Flash-Thinking",
+     "repo": "meituan-longcat/LongCat-Flash-Thinking",
+     "created": "2025-09-21"
+    },
+    {
+     "name": "LongCat-Flash-Chat",
+     "repo": "meituan-longcat/LongCat-Flash-Chat",
+     "created": "2025-08-29"
+    }
+   ],
    "hf_params": 561.9,
    "license": "mit",
    "notes": "k 按 12 个槽位计，另有 256 个零计算专家；按平均落到 FFN 专家的个数算会更稀疏（约 64）。"
@@ -1093,6 +1745,30 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-01-27",
+   "latest": "2026-07-31",
+   "latest_name": "LongCat-Flash-Lite-Sparse",
+   "versions": [
+    {
+     "name": "LongCat-Flash-Lite-Sparse",
+     "repo": "meituan-longcat/LongCat-Flash-Lite-Sparse",
+     "created": "2026-07-31"
+    },
+    {
+     "name": "LongCat-Next",
+     "repo": "meituan-longcat/LongCat-Next",
+     "created": "2026-03-25"
+    },
+    {
+     "name": "LongCat-Flash-Lite",
+     "repo": "meituan-longcat/LongCat-Flash-Lite",
+     "created": "2026-01-27"
+    },
+    {
+     "name": "LongCat-Flash-Lite-Next",
+     "repo": null,
+     "created": null
+    }
+   ],
    "hf_params": 69.1,
    "license": "mit",
    "notes": "k 按 12 个槽位计，另有 128 个零计算专家；总参数含 n-gram 嵌入。"
@@ -1126,6 +1802,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-07-05",
+   "latest": "2026-07-05",
+   "latest_name": "LongCat-2.0",
+   "versions": [
+    {
+     "name": "LongCat-2.0",
+     "repo": "meituan-longcat/LongCat-2.0",
+     "created": "2026-07-05"
+    }
+   ],
    "hf_params": 1775.6,
    "license": "mit",
    "notes": "k 按 12 个槽位计，另有 128 个零计算专家；总参数含 n-gram 嵌入。"
@@ -1159,6 +1844,15 @@
    "per_layer": false,
    "config_ok": false,
    "hf_created": "2026-09-15",
+   "latest": "2026-09-15",
+   "latest_name": "Muse-Spark-Open-816B-A42B",
+   "versions": [
+    {
+     "name": "Muse-Spark-Open-816B-A42B",
+     "repo": "meta-models/Muse-Spark-Open-816B-A42B",
+     "created": "2026-09-15"
+    }
+   ],
    "hf_params": 822.0,
    "license": "other",
    "notes": "仓库需申请访问，配置取自模型卡。"
@@ -1197,6 +1891,35 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-12-16",
+   "latest": "2026-09-27",
+   "latest_name": "MiMo-V2.6-Flash-MOPD",
+   "versions": [
+    {
+     "name": "MiMo-V2.6-Flash-MOPD",
+     "repo": "XiaomiMiMo/MiMo-V2.6-Flash-MOPD",
+     "created": "2026-09-27"
+    },
+    {
+     "name": "MiMo-V2.6-Flash-RL",
+     "repo": "XiaomiMiMo/MiMo-V2.6-Flash-RL",
+     "created": "2026-09-21"
+    },
+    {
+     "name": "MiMo-V2.5",
+     "repo": "XiaomiMiMo/MiMo-V2.5",
+     "created": "2026-04-27"
+    },
+    {
+     "name": "MiMo-V2-Flash",
+     "repo": "XiaomiMiMo/MiMo-V2-Flash",
+     "created": "2025-12-16"
+    },
+    {
+     "name": "MiMo-V2.6-Flash",
+     "repo": null,
+     "created": null
+    }
+   ],
    "hf_params": 309.8,
    "license": "mit",
    "notes": null
@@ -1234,6 +1957,30 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-04-27",
+   "latest": "2026-09-27",
+   "latest_name": "MiMo-V2.6-Pro-MOPD",
+   "versions": [
+    {
+     "name": "MiMo-V2.6-Pro-MOPD",
+     "repo": "XiaomiMiMo/MiMo-V2.6-Pro-MOPD",
+     "created": "2026-09-27"
+    },
+    {
+     "name": "MiMo-V2.6-Pro-RL",
+     "repo": "XiaomiMiMo/MiMo-V2.6-Pro-RL",
+     "created": "2026-09-21"
+    },
+    {
+     "name": "MiMo-V2.5-Pro",
+     "repo": "XiaomiMiMo/MiMo-V2.5-Pro",
+     "created": "2026-04-27"
+    },
+    {
+     "name": "MiMo-V2.6-Pro",
+     "repo": null,
+     "created": null
+    }
+   ],
    "hf_params": 1023.2,
    "license": "mit",
    "notes": null
@@ -1274,6 +2021,45 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-01-12",
+   "latest": "2025-07-01",
+   "latest_name": "MiniMax-M1-80k-hf",
+   "versions": [
+    {
+     "name": "MiniMax-M1-80k-hf",
+     "repo": "MiniMaxAI/MiniMax-M1-80k-hf",
+     "created": "2025-07-01"
+    },
+    {
+     "name": "MiniMax-M1-40k-hf",
+     "repo": "MiniMaxAI/MiniMax-M1-40k-hf",
+     "created": "2025-07-01"
+    },
+    {
+     "name": "MiniMax-M1-80k",
+     "repo": "MiniMaxAI/MiniMax-M1-80k",
+     "created": "2025-06-13"
+    },
+    {
+     "name": "MiniMax-M1-40k",
+     "repo": "MiniMaxAI/MiniMax-M1-40k",
+     "created": "2025-06-05"
+    },
+    {
+     "name": "MiniMax-Text-01-hf",
+     "repo": "MiniMaxAI/MiniMax-Text-01-hf",
+     "created": "2025-06-03"
+    },
+    {
+     "name": "MiniMax-Text-01",
+     "repo": "MiniMaxAI/MiniMax-Text-01",
+     "created": "2025-01-12"
+    },
+    {
+     "name": "MiniMax-VL-01",
+     "repo": "MiniMaxAI/MiniMax-VL-01",
+     "created": "2025-01-12"
+    }
+   ],
    "hf_params": 456.1,
    "license": null,
    "notes": "Lightning Attention 与 softmax 注意力 7:1 混合。"
@@ -1311,6 +2097,30 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-10-22",
+   "latest": "2026-04-09",
+   "latest_name": "MiniMax-M2.7",
+   "versions": [
+    {
+     "name": "MiniMax-M2.7",
+     "repo": "MiniMaxAI/MiniMax-M2.7",
+     "created": "2026-04-09"
+    },
+    {
+     "name": "MiniMax-M2.5",
+     "repo": "MiniMaxAI/MiniMax-M2.5",
+     "created": "2026-02-12"
+    },
+    {
+     "name": "MiniMax-M2.1",
+     "repo": "MiniMaxAI/MiniMax-M2.1",
+     "created": "2025-12-20"
+    },
+    {
+     "name": "MiniMax-M2",
+     "repo": "MiniMaxAI/MiniMax-M2",
+     "created": "2025-10-22"
+    }
+   ],
    "hf_params": 228.7,
    "license": "other",
    "notes": null
@@ -1346,6 +2156,20 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-06-02",
+   "latest": "2026-10-17",
+   "latest_name": "MiniMax-M3.1-Flash",
+   "versions": [
+    {
+     "name": "MiniMax-M3.1-Flash",
+     "repo": "MiniMaxAI/MiniMax-M3.1-Flash",
+     "created": "2026-10-17"
+    },
+    {
+     "name": "MiniMax-M3",
+     "repo": "MiniMaxAI/MiniMax-M3",
+     "created": "2026-06-02"
+    }
+   ],
    "hf_params": 427.0,
    "license": "other",
    "notes": null
@@ -1381,6 +2205,20 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-11-28",
+   "latest": "2025-11-28",
+   "latest_name": "Mistral-Large-3-675B-Instruct-2512",
+   "versions": [
+    {
+     "name": "Mistral-Large-3-675B-Instruct-2512",
+     "repo": "mistralai/Mistral-Large-3-675B-Instruct-2512",
+     "created": "2025-11-28"
+    },
+    {
+     "name": "Mistral-Large-3-675B-Instruct-2512-BF16",
+     "repo": "mistralai/Mistral-Large-3-675B-Instruct-2512-BF16",
+     "created": "2025-09-28"
+    }
+   ],
    "hf_params": null,
    "license": "apache-2.0",
    "notes": null
@@ -1417,6 +2255,25 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-01-23",
+   "latest": "2026-07-01",
+   "latest_name": "Leanstral-1.5-119B-A6B",
+   "versions": [
+    {
+     "name": "Leanstral-1.5-119B-A6B",
+     "repo": "mistralai/Leanstral-1.5-119B-A6B",
+     "created": "2026-07-01"
+    },
+    {
+     "name": "Leanstral-2603",
+     "repo": "mistralai/Leanstral-2603",
+     "created": "2026-03-11"
+    },
+    {
+     "name": "Mistral-Small-4-119B-2603",
+     "repo": "mistralai/Mistral-Small-4-119B-2603",
+     "created": "2026-01-23"
+    }
+   ],
    "hf_params": 119.4,
    "license": "apache-2.0",
    "notes": null
@@ -1456,6 +2313,40 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-12-04",
+   "latest": "2026-09-01",
+   "latest_name": "NVIDIA-NemotronLabs-AI-for-Media-Sports-Tennis",
+   "versions": [
+    {
+     "name": "NVIDIA-NemotronLabs-AI-for-Media-Sports-Tennis",
+     "repo": "nvidia/NVIDIA-NemotronLabs-AI-for-Media-Sports-Tennis",
+     "created": "2026-09-01"
+    },
+    {
+     "name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+     "repo": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+     "created": "2026-08-01"
+    },
+    {
+     "name": "Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+     "repo": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+     "created": "2026-04-20"
+    },
+    {
+     "name": "NVIDIA-Nemotron-Labs-3-Elastic-30B-A3B-BF16",
+     "repo": "nvidia/NVIDIA-Nemotron-Labs-3-Elastic-30B-A3B-BF16",
+     "created": "2026-04-01"
+    },
+    {
+     "name": "Nemotron-Cascade-2-30B-A3B",
+     "repo": "nvidia/Nemotron-Cascade-2-30B-A3B",
+     "created": "2026-03-18"
+    },
+    {
+     "name": "NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
+     "repo": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
+     "created": "2025-12-04"
+    }
+   ],
    "hf_params": 31.6,
    "license": "other",
    "notes": null
@@ -1492,6 +2383,25 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-03-10",
+   "latest": "2026-10-12",
+   "latest_name": "NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+   "versions": [
+    {
+     "name": "NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+     "repo": "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+     "created": "2026-10-12"
+    },
+    {
+     "name": "Nemotron-3-Super-120B-A12B-BF16-MTPv2",
+     "repo": "nvidia/Nemotron-3-Super-120B-A12B-BF16-MTPv2",
+     "created": "2026-05-24"
+    },
+    {
+     "name": "NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+     "repo": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+     "created": "2026-03-10"
+    }
+   ],
    "hf_params": 123.6,
    "license": "other",
    "notes": "LatentMoE，专家在压缩后的潜空间里计算，G 不适用。"
@@ -1533,6 +2443,50 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-06-03",
+   "latest": "2026-09-02",
+   "latest_name": "Nemotron-3-Labs-Ultra-Math-SFT",
+   "versions": [
+    {
+     "name": "Nemotron-3-Labs-Ultra-Math-SFT",
+     "repo": "nvidia/Nemotron-3-Labs-Ultra-Math-SFT",
+     "created": "2026-09-02"
+    },
+    {
+     "name": "Nemotron-3-Labs-Ultra-Math-RL",
+     "repo": "nvidia/Nemotron-3-Labs-Ultra-Math-RL",
+     "created": "2026-09-02"
+    },
+    {
+     "name": "NVIDIA-Nemotron-Labs-Teacher-STEM",
+     "repo": "nvidia/NVIDIA-Nemotron-Labs-Teacher-STEM",
+     "created": "2026-08-14"
+    },
+    {
+     "name": "NVIDIA-Nemotron-Labs-Teacher-General-Reasoning",
+     "repo": "nvidia/NVIDIA-Nemotron-Labs-Teacher-General-Reasoning",
+     "created": "2026-08-14"
+    },
+    {
+     "name": "NVIDIA-Nemotron-Labs-Teacher-Instruction-Following",
+     "repo": "nvidia/NVIDIA-Nemotron-Labs-Teacher-Instruction-Following",
+     "created": "2026-08-14"
+    },
+    {
+     "name": "NVIDIA-Nemotron-Labs-Teacher-Competition-Coding",
+     "repo": "nvidia/NVIDIA-Nemotron-Labs-Teacher-Competition-Coding",
+     "created": "2026-08-14"
+    },
+    {
+     "name": "NVIDIA-Nemotron-Labs-Teacher-Chat",
+     "repo": "nvidia/NVIDIA-Nemotron-Labs-Teacher-Chat",
+     "created": "2026-08-14"
+    },
+    {
+     "name": "NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16",
+     "repo": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16",
+     "created": "2026-06-03"
+    }
+   ],
    "hf_params": 560.5,
    "license": "other",
    "notes": "LatentMoE，G 不适用。"
@@ -1568,6 +2522,20 @@
    "per_layer": true,
    "config_ok": true,
    "hf_created": "2026-10-09",
+   "latest": "2026-10-09",
+   "latest_name": "NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16",
+   "versions": [
+    {
+     "name": "NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16",
+     "repo": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16",
+     "created": "2026-10-09"
+    },
+    {
+     "name": "NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB",
+     "repo": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB",
+     "created": "2026-10-07"
+    }
+   ],
    "hf_params": 74.9,
    "license": "other",
    "notes": "LatentMoE；逐层 240–496 个专家，取均值。"
@@ -1601,6 +2569,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-08-04",
+   "latest": "2025-08-04",
+   "latest_name": "gpt-oss-20b",
+   "versions": [
+    {
+     "name": "gpt-oss-20b",
+     "repo": "openai/gpt-oss-20b",
+     "created": "2025-08-04"
+    }
+   ],
    "hf_params": 20.9,
    "license": "apache-2.0",
    "notes": null
@@ -1634,6 +2611,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-08-04",
+   "latest": "2025-08-04",
+   "latest_name": "gpt-oss-120b",
+   "versions": [
+    {
+     "name": "gpt-oss-120b",
+     "repo": "openai/gpt-oss-120b",
+     "created": "2025-08-04"
+    }
+   ],
    "hf_params": 116.8,
    "license": "apache-2.0",
    "notes": null
@@ -1673,6 +2659,40 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-04-27",
+   "latest": "2025-09-30",
+   "latest_name": "Qwen3-VL-30B-A3B-Instruct",
+   "versions": [
+    {
+     "name": "Qwen3-VL-30B-A3B-Instruct",
+     "repo": "Qwen/Qwen3-VL-30B-A3B-Instruct",
+     "created": "2025-09-30"
+    },
+    {
+     "name": "Qwen3-VL-30B-A3B-Thinking",
+     "repo": "Qwen/Qwen3-VL-30B-A3B-Thinking",
+     "created": "2025-09-30"
+    },
+    {
+     "name": "Qwen3-Coder-30B-A3B-Instruct",
+     "repo": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+     "created": "2025-07-31"
+    },
+    {
+     "name": "Qwen3-30B-A3B-Thinking-2507",
+     "repo": "Qwen/Qwen3-30B-A3B-Thinking-2507",
+     "created": "2025-07-29"
+    },
+    {
+     "name": "Qwen3-30B-A3B-Instruct-2507",
+     "repo": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+     "created": "2025-07-28"
+    },
+    {
+     "name": "Qwen3-30B-A3B",
+     "repo": "Qwen/Qwen3-30B-A3B",
+     "created": "2025-04-27"
+    }
+   ],
    "hf_params": 30.5,
    "license": "apache-2.0",
    "notes": null
@@ -1711,6 +2731,35 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-04-27",
+   "latest": "2025-09-22",
+   "latest_name": "Qwen3-VL-235B-A22B-Instruct",
+   "versions": [
+    {
+     "name": "Qwen3-VL-235B-A22B-Instruct",
+     "repo": "Qwen/Qwen3-VL-235B-A22B-Instruct",
+     "created": "2025-09-22"
+    },
+    {
+     "name": "Qwen3-VL-235B-A22B-Thinking",
+     "repo": "Qwen/Qwen3-VL-235B-A22B-Thinking",
+     "created": "2025-09-22"
+    },
+    {
+     "name": "Qwen3-235B-A22B-Thinking-2507",
+     "repo": "Qwen/Qwen3-235B-A22B-Thinking-2507",
+     "created": "2025-07-25"
+    },
+    {
+     "name": "Qwen3-235B-A22B-Instruct-2507",
+     "repo": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+     "created": "2025-07-21"
+    },
+    {
+     "name": "Qwen3-235B-A22B",
+     "repo": "Qwen/Qwen3-235B-A22B",
+     "created": "2025-04-27"
+    }
+   ],
    "hf_params": 235.1,
    "license": "apache-2.0",
    "notes": null
@@ -1744,6 +2793,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-07-22",
+   "latest": "2025-07-22",
+   "latest_name": "Qwen3-Coder-480B-A35B-Instruct",
+   "versions": [
+    {
+     "name": "Qwen3-Coder-480B-A35B-Instruct",
+     "repo": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+     "created": "2025-07-22"
+    }
+   ],
    "hf_params": 480.2,
    "license": "apache-2.0",
    "notes": null
@@ -1780,6 +2838,25 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-09-09",
+   "latest": "2026-01-30",
+   "latest_name": "Qwen3-Coder-Next",
+   "versions": [
+    {
+     "name": "Qwen3-Coder-Next",
+     "repo": "Qwen/Qwen3-Coder-Next",
+     "created": "2026-01-30"
+    },
+    {
+     "name": "Qwen3-Next-80B-A3B-Instruct",
+     "repo": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+     "created": "2025-09-09"
+    },
+    {
+     "name": "Qwen3-Next-80B-A3B-Thinking",
+     "repo": "Qwen/Qwen3-Next-80B-A3B-Thinking",
+     "created": "2025-09-09"
+    }
+   ],
    "hf_params": 81.3,
    "license": "apache-2.0",
    "notes": null
@@ -1816,6 +2893,25 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-02-24",
+   "latest": "2026-06-22",
+   "latest_name": "Qwen-AgentWorld-35B-A3B",
+   "versions": [
+    {
+     "name": "Qwen-AgentWorld-35B-A3B",
+     "repo": "Qwen/Qwen-AgentWorld-35B-A3B",
+     "created": "2026-06-22"
+    },
+    {
+     "name": "Qwen3.6-35B-A3B",
+     "repo": "Qwen/Qwen3.6-35B-A3B",
+     "created": "2026-04-15"
+    },
+    {
+     "name": "Qwen3.5-35B-A3B",
+     "repo": "Qwen/Qwen3.5-35B-A3B",
+     "created": "2026-02-24"
+    }
+   ],
    "hf_params": 36.0,
    "license": "apache-2.0",
    "notes": null
@@ -1849,6 +2945,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-02-24",
+   "latest": "2026-02-24",
+   "latest_name": "Qwen3.5-122B-A10B",
+   "versions": [
+    {
+     "name": "Qwen3.5-122B-A10B",
+     "repo": "Qwen/Qwen3.5-122B-A10B",
+     "created": "2026-02-24"
+    }
+   ],
    "hf_params": 125.1,
    "license": "apache-2.0",
    "notes": null
@@ -1882,6 +2987,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-02-16",
+   "latest": "2026-02-16",
+   "latest_name": "Qwen3.5-397B-A17B",
+   "versions": [
+    {
+     "name": "Qwen3.5-397B-A17B",
+     "repo": "Qwen/Qwen3.5-397B-A17B",
+     "created": "2026-02-16"
+    }
+   ],
    "hf_params": 403.4,
    "license": "apache-2.0",
    "notes": null
@@ -1915,6 +3029,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-08-24",
+   "latest": "2026-08-24",
+   "latest_name": "Qwen3.8-Flash-Next",
+   "versions": [
+    {
+     "name": "Qwen3.8-Flash-Next",
+     "repo": "Qwen/Qwen3.8-Flash-Next",
+     "created": "2026-08-24"
+    }
+   ],
    "hf_params": 180.0,
    "license": "other",
    "notes": "另有 n-gram 嵌入参数。"
@@ -1948,6 +3071,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-08-08",
+   "latest": "2026-08-08",
+   "latest_name": "Qwen3.8-2.4T-A95B",
+   "versions": [
+    {
+     "name": "Qwen3.8-2.4T-A95B",
+     "repo": "Qwen/Qwen3.8-2.4T-A95B",
+     "created": "2026-08-08"
+    }
+   ],
    "hf_params": 2446.2,
    "license": "other",
    "notes": null
@@ -1981,6 +3113,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2025-07-28",
+   "latest": "2025-07-28",
+   "latest_name": "step3",
+   "versions": [
+    {
+     "name": "step3",
+     "repo": "stepfun-ai/step3",
+     "created": "2025-07-28"
+    }
+   ],
    "hf_params": 321.0,
    "license": "apache-2.0",
    "notes": null
@@ -2016,6 +3157,20 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-02-01",
+   "latest": "2026-05-23",
+   "latest_name": "Step-3.7-Flash",
+   "versions": [
+    {
+     "name": "Step-3.7-Flash",
+     "repo": "stepfun-ai/Step-3.7-Flash",
+     "created": "2026-05-23"
+    },
+    {
+     "name": "Step-3.5-Flash",
+     "repo": "stepfun-ai/Step-3.5-Flash",
+     "created": "2026-02-01"
+    }
+   ],
    "hf_params": 199.4,
    "license": "apache-2.0",
    "notes": null
@@ -2051,6 +3206,20 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-09-20",
+   "latest": "2026-09-20",
+   "latest_name": "Step-5-Preview",
+   "versions": [
+    {
+     "name": "Step-5-Preview",
+     "repo": "stepfun-ai/Step-5-Preview",
+     "created": "2026-09-20"
+    },
+    {
+     "name": "Step-5-Preview-BF16",
+     "repo": "stepfun-ai/Step-5-Preview-BF16",
+     "created": "2026-09-20"
+    }
+   ],
    "hf_params": 604.3,
    "license": "other",
    "notes": null
@@ -2084,6 +3253,15 @@
    "per_layer": false,
    "config_ok": true,
    "hf_created": "2026-01-05",
+   "latest": "2026-01-05",
+   "latest_name": "Youtu-LLM-A7B-Base",
+   "versions": [
+    {
+     "name": "Youtu-LLM-A7B-Base",
+     "repo": "tencent/Youtu-LLM-A7B-Base",
+     "created": "2026-01-05"
+    }
+   ],
    "hf_params": 118.4,
    "license": "other",
    "notes": "腾讯优图的视觉语言 MoE。"

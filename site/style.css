@@ -121,6 +121,7 @@ th[aria-sort="ascending"]::after { content: " ↑"; }
 th[aria-sort="descending"]::after { content: " ↓"; }
 tbody tr.main { cursor: pointer; }
 tbody tr.main:hover { background: var(--row-hover); }
+td .vers { font-size: 11px; color: var(--muted); white-space: normal; max-width: 300px; line-height: 1.35; margin-top: 1px; }
 tbody tr.detail td { text-align: left; white-space: normal; color: var(--ink-2); background: var(--page); font-size: 12px; }
 .detail dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 14px; margin: 4px 0; }
 .detail dt { color: var(--muted); }

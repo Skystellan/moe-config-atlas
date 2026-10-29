@@ -82,6 +82,18 @@ def build_entry(m, refresh):
     parsed.update(m.get("override") or {})
     info = fetch_info(repo, refresh)
 
+    # Every upload of this configuration (main repo + variants), newest first.
+    versions = [{"name": repo.split("/")[-1], "repo": repo, "created": (info.get("createdAt") or "")[:10] or None}]
+    for v in m.get("variants") or []:
+        if isinstance(v, dict):  # a version whose weights are not on HF yet, e.g. {name, released, note}
+            versions.append({"name": v["name"], "repo": None, "created": str(v.get("released") or "") or None,
+                             "note": v.get("note")})
+            continue
+        created = (fetch_info(v, refresh).get("createdAt") or "")[:10] or None if "/" in v else None
+        versions.append({"name": v.split("/")[-1], "repo": v if "/" in v else None, "created": created})
+    dated = sorted((x for x in versions if x["created"]), key=lambda x: x["created"], reverse=True)
+    latest = dated[0] if dated else versions[0]
+
     E, k, s = parsed.get("E"), parsed.get("k"), parsed.get("s") or 0
     d, de = parsed.get("d_model"), parsed.get("d_expert")
     total, active = m["total"], m["active"]
@@ -90,7 +102,7 @@ def build_entry(m, refresh):
         "vendor": m["vendor"],
         "name": m["name"],
         "repo": repo,
-        "variants": m.get("variants") or [],
+        "variants": [v["name"] if isinstance(v, dict) else v for v in m.get("variants") or []],
         "released": str(m["released"]),
         "year": int(str(m["released"])[:4]),
         "total": total,
@@ -113,6 +125,9 @@ def build_entry(m, refresh):
         "per_layer": parsed.get("per_layer", False),
         "config_ok": raw is not None,
         "hf_created": (info.get("createdAt") or "")[:10] or None,
+        "latest": latest["created"],
+        "latest_name": latest["name"],
+        "versions": dated + [x for x in versions if not x["created"]],
         "hf_params": r((info.get("safetensors") or {}).get("total", 0) / 1e9, 1) or None,
         "license": (info.get("cardData") or {}).get("license"),
         "notes": m.get("notes"),
@@ -148,7 +163,7 @@ def main():
         "models": rows,
     }
     (OUT / "models.json").write_text(json.dumps(payload, ensure_ascii=False, indent=1))
-    cols = [c for c in rows[0] if c not in ("variants",)]
+    cols = [c for c in rows[0] if c not in ("variants", "versions")]
     with open(OUT / "models.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=cols + ["variants"])
         w.writeheader()
