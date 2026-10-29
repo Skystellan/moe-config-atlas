@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 05:28 UTC",
+ "generated": "2026-10-29 05:31 UTC",
  "count": 58,
  "models": [
   {
@@ -2558,7 +2558,7 @@
    "context": 1048576,
    "mtp": 1,
    "moe_layers": 57,
-   "attention": "sparse",
+   "attention": "sparse×57 + full×3",
    "model_type": "minimax_m3_vl",
    "per_layer": false,
    "config_ok": true,
@@ -3876,8 +3876,8 @@
    "layers": 48,
    "mixer_layers": 48,
    "aspect": 64.0,
-   "global_attn_frac": 100.0,
-   "kv_kib_per_token": 54.0,
+   "global_attn_frac": 25.0,
+   "kv_kib_per_token": 13.5,
    "window": null,
    "mla": true,
    "kv_heads": null,
@@ -3886,7 +3886,7 @@
    "context": 262144,
    "mtp": 1,
    "moe_layers": 47,
-   "attention": "MLA",
+   "attention": "KDA×36 + MLA×12",
    "model_type": "youtu_vl_moe",
    "per_layer": false,
    "config_ok": true,

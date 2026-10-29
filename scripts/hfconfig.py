@@ -89,6 +89,9 @@ def _mixers(c, n_layers):
     if isinstance(c.get("hybrid_layer_pattern"), list):  # MiMo: 1 = sliding window
         hp = c["hybrid_layer_pattern"]
         return Counter(sliding=sum(1 for x in hp if x), full=sum(1 for x in hp if not x))
+    if isinstance(c.get("linear_attention_pattern"), list):  # Youtu: 1 = KDA
+        lp = c["linear_attention_pattern"][:n_layers or None]
+        return Counter(KDA=sum(1 for x in lp if x), **{full: sum(1 for x in lp if not x)})
     if isinstance(c.get("attn_type_list"), list):  # MiniMax: 0 = lightning (linear)
         at = c["attn_type_list"]
         return Counter(linear=sum(1 for x in at if not x), full=sum(1 for x in at if x))
@@ -109,6 +112,10 @@ def _mixers(c, n_layers):
         ratios = c["compress_ratios"][:n_layers]  # trailing entries are MTP layers
         return Counter(sliding=sum(1 for r in ratios if not r), compressed=sum(1 for r in ratios if r))
     if isinstance(c.get("sparse_attention_config"), dict) and c["sparse_attention_config"].get("use_sparse_attention"):
+        freq = c["sparse_attention_config"].get("sparse_attention_freq")  # MiniMax M3: 0 = dense layer
+        if isinstance(freq, list) and n_layers:
+            freq = freq[:n_layers]
+            return Counter(sparse=sum(1 for x in freq if x), **{full: sum(1 for x in freq if not x)})
         kind = "sparse"
     elif c.get("index_topk") or c.get("index_n_heads"):
         kind = "DSA"
