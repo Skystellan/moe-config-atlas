@@ -61,7 +61,7 @@ def _get(c, field):
 # Token-mixer layer types, grouped by how their state grows with context.
 GLOBAL = {"full", "MLA", "attention", "DSA", "compressed", "sparse"}  # cache grows with every token
 LOCAL = {"sliding"}  # bounded by the window
-LINEAR = {"linear", "KDA", "mamba"}  # constant-size recurrent state
+LINEAR = {"linear", "GDN", "KDA", "Lightning", "mamba"}  # constant-size recurrent state
 
 
 def _summary(counts):
@@ -180,6 +180,107 @@ def _moe_layers(c, n_layers):
     return n_layers - first
 
 
+# Architecture facts that live in modeling code rather than config.json, checked
+# against transformers 5.21 and the vendors' remote modeling files. A key here
+# overrides what the config flags say; None means "not public".
+ARCH = {
+    "qwen3_moe": dict(qk_norm=True, router="softmax", expert_bias=False),
+    "qwen3_next": dict(qk_norm=True, attn_gate=True, router="softmax", expert_bias=False, linear="GDN"),
+    "qwen3_5_moe_text": dict(qk_norm=True, attn_gate=True, router="softmax", expert_bias=False, linear="GDN"),
+    "qwen4_exp_text": dict(qk_norm=True, attn_gate=True, router="softmax", expert_bias=False, linear="GDN"),
+    "glm4_moe": dict(router="sigmoid", expert_bias=True),
+    "glm4_moe_lite": dict(router="sigmoid", expert_bias=True),
+    "glm_moe_dsa": dict(expert_bias=True),
+    "glm5_next_text": dict(expert_bias=True, linear="KDA"),
+    "gemma4_text": dict(qk_norm=True, router="softmax", expert_bias=False),
+    "gpt_oss": dict(attn_sink=True, router="softmax", expert_bias=False),
+    "deepseek_v4": dict(qk_norm=True, attn_sink=True),
+    "deepseek_v41_text": dict(qk_norm=True, attn_sink=True),  # no public modeling code; attention assumed as in V4
+    "kimi_linear": dict(expert_bias=True),
+    "bailing_hybrid": dict(qk_norm=False),  # use_qk_norm is set but unused by the modeling code
+    "longcat": dict(router="softmax", expert_bias=True),
+    "minimax_text_01": dict(router="softmax", expert_bias=False, linear="Lightning"),
+    "minimax_m3_vl": dict(qk_norm=True, expert_bias=True),
+    "mistral4": dict(router="softmax", expert_bias=False),
+    "nemotron_h": dict(router="sigmoid", expert_bias=True),
+    "nemotron_h_puzzle": dict(router="sigmoid", expert_bias=True),
+    "step3_text": dict(router="softmax", expert_bias=False),
+    "step5": dict(qk_norm=None),  # no public modeling code and no qk-norm flag
+    "ernie4_5_moe": dict(router="softmax", expert_bias=True),
+    "hunyuan_v1_moe": dict(router="softmax", expert_bias=False),
+    "hy_v4": dict(router="sigmoid", expert_bias=True),
+    "mimo_v2_flash": dict(expert_bias=True),
+    "mimo_v2": dict(expert_bias=True),
+    "youtu_vl_moe": dict(qk_norm=True),
+}
+
+
+FEATURES = ("linear_attn", "sparse_attn", "attn_gate", "attn_sink", "qk_norm", "hyper_conn", "attn_res",
+            "ngram_mem", "router", "expert_bias", "group_routing")
+
+
+def family(c):
+    if c.get("model_type"):
+        return c["model_type"]
+    arch = ((c.get("architectures") or [""])[0]).lower()
+    if arch.startswith("longcat"):
+        return "longcat"
+    if c.get("d_expert_moe"):  # Mistral params.json; Large 3 shares Small 4's MoE block
+        return "mistral4"
+    return None
+
+
+def _flag(c, *keys):
+    return any(c.get(k) not in (None, False, 0, "") for k in keys)
+
+
+def features(c, mixers):
+    """Structural features that don't reduce to a single number."""
+    fam = family(c)
+    f = {}
+    kinds = {k for k, v in mixers.items() if v}
+    linear = kinds & LINEAR
+    f["linear_attn"] = ("Mamba-2" if "mamba" in linear else sorted(linear)[0]) if linear else False
+    if "DSA" in kinds:
+        f["sparse_attn"] = "DSA"
+    elif "compressed" in kinds:
+        ratios = {r for r in c.get("compress_ratios") or [] if r}
+        f["sparse_attn"] = "CSA+HCA" if ratios <= {4, 128} else "压缩"
+    elif "sparse" in kinds:
+        f["sparse_attn"] = "块稀疏"
+    else:
+        f["sparse_attn"] = False
+    f["attn_gate"] = _flag(c, "attn_output_gate", "use_head_wise_attn_gate", "mla_use_output_gate", "gated_mla",
+                           "attention_output_gate", "gated_attention_proj_granularity_type")
+    f["attn_sink"] = _flag(c, "learnable_sink", "add_swa_attention_sink_bias", "add_full_attention_sink_bias", "sink")
+    f["qk_norm"] = _flag(c, "use_qk_norm", "qk_norm", "qk_layernorm", "qk_norm_type")
+    n_hc = c.get("hc_mult") or c.get("hc_count") or (4 if c.get("mhc") else None)
+    f["hyper_conn"] = f"{'mHC' if c.get('hc_sinkhorn_iters') else 'HC'}×{n_hc}" if n_hc else False
+    f["attn_res"] = c.get("attn_res_block_size") or False
+    if c.get("engram_layer_ids"):
+        f["ngram_mem"] = "Engram"
+    elif c.get("ngram_size"):
+        f["ngram_mem"] = "层内注入"  # hashed n-grams fed into the hyper-connection streams
+    elif c.get("oe_vocab_size_ratio") or c.get("ngram_vocab_size_ratio"):
+        f["ngram_mem"] = "嵌入层"
+    else:
+        f["ngram_mem"] = False
+    router = (c.get("scoring_func") or c.get("moe_router_activation_func") or c.get("moe_router_activation")
+              or ("sigmoid" if c.get("moe_router_use_sigmoid") or c.get("use_moe_router_bias") else None))
+    if fam == "bailing_moe":  # Ling 1.x routes with softmax, Ling 2.0 with sigmoid + expert bias
+        router = "sigmoid" if c.get("moe_router_enable_expert_bias") else "softmax"
+    f["router"] = router
+    f["expert_bias"] = c.get("topk_method") == "noaux_tc" or _flag(
+        c, "moe_router_enable_expert_bias", "use_routing_bias", "use_moe_router_bias",
+        "moe_router_modality_aware_expert_bias")
+    n_group = c.get("n_group") or c.get("num_expert_groups")
+    f["group_routing"] = f"{n_group}/{c.get('topk_group') or c.get('num_expert_groups_per_tok')}" if (n_group or 0) > 1 else False
+    for k, v in ARCH.get(fam, {}).items():
+        if k != "linear":
+            f[k] = v
+    return f
+
+
 def parse(raw):
     c = text_config(raw)
     out, per_layer = {}, False
@@ -213,6 +314,9 @@ def parse(raw):
         out["layers"] = len(c["layers_block_type"])
     out["moe_layers"] = _moe_layers(c, out["layers"])
     mixers = _mixers(c, out["layers"])
+    label = ARCH.get(family(c), {}).get("linear")
+    if label and "linear" in mixers:  # name the linear-attention kind, e.g. GDN or Lightning
+        mixers[label] = mixers.pop("linear")
     out["attention"] = _summary(mixers)
     n_mix = sum(mixers.values())
     n_global = sum(v for k, v in mixers.items() if k in GLOBAL)
@@ -235,6 +339,7 @@ def parse(raw):
     out["mtp"] = next((c[k] for k in ("num_nextn_predict_layers", "mtp_num_hidden_layers", "mtp_num_layers",
                                       "num_mtp_modules") if isinstance(c.get(k), int)), 0)
     out["model_type"] = c.get("model_type") or raw.get("model_type")
+    out.update(features(c, mixers))
     out["per_layer"] = per_layer
     return out
 

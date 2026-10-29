@@ -5,10 +5,11 @@ const TIERS = [
   { id: "M", label: "中（50–500B）" },
   { id: "L", label: "大（≥500B）" },
 ];
-const state = { q: "", tiers: new Set(), years: new Set(), vendor: "", group: "sparsity", sort: { key: "latest", dir: -1 } };
+const state = { q: "", tiers: new Set(), years: new Set(), vendor: "", group: "sparsity", heat: "vendor", sort: { key: "latest", dir: -1 } };
 let DATA = [];
 const charts = [];
 const multCharts = [];
+const adoptCharts = [];
 
 const $ = (sel) => document.querySelector(sel);
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -259,6 +260,154 @@ function renderMultiples(rows) {
   });
 }
 
+/* ---------- structural features ---------- */
+
+// value(m) is what the table shows; has(m) is true / false / null (config not public).
+const known = (m, v) => (m.config_ok ? v : null);
+const FEATURES = [
+  { key: "linear_attn", label: "线性注意力", th: "线性", title: "GDN、KDA、Lightning 或 Mamba-2 层" },
+  { key: "window", label: "滑窗", title: "滑动窗口注意力层（窗口大小）" },
+  { key: "sparse_attn", label: "稀疏注意力", th: "稀疏", title: "DSA、块稀疏或压缩注意力" },
+  { key: "mla", label: "MLA", title: "多头潜注意力" },
+  { key: "attn_gate", label: "输出门", title: "softmax 注意力输出上的 sigmoid 门" },
+  { key: "attn_sink", label: "Sink", title: "可学习的 attention sink" },
+  { key: "qk_norm", label: "QK-norm", title: "对每个头的 Q、K 做 RMSNorm" },
+  { key: "hyper_conn", label: "超连接", title: "多路残差流（HC / mHC）" },
+  { key: "attn_res", label: "AttnRes", title: "Attention Residuals：用注意力聚合前面各层的输出（块大小）" },
+  { key: "ngram_mem", label: "N-gram 记忆", th: "N-gram", heat: "N-gram\n记忆", title: "哈希 n-gram 查表：Engram、层内注入或嵌入层" },
+  { key: "mtp", label: "MTP", title: "多 token 预测层数" },
+  { key: "router", label: "非 softmax 路由", th: "路由", heat: "非 softmax\n路由", title: "路由打分用 sigmoid 等，而不是 softmax",
+    has: (m) => (m.router == null ? null : m.router !== "softmax"), value: (m) => m.router },
+  { key: "expert_bias", label: "专家偏置", th: "偏置", title: "无辅助损失负载均衡的专家偏置" },
+  { key: "group_routing", label: "分组路由", th: "分组", title: "先选专家组再选专家（组数/选中组数）" },
+  { key: "s", label: "共享专家", th: "共享", title: "共享专家数" },
+  { key: "latent", label: "LatentMoE", th: "Latent", title: "专家在低维潜空间里计算（潜空间维度）" },
+];
+for (const f of FEATURES) {
+  f.value ??= (m) => m[f.key];
+  f.has ??= (m) => known(m, Boolean(f.value(m)));
+}
+function featureCell(f, m) {
+  const h = f.has(m);
+  if (h == null) return `<span class="muted">?</span>`;
+  const v = f.value(m);
+  if (f.key === "router") return h ? esc(v) : `<span class="muted">${esc(v)}</span>`;
+  if (!h) return `<span class="muted">·</span>`;
+  return v === true ? "✓" : esc(v);
+}
+
+const quarter = (m) => `${m.released.slice(0, 4)} Q${Math.ceil(+m.released.slice(5, 7) / 3)}`;
+function quarters() {
+  const last = DATA.map(quarter).sort().pop();
+  const out = [];
+  for (let y = 2025; ; y++) {
+    for (let q = 1; q <= 4; q++) {
+      const k = `${y} Q${q}`;
+      out.push(k);
+      if (k === last) return out;
+    }
+  }
+}
+const names = (ms) => ms.map((m) => esc(m.name)).join("、");
+
+function renderAdoption(rows) {
+  const box = $("#adoption");
+  for (const c of adoptCharts.splice(0)) c.dispose();
+  const qs = quarters();
+  box.innerHTML = FEATURES.map((f, i) => {
+    const ks = rows.filter((m) => f.has(m) != null);
+    const n = ks.filter((m) => f.has(m)).length;
+    return `<div class="mult"><h4 title="${esc(f.title)}">${esc(f.label)} <span class="muted">${n}/${ks.length}</span></h4><div class="m" id="adopt-${i}"></div></div>`;
+  }).join("");
+  FEATURES.forEach((f, i) => {
+    const data = qs.map((q) => {
+      const ms = rows.filter((m) => quarter(m) === q && f.has(m) != null);
+      const yes = ms.filter((m) => f.has(m));
+      const no = ms.filter((m) => !f.has(m));
+      return { value: ms.length ? Math.round(100 * yes.length / ms.length) : null, q, yes, no, ms };
+    });
+    chart(`adopt-${i}`, adoptCharts).setOption({
+      grid: { left: 34, right: 6, top: 10, bottom: 22 },
+      tooltip: {
+        trigger: "item",
+        backgroundColor: css("--surface"), borderColor: css("--ring"), textStyle: { color: css("--ink"), fontSize: 12 },
+        formatter: (p) => {
+          const d = p.data;
+          if (!d.ms.length) return `${d.q}：没有新配置`;
+          const no = d.no;
+          return `<b>${esc(f.label)}</b> · ${d.q}<br>${d.yes.length}/${d.ms.length}（${d.value}%）` +
+            (d.yes.length ? `<br>用了：${names(d.yes)}` : "") + (no.length ? `<br><span style="color:${css("--muted")}">没用：${names(no)}</span>` : "");
+        },
+      },
+      xAxis: baseAxis({ type: "category", data: qs, axisLabel: { color: css("--muted"), fontSize: 10, interval: 3, formatter: (q) => q.replace(" Q1", "") } }),
+      yAxis: baseAxis({ type: "value", min: 0, max: 100, interval: 50, axisLabel: { color: css("--muted"), fontSize: 10, formatter: "{value}%" } }),
+      series: [{
+        type: "bar", barCategoryGap: "18%",
+        itemStyle: { color: css("--accent"), borderRadius: [3, 3, 0, 0] },
+        // keep empty quarters hoverable so the tooltip can say there was nothing new
+        data: data.map((d) => ({ ...d, value: d.value ?? 0, itemStyle: d.value == null ? { color: "transparent" } : undefined })),
+      }],
+    }, true);
+  });
+}
+
+function renderHeatmap(rows) {
+  const box = $("#heat-mode");
+  box.innerHTML = "";
+  for (const [id, label] of [["vendor", "按厂家"], ["tier", "按档位"]]) {
+    box.append(chip(label, state.heat === id, () => { state.heat = id; renderHeatmap(filtered()); }));
+  }
+  const groups = state.heat === "tier"
+    ? TIERS.map((t) => ({ label: t.label, ms: rows.filter((m) => m.tier === t.id) })).filter((g) => g.ms.length)
+    : [...new Set(rows.map((m) => m.vendor))].map((v) => ({ label: v, ms: rows.filter((m) => m.vendor === v) }))
+      .sort((a, b) => b.ms.length - a.ms.length || a.label.localeCompare(b.label));
+  const steps = [1, 2, 3, 4, 5].map((i) => css(`--seq-${i}`));
+  const inkOn = [1, 2, 3, 4, 5].map((i) => css(`--seq-ink-${i}`));
+  const data = [];
+  groups.forEach((g, y) => FEATURES.forEach((f, x) => {
+    const ms = g.ms.filter((m) => f.has(m) != null);
+    const yes = ms.filter((m) => f.has(m));
+    const no = ms.filter((m) => !f.has(m));
+    const share = ms.length ? yes.length / ms.length : null;
+    const b = share ? Math.min(4, Math.floor(share * 5 - 1e-9)) : -1;
+    data.push({
+      value: [x, y, share ?? 0], f, g, yes, no, ms,
+      itemStyle: { color: b >= 0 ? steps[b] : css("--page"), borderColor: css("--surface"), borderWidth: 2, borderRadius: 3 },
+      label: { color: b >= 0 ? inkOn[b] : css("--muted") },
+    });
+  }));
+  const el = $("#c-heat");
+  el.style.height = `${groups.length * 28 + 56}px`;
+  const c = chart("c-heat");
+  c.resize();
+  c.setOption({
+    grid: { left: 8, right: 8, top: 40, bottom: 4, containLabel: true },
+    tooltip: {
+      trigger: "item",
+      backgroundColor: css("--surface"), borderColor: css("--ring"), textStyle: { color: css("--ink"), fontSize: 12 },
+      formatter: (p) => {
+        const { f, g, yes, no, ms } = p.data;
+        if (!ms.length) return `<b>${esc(g.label)}</b> · ${esc(f.label)}<br>config 未公开`;
+        return `<b>${esc(g.label)}</b> · ${esc(f.label)}<br>${yes.length}/${ms.length}` +
+          (yes.length ? `<br>用了：${yes.map((m) => `${esc(m.name)}${f.value(m) === true ? "" : `（${esc(f.value(m))}）`}`).join("、")}` : "") +
+          (no.length ? `<br><span style="color:${css("--muted")}">没用：${names(no)}</span>` : "");
+      },
+    },
+    xAxis: { type: "category", position: "top", data: FEATURES.map((f) => f.heat ?? f.label), axisLine: { show: false }, axisTick: { show: false },
+      splitLine: { show: false }, axisLabel: { color: css("--ink-2"), fontSize: 11, interval: 0, width: 56, overflow: "break", lineHeight: 13 } },
+    yAxis: { type: "category", inverse: true, data: groups.map((g) => `${g.label} (${g.ms.length})`), axisLine: { show: false }, axisTick: { show: false },
+      axisLabel: { color: css("--ink-2"), fontSize: 11 } },
+    series: [{
+      type: "heatmap", data,
+      label: { show: true, fontSize: 10, formatter: (p) => (!p.data.ms.length ? "?" : p.data.yes.length ? `${p.data.yes.length}/${p.data.ms.length}` : "") },
+      emphasis: { itemStyle: { borderColor: css("--ink"), borderWidth: 1.5 } },
+    }],
+  }, true);
+  $("#heat-legend").innerHTML = `<span class="muted">采用比例</span>` +
+    ["0–20%", "20–40%", "40–60%", "60–80%", "80–100%"].map((t, i) => `<span><i style="background:${steps[i]}"></i>${t}</span>`).join("") +
+    `<span><i style="background:${css("--page")};border:1px solid ${css("--ring")}"></i>没用</span>`;
+}
+
 /* ---------- table ---------- */
 
 const BASE_COLS = [
@@ -293,7 +442,13 @@ const COL_GROUPS = {
     { key: "window", label: "滑窗", f: (m) => m.window ?? "–" },
     { key: "context", label: "上下文", f: (m) => fmtCtx(m.context) },
   ] },
+  attnFeat: { label: "注意力结构", cols: FEATURES.slice(0, 7) },
+  residFeat: { label: "残差与路由", cols: FEATURES.slice(7) },
 };
+for (const g of [COL_GROUPS.attnFeat, COL_GROUPS.residFeat]) {
+  g.cols = g.cols.map((f) => ({ key: f.key, label: f.th ?? f.label, title: f.title, f: (m) => featureCell(f, m),
+    sort: (m) => { const h = f.has(m); return h == null ? null : +h; } }));
+}
 const cols = () => BASE_COLS.concat(COL_GROUPS[state.group].cols);
 
 // Model name plus the newest same-config versions, so a fresh post-training
@@ -328,8 +483,10 @@ function renderTable(rows) {
   });
 
   const { key, dir } = state.sort;
+  const col = COLS.find((c) => c.key === key);
+  const val = (m) => (col && col.sort ? col.sort(m) : m[key]);
   const sorted = rows.slice().sort((a, b) => {
-    const x = a[key], y = b[key];
+    const x = val(a), y = val(b);
     if (x == null) return 1;
     if (y == null) return -1;
     return (typeof x === "number" ? x - y : String(x).localeCompare(String(y))) * dir;
@@ -373,6 +530,8 @@ function update() {
   renderControls();
   renderTiles(rows);
   renderCharts(rows);
+  renderAdoption(rows);
+  renderHeatmap(rows);
   renderMultiples(rows);
   renderColGroups();
   renderTable(rows);
@@ -402,7 +561,7 @@ async function main() {
   $("#q").oninput = (e) => { state.q = e.target.value; update(); };
   initTheme();
   update();
-  addEventListener("resize", () => charts.concat(multCharts).forEach((c) => c.resize()));
+  addEventListener("resize", () => charts.concat(multCharts, adoptCharts).forEach((c) => c.resize()));
 }
 
 main().catch((e) => { $("#meta").textContent = `数据加载失败：${e.message}`; });

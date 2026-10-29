@@ -78,6 +78,20 @@
   </section>
   <p class="legend-note legend-copy"></p>
 
+  <h2 class="sec">结构特征</h2>
+  <section class="card">
+    <h2>按季度的采用率</h2>
+    <p class="sub">每根柱是当季首发的配置里用了该特征的比例，标题旁是总数。悬停看具体型号；随上面的筛选变化。</p>
+    <div class="multiples" id="adoption"></div>
+  </section>
+  <section class="card">
+    <h2>谁在用</h2>
+    <p class="sub">格子里是用了该特征的配置数 / 该组配置数，颜色越深比例越高。</p>
+    <div class="chips col-groups" id="heat-mode" role="group" aria-label="热力图分组"></div>
+    <div class="scroll-x"><div class="chart heat" id="c-heat"></div></div>
+    <p class="legend-note" id="heat-legend"></p>
+  </section>
+
   <section class="card">
     <h2>各厂家的演化</h2>
     <p class="sub">纵轴 E/k（对数），横轴首发时间；同一档位的型号连成一条线，颜色同上。</p>
@@ -108,6 +122,15 @@
       <dt>全局注意力层占比</dt><dd>KV 缓存随上下文增长的层（full、MLA、DSA、稀疏或压缩注意力）占全部 token mixer 层的比例。线性注意力、Mamba 的状态大小固定，滑窗层只缓存窗口内的 token。</dd>
       <dt>KV cache / token</dt><dd>上下文足够长时每多一个 token 要多存的 bf16 KV：全局层数 × 每层每 token 的 K、V 维度 × 2 字节。MLA 按 kv_lora_rank + RoPE 维度算；DeepSeek V4 的压缩层按压缩率摊到每个 token（CSA 每 4 个 token 存一条，HCA 每 128 个）。不含线性层状态、滑窗缓存和稀疏注意力的索引键；DeepSeek V4.1 改了压缩配置的写法，暂不计算。</dd>
       <dt>注意力</dt><dd>按 config.json 里的层类型字段推断（layer_types、kda_layers、full_attention_interval 等），只数 token mixer 的种类和层数，细节以技术报告为准。</dd>
+      <dt>结构特征</dt><dd>按 config.json 的字段识别，config 里没有写的部分（比如 Qwen3 的 QK-norm、gpt-oss 的 sink、各家的路由打分函数）对照 transformers 5.21 和厂家仓库里的建模代码核对，规则在 <code>scripts/hfconfig.py</code> 的 <code>ARCH</code> 里。config 未公开的记为"?"，不计入采用率。</dd>
+      <dt>线性注意力</dt><dd>状态大小固定的 token mixer：Gated DeltaNet（GDN）、Kimi Delta Attention（KDA）、MiniMax 的 Lightning Attention、Mamba-2。</dd>
+      <dt>稀疏注意力</dt><dd>每个 query 只看部分 KV：DeepSeek 的 DSA、MiniMax M3 的块稀疏、DeepSeek V4 的压缩注意力（CSA + HCA）。</dd>
+      <dt>输出门</dt><dd>softmax 注意力层的输出乘一个由输入算出的 sigmoid 门（Gated Attention）。线性注意力层自带的门不算。</dd>
+      <dt>Sink / QK-norm</dt><dd>Sink 是每个头一个可学习的 logit，让注意力可以"什么都不看"；QK-norm 是对每个头的 Q、K 做 RMSNorm。MLA 对低秩潜向量的归一化不算 QK-norm。</dd>
+      <dt>超连接</dt><dd>把残差流扩成 n 路并用可学习的权重混合（Hyper-Connections）；mHC 用 Sinkhorn 把混合矩阵约束成双随机矩阵。</dd>
+      <dt>AttnRes</dt><dd>Attention Residuals：每层的输入由对前面各层（按块）输出的注意力加权得到，代替固定的残差相加。</dd>
+      <dt>N-gram 记忆</dt><dd>用哈希过的 n-gram 查一张大嵌入表：Engram 和 Qwen3.8-Flash-Next 在中间层注入，LongCat 加在输入嵌入上。</dd>
+      <dt>路由</dt><dd>打分函数（softmax、sigmoid、sqrtsoftplus）、无辅助损失的专家偏置、先选组再选专家的分组路由。</dd>
       <dt>档位</dt><dd>按总参数：小 ≤ 50B，中 50–500B，大 ≥ 500B。</dd>
       <dt>收录范围</dt><dd>2025 年及以后首次上传的开源 MoE；只改了后训练、注意力或量化而 MoE 配置不变的版本合并为一行。</dd>
     </dl>
