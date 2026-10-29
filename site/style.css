@@ -97,6 +97,8 @@ h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: -0.01em; }
 .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 14px 16px; margin: 0 0 12px; }
 .card h2 { margin: 0; font-size: 16px; }
 .card .sub { margin: 2px 0 10px; color: var(--muted); font-size: 12px; }
+h2.sec { font-size: 15px; margin: 18px 0 8px; color: var(--ink-2); }
+.col-groups { margin: 0 0 8px; }
 .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .charts .card { margin: 0; }
 figure { margin: 0; }
