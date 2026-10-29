@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MoE Config Atlas</title>
+<meta name="description" content="2025 年以来开源 MoE 大模型的稀疏度与形状统计，数据每周从 Hugging Face config.json 自动更新。">
+<link rel="stylesheet" href="style.css">
+<script>
+  try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+</head>
+<body>
+<header class="wrap top">
+  <div>
+    <h1>MoE Config Atlas</h1>
+    <p class="lede">2025 年以来开源 MoE 大模型的稀疏度与形状。每个配置直接从 Hugging Face 上的 <code>config.json</code> 解析，每周自动更新。</p>
+    <p class="meta" id="meta">加载中…</p>
+  </div>
+  <nav class="links">
+    <a href="data/models.csv" download>CSV</a>
+    <a href="data/models.json" download>JSON</a>
+    <a href="https://github.com/Skystellan/moe-config-atlas">GitHub</a>
+    <button id="theme" type="button" aria-label="切换深浅色">◐</button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <section class="filters" aria-label="筛选">
+    <input id="q" type="search" placeholder="搜索型号或厂家">
+    <div class="chips" id="tier-chips"></div>
+    <div class="chips" id="year-chips"></div>
+    <select id="vendor" aria-label="厂家"><option value="">全部厂家</option></select>
+    <span class="count" id="count"></span>
+  </section>
+
+  <section class="tiles" id="tiles" aria-label="分档统计"></section>
+
+  <section class="charts">
+    <figure class="card">
+      <figcaption><b>参数激活比</b><span>激活参数 / 总参数，横轴为总参数（对数）</span></figcaption>
+      <div class="chart" id="c-param"></div>
+    </figure>
+    <figure class="card">
+      <figcaption><b>路由稀疏度 E/k</b><span>路由专家数 / 每 token 选中数</span></figcaption>
+      <div class="chart" id="c-ek"></div>
+    </figure>
+    <figure class="card">
+      <figcaption><b>专家数与 top-k</b><span>斜线是等 E/k 线；点越靠右下越稀疏</span></figcaption>
+      <div class="chart" id="c-ek2"></div>
+    </figure>
+    <figure class="card">
+      <figcaption><b>专家粒度 G</b><span>G = 2d / d<sub>expert</sub>，越大专家越细；LatentMoE 不计</span></figcaption>
+      <div class="chart" id="c-gran"></div>
+    </figure>
+  </section>
+  <p class="legend-note" id="legend"></p>
+
+  <section class="card">
+    <h2>各厂家的演化</h2>
+    <p class="sub">纵轴 E/k（对数），横轴首发时间；同一档位的型号连成一条线，颜色同上。</p>
+    <div class="multiples" id="multiples"></div>
+  </section>
+
+  <section class="card">
+    <h2>全表</h2>
+    <p class="sub">点列名排序，点一行看同配置版本、注意力布局和备注。</p>
+    <div class="table-wrap">
+      <table id="table">
+        <thead><tr></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card defs">
+    <h2>口径</h2>
+    <dl>
+      <dt>E / k / s</dt><dd>路由专家数 / 每 token 选中的路由专家数 / 共享专家数。逐层不同的模型取均值或众数，表中标 ≈。</dd>
+      <dt>E/k</dt><dd>路由稀疏度，只看路由专家。</dd>
+      <dt>专家激活比 A</dt><dd>(k + s) / (E + s)，把共享专家也算进去。</dd>
+      <dt>参数激活比</dt><dd>激活参数 / 总参数，两者取自模型卡或技术报告（config 里没有）。</dd>
+      <dt>G</dt><dd>2d / d<sub>expert</sub>，d 是隐藏维度。和标准 FFN 宽度 8d/3 比，G≈2.7 相当于"一个专家 = 一个 dense FFN"。</dd>
+      <dt>注意力</dt><dd>按 config.json 里的层类型字段推断（layer_types、kda_layers、full_attention_interval 等），只数 token mixer 的种类和层数，细节以技术报告为准。</dd>
+      <dt>档位</dt><dd>按总参数：小 ≤ 50B，中 50–500B，大 ≥ 500B。</dd>
+      <dt>收录范围</dt><dd>2025 年及以后首次上传的开源 MoE；只改了后训练、注意力或量化而 MoE 配置不变的版本合并为一行。</dd>
+    </dl>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  数据来自各模型在 Hugging Face 上的 config.json 与模型卡。发现错误请到 <a href="https://github.com/Skystellan/moe-config-atlas/issues">GitHub issues</a> 反馈。
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.6.0/echarts.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

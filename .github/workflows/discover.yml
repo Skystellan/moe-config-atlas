@@ -1,0 +1,45 @@
+name: Discover new MoE models
+
+# Weekly scan of the vendor orgs listed in discover.yaml. Anything new is
+# proposed in a pull request; nothing is published until it is merged.
+on:
+  schedule:
+    - cron: "41 1 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Scan Hugging Face
+        id: scan
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/discover.py
+      - name: Build data for the preview
+        if: steps.scan.outputs.found == 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/build.py
+      - uses: peter-evans/create-pull-request@v7
+        if: steps.scan.outputs.found == 'true'
+        with:
+          branch: auto/discover
+          delete-branch: true
+          commit-message: "discover: new MoE checkpoints on Hugging Face"
+          title: "新发现的 MoE 模型"
+          body-path: .cache/discover-report.md
+          labels: discover
+          add-paths: |
+            models.yaml
+            discover_state.json
+            site/data

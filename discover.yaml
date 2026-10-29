@@ -1,0 +1,39 @@
+# Hugging Face organizations scanned weekly for new MoE checkpoints.
+# org: vendor label used in models.yaml
+orgs:
+  deepseek-ai: DeepSeek
+  moonshotai: Kimi
+  Qwen: Qwen
+  zai-org: GLM
+  MiniMaxAI: MiniMax
+  inclusionAI: Ling
+  meituan-longcat: LongCat
+  stepfun-ai: Step
+  XiaomiMiMo: MiMo
+  tencent: Hunyuan
+  mistralai: Mistral
+  nvidia: NVIDIA
+  openai: OpenAI
+  google: Google
+  meta-models: Meta
+  baidu: ERNIE
+
+# Only repos created on/after this date are considered.
+since: "2025-01-01"
+
+# Repo names matching any of these (case-insensitive regex) are quantized /
+# draft / converted copies and are skipped without fetching config.json.
+skip_patterns:
+  - gguf
+  - "fp8|fp4|nvfp4|mxfp4|int4|int8|w4a16|w8a8|awq|gptq|bnb|mlx|onnx|exl2"
+  - "eagle|dflash|mtp-draft|-draft"
+
+# Not chat/base LLMs even when they reuse an MoE backbone: skipped entirely.
+non_llm_patterns:
+  - "ocr|tts|asr|speech|audio|transcribe|image|video|diffusion|llada"
+  - "embed|rerank|genrm|reward|guard|privacy|embodied"
+
+# Same-shape repos matching these are not worth listing as variants
+# (pre-training checkpoints, framework-specific copies).
+variant_skip_patterns:
+  - "-base(-|$)|pretrain|midtrain|paddle|-pt$"
