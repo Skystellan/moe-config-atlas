@@ -67,6 +67,23 @@ def fetch_info(repo, refresh):
     return cached(f"{key}.info.json", lambda: http_json(f"{HF}/api/models/{repo}?expand[]=createdAt&expand[]=safetensors&expand[]=cardData"), refresh) or {}
 
 
+def fetch_index_mtp(repo, refresh):
+    """MTP layers found in the weight index, for configs that don't declare them (MiMo, Qwen3-Next)."""
+    key = repo.replace("/", "__")
+
+    def count():
+        try:
+            names = http_json(f"{HF}/{repo}/resolve/main/model.safetensors.index.json").get("weight_map", {})
+        except urllib.error.HTTPError as e:
+            if e.code == 404:  # single-file checkpoint
+                return {"mtp": 0}
+            raise
+        return {"mtp": len({int(n) for w in names for n in re.findall(r"(?:^|\.)mtp\.layers\.(\d+)\.", w)})
+                or (1 if any(w.startswith("mtp.") or ".mtp." in w for w in names) else 0)}
+
+    return (cached(f"{key}.mtp.json", count, refresh) or {}).get("mtp")
+
+
 def tier(total):
     return "S" if total <= 50 else ("M" if total < 500 else "L")
 
@@ -129,9 +146,10 @@ def build_entry(m, refresh):
         "head_dim": parsed.get("head_dim"),
         "vocab": parsed.get("vocab"),
         "context": parsed.get("context"),
-        "mtp": parsed.get("mtp"),
+        "mtp": (parsed.get("mtp") or fetch_index_mtp(repo, refresh)) if raw else None,
         "moe_layers": parsed.get("moe_layers"),
         "attention": parsed.get("attention") if raw else None,
+        **{f: parsed.get(f) if raw else None for f in hfconfig.FEATURES},
         "model_type": parsed.get("model_type"),
         "per_layer": parsed.get("per_layer", False),
         "config_ok": raw is not None,
