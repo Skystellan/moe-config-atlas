@@ -105,12 +105,37 @@ function baseAxis(extra) {
   }, extra);
 }
 
-function tooltip() {
+// Tooltips live on <body> so a scrolling or narrow chart container can't clip them,
+// and are placed next to the pointer but kept inside the viewport.
+const pointer = { x: null, y: null };
+addEventListener("pointermove", (e) => { pointer.x = e.clientX; pointer.y = e.clientY; }, true);
+addEventListener("pointerdown", (e) => { pointer.x = e.clientX; pointer.y = e.clientY; }, true);
+function tipPosition(point, params, dom, rect, size) {
+  const [w, h] = size.contentSize;
+  if (pointer.x == null) return [point[0] + 14, point[1] + 14];
+  const ox = pointer.x - point[0], oy = pointer.y - point[1]; // chart origin in the viewport
+  let x = pointer.x + 14, y = pointer.y + 14;
+  if (x + w > innerWidth - 8) x = pointer.x - 14 - w;
+  x = Math.max(8, Math.min(x, innerWidth - 8 - w));
+  if (y + h > innerHeight - 8) y = pointer.y - 14 - h;
+  y = Math.max(8, y);
+  return [x - ox, y - oy];
+}
+function tipStyle() {
   return {
     trigger: "item",
+    appendTo: "body",
+    position: tipPosition,
     backgroundColor: css("--surface"),
     borderColor: css("--ring"),
     textStyle: { color: css("--ink"), fontSize: 12 },
+    extraCssText: "max-width: min(420px, calc(100vw - 32px)); white-space: normal;",
+  };
+}
+
+function tooltip() {
+  return {
+    ...tipStyle(),
     formatter: (p) => {
       const m = p.data.m;
       if (!m) return "";
@@ -329,8 +354,7 @@ function renderAdoption(rows) {
     chart(`adopt-${i}`, adoptCharts).setOption({
       grid: { left: 34, right: 6, top: 10, bottom: 22 },
       tooltip: {
-        trigger: "item",
-        backgroundColor: css("--surface"), borderColor: css("--ring"), textStyle: { color: css("--ink"), fontSize: 12 },
+        ...tipStyle(),
         formatter: (p) => {
           const d = p.data;
           if (!d.ms.length) return `${d.q}：没有新配置`;
@@ -383,8 +407,7 @@ function renderHeatmap(rows) {
   c.setOption({
     grid: { left: 8, right: 8, top: 40, bottom: 4, containLabel: true },
     tooltip: {
-      trigger: "item",
-      backgroundColor: css("--surface"), borderColor: css("--ring"), textStyle: { color: css("--ink"), fontSize: 12 },
+      ...tipStyle(),
       formatter: (p) => {
         const { f, g, yes, no, ms } = p.data;
         if (!ms.length) return `<b>${esc(g.label)}</b> · ${esc(f.label)}<br>config 未公开`;
