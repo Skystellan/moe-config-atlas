@@ -1,12 +1,23 @@
 {
- "generated": "2026-10-29 04:21 UTC",
- "count": 51,
+ "generated": "2026-10-29 04:28 UTC",
+ "count": 58,
  "models": [
   {
    "vendor": "DeepSeek",
    "name": "DeepSeek-V3.2",
    "repo": "deepseek-ai/DeepSeek-V3.2",
-   "variants": [],
+   "variants": [
+    "deepseek-ai/DeepSeek-R1-Zero",
+    "deepseek-ai/DeepSeek-R1",
+    "deepseek-ai/DeepSeek-V3-0324",
+    "deepseek-ai/DeepSeek-Prover-V2-671B",
+    "deepseek-ai/DeepSeek-R1-0528",
+    "deepseek-ai/DeepSeek-V3.1",
+    "deepseek-ai/DeepSeek-V3.1-Terminus",
+    "deepseek-ai/DeepSeek-V3.2-Exp",
+    "deepseek-ai/DeepSeek-Math-V2",
+    "deepseek-ai/DeepSeek-V3.2-Speciale"
+   ],
    "released": "2025-12",
    "year": 2025,
    "total": 671,
@@ -39,7 +50,11 @@
    "vendor": "DeepSeek",
    "name": "DeepSeek-V4-Flash",
    "repo": "deepseek-ai/DeepSeek-V4-Flash",
-   "variants": [],
+   "variants": [
+    "deepseek-ai/DeepSeek-V4-Flash-DSpark",
+    "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp"
+   ],
    "released": "2026-04",
    "year": 2026,
    "total": 284,
@@ -73,7 +88,8 @@
    "name": "DeepSeek-V4-Pro",
    "repo": "deepseek-ai/DeepSeek-V4-Pro",
    "variants": [
-    "deepseek-ai/DeepSeek-V4-Pro-0813"
+    "deepseek-ai/DeepSeek-V4-Pro-0813",
+    "deepseek-ai/DeepSeek-V4-Pro-DSpark"
    ],
    "released": "2026-04",
    "year": 2026,
@@ -142,7 +158,9 @@
    "vendor": "ERNIE",
    "name": "ERNIE-4.5-21B-A3B",
    "repo": "baidu/ERNIE-4.5-21B-A3B-PT",
-   "variants": [],
+   "variants": [
+    "baidu/ERNIE-4.5-21B-A3B-Thinking"
+   ],
    "released": "2025-06",
    "year": 2025,
    "total": 21,
@@ -208,7 +226,10 @@
    "vendor": "GLM",
    "name": "GLM-4.5-Air",
    "repo": "zai-org/GLM-4.5-Air",
-   "variants": [],
+   "variants": [
+    "zai-org/GLM-4.5V",
+    "zai-org/GLM-4.6V"
+   ],
    "released": "2025-07",
    "year": 2025,
    "total": 106,
@@ -313,7 +334,8 @@
    "variants": [
     "zai-org/GLM-5.1",
     "zai-org/GLM-5.2",
-    "zai-org/GLM-5.3"
+    "zai-org/GLM-5.3",
+    "zai-org/GLM-5.3-BF16"
    ],
    "released": "2026-02",
    "year": 2026,
@@ -347,7 +369,9 @@
    "vendor": "GLM",
    "name": "GLM-5.3-Flash",
    "repo": "zai-org/GLM-5.3-Flash",
-   "variants": [],
+   "variants": [
+    "zai-org/GLM-5.3-Flash-BF16"
+   ],
    "released": "2026-08",
    "year": 2026,
    "total": 320,
@@ -380,7 +404,10 @@
    "vendor": "Google",
    "name": "Gemma 4 26B-A4B",
    "repo": "google/gemma-4-26B-A4B-it",
-   "variants": [],
+   "variants": [
+    "google/gemma-4-26B-A4B",
+    "google/gemma-4-26B-A4B-it-qat-q4_0-unquantized"
+   ],
    "released": "2026-03",
    "year": 2026,
    "total": 25.2,
@@ -479,6 +506,41 @@
   },
   {
    "vendor": "Hunyuan",
+   "name": "Hy-MT2-30B-A3B",
+   "repo": "tencent/Hy-MT2-30B-A3B",
+   "variants": [
+    "tencent/Hy-Memory-30B-A3B"
+   ],
+   "released": "2026-05",
+   "year": 2026,
+   "total": 30,
+   "active": 3,
+   "tier": "S",
+   "E": 128,
+   "k": 8,
+   "s": 1,
+   "E_over_k": 16.0,
+   "expert_activation": 7.0,
+   "param_activation": 10.0,
+   "granularity": 5.3,
+   "d_model": 2048,
+   "d_expert": 768,
+   "d_shared": null,
+   "latent": null,
+   "zero_experts": null,
+   "layers": 48,
+   "moe_layers": 47,
+   "attention": "full",
+   "model_type": "hy_v3",
+   "per_layer": false,
+   "config_ok": true,
+   "hf_created": "2026-05-11",
+   "hf_params": 30.1,
+   "license": "apache-2.0",
+   "notes": "翻译专用模型；Hy-Memory 是同一配置的记忆写入模型。"
+  },
+  {
+   "vendor": "Hunyuan",
    "name": "Hy4-preview",
    "repo": "tencent/Hy4-preview",
    "variants": [],
@@ -512,11 +574,52 @@
   },
   {
    "vendor": "Kimi",
+   "name": "Moonlight-16B-A3B",
+   "repo": "moonshotai/Moonlight-16B-A3B",
+   "variants": [
+    "moonshotai/Moonlight-16B-A3B-Instruct",
+    "moonshotai/Kimi-VL-A3B-Instruct",
+    "moonshotai/Kimi-VL-A3B-Thinking",
+    "moonshotai/Kimi-VL-A3B-Thinking-2506"
+   ],
+   "released": "2025-02",
+   "year": 2025,
+   "total": 16,
+   "active": 3,
+   "tier": "S",
+   "E": 64,
+   "k": 6,
+   "s": 2,
+   "E_over_k": 10.7,
+   "expert_activation": 12.1,
+   "param_activation": 18.8,
+   "granularity": 2.9,
+   "d_model": 2048,
+   "d_expert": 1408,
+   "d_shared": null,
+   "latent": null,
+   "zero_experts": null,
+   "layers": 27,
+   "moe_layers": 26,
+   "attention": "MLA",
+   "model_type": "deepseek_v3",
+   "per_layer": false,
+   "config_ok": true,
+   "hf_created": "2025-02-22",
+   "hf_params": 16.0,
+   "license": "mit",
+   "notes": "Muon 优化器的验证模型。"
+  },
+  {
+   "vendor": "Kimi",
    "name": "Kimi K2",
    "repo": "moonshotai/Kimi-K2-Instruct",
    "variants": [
     "moonshotai/Kimi-K2.5",
-    "moonshotai/Kimi-K2.6"
+    "moonshotai/Kimi-K2.6",
+    "moonshotai/Kimi-K2-Instruct-0905",
+    "moonshotai/Kimi-K2-Thinking",
+    "moonshotai/Kimi-K2.7-Code"
    ],
    "released": "2025-07",
    "year": 2025,
@@ -616,9 +719,95 @@
   },
   {
    "vendor": "Ling",
+   "name": "Ling-lite",
+   "repo": "inclusionAI/Ling-lite-base",
+   "variants": [
+    "inclusionAI/Ling-lite",
+    "inclusionAI/Ling-Coder-lite",
+    "inclusionAI/Ring-lite-distill-preview",
+    "inclusionAI/Ring-lite-linear-preview",
+    "inclusionAI/Ming-Lite-Omni",
+    "inclusionAI/Ling-lite-1.5",
+    "inclusionAI/Ring-lite",
+    "inclusionAI/Ming-Lite-Omni-1.5",
+    "inclusionAI/Ling-lite-1.5-2506",
+    "inclusionAI/Ring-lite-2507",
+    "inclusionAI/Ring-lite-2506",
+    "inclusionAI/Ling-lite-1.5-2507",
+    "inclusionAI/Ming-UniVision-16B-A3B"
+   ],
+   "released": "2025-02",
+   "year": 2025,
+   "total": 16.8,
+   "active": 2.75,
+   "tier": "S",
+   "E": 64,
+   "k": 6,
+   "s": 2,
+   "E_over_k": 10.7,
+   "expert_activation": 12.1,
+   "param_activation": 16.4,
+   "granularity": 2.9,
+   "d_model": 2048,
+   "d_expert": 1408,
+   "d_shared": null,
+   "latent": null,
+   "zero_experts": null,
+   "layers": 28,
+   "moe_layers": 28,
+   "attention": "full",
+   "model_type": "bailing_moe",
+   "per_layer": false,
+   "config_ok": true,
+   "hf_created": "2025-02-28",
+   "hf_params": 16.8,
+   "license": "mit",
+   "notes": null
+  },
+  {
+   "vendor": "Ling",
+   "name": "Ling-plus",
+   "repo": "inclusionAI/Ling-plus-base",
+   "variants": [
+    "inclusionAI/Ling-plus"
+   ],
+   "released": "2025-02",
+   "year": 2025,
+   "total": 290,
+   "active": 28.8,
+   "tier": "M",
+   "E": 64,
+   "k": 4,
+   "s": 1,
+   "E_over_k": 16.0,
+   "expert_activation": 7.7,
+   "param_activation": 9.9,
+   "granularity": 3.5,
+   "d_model": 5376,
+   "d_expert": 3072,
+   "d_shared": null,
+   "latent": null,
+   "zero_experts": null,
+   "layers": 88,
+   "moe_layers": 88,
+   "attention": "full",
+   "model_type": "bailing_moe",
+   "per_layer": false,
+   "config_ok": true,
+   "hf_created": "2025-02-28",
+   "hf_params": 292.5,
+   "license": "mit",
+   "notes": null
+  },
+  {
+   "vendor": "Ling",
    "name": "Ling-mini-2.0",
    "repo": "inclusionAI/Ling-mini-2.0",
-   "variants": [],
+   "variants": [
+    "inclusionAI/Ring-mini-2.0",
+    "inclusionAI/Ring-mini-linear-2.0",
+    "inclusionAI/Ring-mini-sparse-2.0-exp"
+   ],
    "released": "2025-09",
    "year": 2025,
    "total": 16.3,
@@ -652,7 +841,12 @@
    "name": "Ling-flash-2.0",
    "repo": "inclusionAI/Ling-flash-2.0",
    "variants": [
-    "inclusionAI/Ling-2.6-flash"
+    "inclusionAI/Ling-2.6-flash",
+    "inclusionAI/Ring-flash-2.0",
+    "inclusionAI/Ring-flash-linear-2.0",
+    "inclusionAI/Ming-flash-omni-Preview",
+    "inclusionAI/Ring-flash-linear-2.0-128k",
+    "inclusionAI/Ming-flash-omni-2.0"
    ],
    "released": "2025-09",
    "year": 2025,
@@ -688,7 +882,10 @@
    "repo": "inclusionAI/Ling-1T",
    "variants": [
     "inclusionAI/Ling-2.5-1T",
-    "inclusionAI/Ling-2.6-1T"
+    "inclusionAI/Ling-2.6-1T",
+    "inclusionAI/Ring-1T",
+    "inclusionAI/Ring-2.5-1T",
+    "inclusionAI/Ring-2.6-1T"
    ],
    "released": "2025-10",
    "year": 2025,
@@ -755,7 +952,11 @@
    "vendor": "Ling",
    "name": "Ling-3.0-flash",
    "repo": "inclusionAI/Ling-3.0-flash",
-   "variants": [],
+   "variants": [
+    "inclusionAI/Ling-3.0-flash-Fin",
+    "inclusionAI/Ling-3.0-flash-VL",
+    "inclusionAI/Ling-3.0-flash-Sante"
+   ],
    "released": "2026-08",
    "year": 2026,
    "total": 124,
@@ -788,7 +989,9 @@
    "vendor": "Ling",
    "name": "Ling-3.1-flash",
    "repo": "inclusionAI/Ling-3.1-flash",
-   "variants": [],
+   "variants": [
+    "inclusionAI/Ling-3.1-flash-1019"
+   ],
    "released": "2026-10",
    "year": 2026,
    "total": 560,
@@ -821,7 +1024,14 @@
    "vendor": "LongCat",
    "name": "LongCat-Flash",
    "repo": "meituan-longcat/LongCat-Flash-Chat",
-   "variants": [],
+   "variants": [
+    "meituan-longcat/LongCat-Flash-Thinking",
+    "meituan-longcat/LongCat-Flash-Omni",
+    "meituan-longcat/LongCat-Flash-Thinking-2601",
+    "meituan-longcat/LongCat-HeavyMode-Summary",
+    "meituan-longcat/LongCat-Flash-Thinking-ZigZag",
+    "meituan-longcat/LongCat-Flash-Prover"
+   ],
    "released": "2025-08",
    "year": 2025,
    "total": 560,
@@ -855,7 +1065,9 @@
    "name": "LongCat-Flash-Lite",
    "repo": "meituan-longcat/LongCat-Flash-Lite",
    "variants": [
-    "LongCat-Flash-Lite-Next"
+    "LongCat-Flash-Lite-Next",
+    "meituan-longcat/LongCat-Next",
+    "meituan-longcat/LongCat-Flash-Lite-Sparse"
    ],
    "released": "2026-01",
    "year": 2026,
@@ -957,7 +1169,9 @@
    "repo": "XiaomiMiMo/MiMo-V2-Flash",
    "variants": [
     "XiaomiMiMo/MiMo-V2.5",
-    "MiMo-V2.6-Flash"
+    "MiMo-V2.6-Flash",
+    "XiaomiMiMo/MiMo-V2.6-Flash-RL",
+    "XiaomiMiMo/MiMo-V2.6-Flash-MOPD"
    ],
    "released": "2025-12",
    "year": 2025,
@@ -992,7 +1206,9 @@
    "name": "MiMo-V2.5-Pro",
    "repo": "XiaomiMiMo/MiMo-V2.5-Pro",
    "variants": [
-    "MiMo-V2.6-Pro"
+    "MiMo-V2.6-Pro",
+    "XiaomiMiMo/MiMo-V2.6-Pro-RL",
+    "XiaomiMiMo/MiMo-V2.6-Pro-MOPD"
    ],
    "released": "2026-04",
    "year": 2026,
@@ -1021,6 +1237,46 @@
    "hf_params": 1023.2,
    "license": "mit",
    "notes": null
+  },
+  {
+   "vendor": "MiniMax",
+   "name": "MiniMax-Text-01",
+   "repo": "MiniMaxAI/MiniMax-Text-01",
+   "variants": [
+    "MiniMaxAI/MiniMax-VL-01",
+    "MiniMaxAI/MiniMax-Text-01-hf",
+    "MiniMaxAI/MiniMax-M1-40k",
+    "MiniMaxAI/MiniMax-M1-80k",
+    "MiniMaxAI/MiniMax-M1-80k-hf",
+    "MiniMaxAI/MiniMax-M1-40k-hf"
+   ],
+   "released": "2025-01",
+   "year": 2025,
+   "total": 456,
+   "active": 45.9,
+   "tier": "M",
+   "E": 32,
+   "k": 2,
+   "s": 0,
+   "E_over_k": 16.0,
+   "expert_activation": 6.2,
+   "param_activation": 10.1,
+   "granularity": 1.3,
+   "d_model": 6144,
+   "d_expert": 9216,
+   "d_shared": null,
+   "latent": null,
+   "zero_experts": null,
+   "layers": 80,
+   "moe_layers": 80,
+   "attention": "linear×70 + full×10",
+   "model_type": "minimax_text_01",
+   "per_layer": false,
+   "config_ok": true,
+   "hf_created": "2025-01-12",
+   "hf_params": 456.1,
+   "license": null,
+   "notes": "Lightning Attention 与 softmax 注意力 7:1 混合。"
   },
   {
    "vendor": "MiniMax",
@@ -1098,7 +1354,9 @@
    "vendor": "Mistral",
    "name": "Mistral Large 3",
    "repo": "mistralai/Mistral-Large-3-675B-Instruct-2512",
-   "variants": [],
+   "variants": [
+    "mistralai/Mistral-Large-3-675B-Instruct-2512-BF16"
+   ],
    "released": "2025-12",
    "year": 2025,
    "total": 675,
@@ -1132,7 +1390,8 @@
    "name": "Mistral Small 4",
    "repo": "mistralai/Mistral-Small-4-119B-2603",
    "variants": [
-    "mistralai/Leanstral-1.5-119B-A6B"
+    "mistralai/Leanstral-1.5-119B-A6B",
+    "mistralai/Leanstral-2603"
    ],
    "released": "2026-03",
    "year": 2026,
@@ -1167,7 +1426,11 @@
    "name": "Nemotron 3 Nano",
    "repo": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
    "variants": [
-    "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16"
+    "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+    "nvidia/Nemotron-Cascade-2-30B-A3B",
+    "nvidia/NVIDIA-Nemotron-Labs-3-Elastic-30B-A3B-BF16",
+    "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+    "nvidia/NVIDIA-NemotronLabs-AI-for-Media-Sports-Tennis"
    ],
    "released": "2025-12",
    "year": 2025,
@@ -1201,7 +1464,10 @@
    "vendor": "NVIDIA",
    "name": "Nemotron 3 Super",
    "repo": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
-   "variants": [],
+   "variants": [
+    "nvidia/Nemotron-3-Super-120B-A12B-BF16-MTPv2",
+    "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16"
+   ],
    "released": "2026-03",
    "year": 2026,
    "total": 120,
@@ -1234,7 +1500,15 @@
    "vendor": "NVIDIA",
    "name": "Nemotron 3 Ultra",
    "repo": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16",
-   "variants": [],
+   "variants": [
+    "nvidia/NVIDIA-Nemotron-Labs-Teacher-STEM",
+    "nvidia/NVIDIA-Nemotron-Labs-Teacher-General-Reasoning",
+    "nvidia/NVIDIA-Nemotron-Labs-Teacher-Instruction-Following",
+    "nvidia/NVIDIA-Nemotron-Labs-Teacher-Competition-Coding",
+    "nvidia/NVIDIA-Nemotron-Labs-Teacher-Chat",
+    "nvidia/Nemotron-3-Labs-Ultra-Math-SFT",
+    "nvidia/Nemotron-3-Labs-Ultra-Math-RL"
+   ],
    "released": "2026-06",
    "year": 2026,
    "total": 550,
@@ -1267,7 +1541,9 @@
    "vendor": "NVIDIA",
    "name": "Nemotron 3.5 Bolt",
    "repo": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16",
-   "variants": [],
+   "variants": [
+    "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB"
+   ],
    "released": "2026-10",
    "year": 2026,
    "total": 74,
@@ -1366,7 +1642,13 @@
    "vendor": "Qwen",
    "name": "Qwen3-30B-A3B",
    "repo": "Qwen/Qwen3-30B-A3B",
-   "variants": [],
+   "variants": [
+    "Qwen/Qwen3-30B-A3B-Instruct-2507",
+    "Qwen/Qwen3-30B-A3B-Thinking-2507",
+    "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "Qwen/Qwen3-VL-30B-A3B-Instruct",
+    "Qwen/Qwen3-VL-30B-A3B-Thinking"
+   ],
    "released": "2025-04",
    "year": 2025,
    "total": 30.5,
@@ -1399,7 +1681,12 @@
    "vendor": "Qwen",
    "name": "Qwen3-235B-A22B",
    "repo": "Qwen/Qwen3-235B-A22B",
-   "variants": [],
+   "variants": [
+    "Qwen/Qwen3-235B-A22B-Instruct-2507",
+    "Qwen/Qwen3-235B-A22B-Thinking-2507",
+    "Qwen/Qwen3-VL-235B-A22B-Instruct",
+    "Qwen/Qwen3-VL-235B-A22B-Thinking"
+   ],
    "released": "2025-04",
    "year": 2025,
    "total": 235,
@@ -1430,10 +1717,44 @@
   },
   {
    "vendor": "Qwen",
+   "name": "Qwen3-Coder-480B-A35B",
+   "repo": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+   "variants": [],
+   "released": "2025-07",
+   "year": 2025,
+   "total": 480,
+   "active": 35,
+   "tier": "M",
+   "E": 160,
+   "k": 8,
+   "s": 0,
+   "E_over_k": 20.0,
+   "expert_activation": 5.0,
+   "param_activation": 7.3,
+   "granularity": 4.8,
+   "d_model": 6144,
+   "d_expert": 2560,
+   "d_shared": null,
+   "latent": null,
+   "zero_experts": null,
+   "layers": 62,
+   "moe_layers": 62,
+   "attention": "full",
+   "model_type": "qwen3_moe",
+   "per_layer": false,
+   "config_ok": true,
+   "hf_created": "2025-07-22",
+   "hf_params": 480.2,
+   "license": "apache-2.0",
+   "notes": null
+  },
+  {
+   "vendor": "Qwen",
    "name": "Qwen3-Next-80B-A3B",
    "repo": "Qwen/Qwen3-Next-80B-A3B-Instruct",
    "variants": [
-    "Qwen/Qwen3-Coder-Next"
+    "Qwen/Qwen3-Coder-Next",
+    "Qwen/Qwen3-Next-80B-A3B-Thinking"
    ],
    "released": "2025-09",
    "year": 2025,
@@ -1468,7 +1789,8 @@
    "name": "Qwen3.5-35B-A3B",
    "repo": "Qwen/Qwen3.5-35B-A3B",
    "variants": [
-    "Qwen/Qwen3.6-35B-A3B"
+    "Qwen/Qwen3.6-35B-A3B",
+    "Qwen/Qwen-AgentWorld-35B-A3B"
    ],
    "released": "2026-02",
    "year": 2026,
@@ -1702,7 +2024,9 @@
    "vendor": "Step",
    "name": "Step-5-Preview",
    "repo": "stepfun-ai/Step-5-Preview",
-   "variants": [],
+   "variants": [
+    "stepfun-ai/Step-5-Preview-BF16"
+   ],
    "released": "2026-09",
    "year": 2026,
    "total": 600,
@@ -1730,6 +2054,39 @@
    "hf_params": 604.3,
    "license": "other",
    "notes": null
+  },
+  {
+   "vendor": "Youtu",
+   "name": "Youtu-LLM-A7B",
+   "repo": "tencent/Youtu-LLM-A7B-Base",
+   "variants": [],
+   "released": "2026-01",
+   "year": 2026,
+   "total": 120,
+   "active": 7,
+   "tier": "M",
+   "E": 256,
+   "k": 8,
+   "s": 1,
+   "E_over_k": 32.0,
+   "expert_activation": 3.5,
+   "param_activation": 5.8,
+   "granularity": 6.0,
+   "d_model": 3072,
+   "d_expert": 1024,
+   "d_shared": null,
+   "latent": null,
+   "zero_experts": null,
+   "layers": 48,
+   "moe_layers": 47,
+   "attention": "MLA",
+   "model_type": "youtu_vl_moe",
+   "per_layer": false,
+   "config_ok": true,
+   "hf_created": "2026-01-05",
+   "hf_params": 118.4,
+   "license": "other",
+   "notes": "腾讯优图的视觉语言 MoE。"
   }
  ]
 }
