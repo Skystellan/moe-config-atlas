@@ -5,7 +5,7 @@ const TIERS = [
   { id: "M", label: "中（50–500B）" },
   { id: "L", label: "大（≥500B）" },
 ];
-const state = { q: "", tiers: new Set(), years: new Set(), vendor: "", sort: { key: "released", dir: -1 } };
+const state = { q: "", tiers: new Set(), years: new Set(), vendor: "", sort: { key: "latest", dir: -1 } };
 let DATA = [];
 const charts = [];
 
@@ -109,6 +109,7 @@ function tooltip() {
       if (!m) return "";
       return `<b>${esc(m.name)}</b> <span style="color:${css("--muted")}">${esc(m.vendor)} · ${m.released}</span><br>` +
         `总 / 激活：${fmtParams(m.total)} / ${fmtParams(m.active)}（${num(m.param_activation)}%）<br>` +
+        (m.latest_name !== m.repo.split("/").pop() ? `最近版本：${esc(m.latest_name)}（${m.latest ?? "–"}）<br>` : "") +
         `配置：${fmtConfig(m)}，E/k = ${num(m.E_over_k)}，A = ${num(m.expert_activation)}%` +
         (m.granularity ? `，G = ${num(m.granularity)}` : "");
     },
@@ -218,8 +219,9 @@ function renderMultiples(rows) {
 
 const COLS = [
   { key: "vendor", label: "厂家", l: true, f: (m) => `<span class="tier-dot" style="background:${tierColor(m.tier)}"></span>${esc(m.vendor)}` },
-  { key: "name", label: "型号", l: true, f: (m) => `${esc(m.name)}${m.variants.length ? ` <span class="muted">+${m.variants.length}</span>` : ""}` },
-  { key: "released", label: "首发" },
+  { key: "name", label: "型号", l: true, f: nameCell },
+  { key: "released", label: "首发", title: "这个 MoE 配置第一次上传 HF 的年月" },
+  { key: "latest", label: "最近上传", title: "同配置各版本里最近一次上传 HF 的日期", f: (m) => m.latest ?? "–" },
   { key: "total", label: "总参数", f: (m) => fmtParams(m.total) },
   { key: "active", label: "激活", f: (m) => fmtParams(m.active) },
   { key: "E", label: "E/k+s", f: fmtConfig },
@@ -232,6 +234,16 @@ const COLS = [
   { key: "d_expert", label: "d_expert", f: (m) => m.d_expert ?? "–" },
   { key: "attention", label: "注意力", title: "按 config.json 字段推断的层类型", l: true, f: (m) => esc(m.attention ?? "–") },
 ];
+
+// Model name plus the newest same-config versions, so a fresh post-training
+// release (e.g. a -1017 checkpoint) is visible without expanding the row.
+function nameCell(m) {
+  const others = m.versions.filter((v) => v.repo !== m.repo);
+  if (!others.length) return esc(m.name);
+  const shown = others.slice(0, 3).map((v) => esc(v.name)).join("、");
+  const more = others.length > 3 ? ` 等 ${others.length} 个` : "";
+  return `${esc(m.name)}<div class="vers">同配置：${shown}${more}</div>`;
+}
 
 function renderTable(rows) {
   const head = $("#table thead tr");
@@ -269,7 +281,8 @@ function repoLink(r) {
 function detail(m) {
   const items = [
     ["仓库", `${repoLink(m.repo)} · <a href="https://huggingface.co/${esc(m.repo)}/blob/main/config.json" target="_blank" rel="noopener">config.json</a>`],
-    m.variants.length && ["同配置版本", m.variants.map(repoLink).join("，")],
+    m.versions.length > 1 && ["各版本（新→旧）", m.versions.map((v) =>
+      `${v.repo ? repoLink(v.repo) : esc(v.name)} <span class="muted">${v.created ?? "未上 HF"}${v.note ? `，${esc(v.note)}` : ""}</span>`).join("<br>")],
     ["model_type", esc(m.model_type ?? "–")],
     m.d_shared && ["共享专家宽度", m.d_shared],
     m.latent && ["LatentMoE 潜空间维度", m.latent],
