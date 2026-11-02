@@ -509,3 +509,9 @@
   variants:
   - tencent/Hy-Memory-30B-A3B
   notes: 翻译专用模型；Hy-Memory 是同一配置的记忆写入模型。
+- vendor: Mistral
+  name: Mistral-Large-4-1T-A52B
+  repo: mistralai/Mistral-Large-4-1T-A52B
+  released: 2026-09
+  total: 1000.0
+  active: 52.0
