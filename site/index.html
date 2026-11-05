@@ -86,10 +86,19 @@
   </section>
   <p class="legend-note legend-copy"></p>
 
+  <section class="card" id="layers">
+    <h2>逐层结构</h2>
+    <p class="sub">每行一个配置，每格是一层 token mixer，从第一层排到最后一层。格子越高，这一层的 KV 缓存随上下文涨得越多：全局和稀疏注意力最高，滑窗和分块一半，线性注意力、Mamba 和短卷积的状态大小固定，最矮。悬停看每一层，点型号加入并排对比；随上面的筛选变化。<span class="take" id="lay-take"></span></p>
+    <div class="fp-bar"><div class="chips" id="lay-sort" role="group" aria-label="排序"></div></div>
+    <p class="legend-note" id="lay-legend"></p>
+    <div class="lay-wrap" id="lay"></div>
+    <p class="muted lay-note" id="lay-note"></p>
+  </section>
+
   <h2 class="sec">结构特征</h2>
   <section class="card">
     <h2>结构指纹</h2>
-    <p class="sub">每行一个配置：左边是形状数值，右边是 29 项结构特征，格子里是具体取值（窗口大小、稀疏注意力种类、超连接路数等）。点列名排序；也可以切到按厂家或档位汇总的采用比例。随上面的筛选变化。</p>
+    <p class="sub">每行一个配置：左边是形状数值，右边是 <span id="fp-n">33</span> 项结构特征，格子里是具体取值（窗口大小、稀疏注意力种类、超连接路数等）。点列名排序；也可以切到按厂家或档位汇总的采用比例。随上面的筛选变化。</p>
     <div class="fp-bar">
       <div class="chips" id="fp-mode" role="group" aria-label="视图"></div>
       <div class="chips" id="fp-groups" role="group" aria-label="列分组"></div>
@@ -117,15 +126,17 @@
 
   <section class="card">
     <h2>按季度的采用率</h2>
-    <p class="sub">每根柱是当季首发的配置里用了该特征的比例，标题旁是总数。悬停看具体型号；随上面的筛选变化。</p>
+    <p class="sub">每行一项结构特征，每列一个季度，颜色越深，当季首发的配置里用它的越多；按两年之间涨了多少排序。悬停看具体型号；随上面的筛选变化。<span class="take" id="adopt-take"></span></p>
     <div class="chips col-groups" id="adopt-groups" role="group" aria-label="特征分组"></div>
-    <div class="multiples" id="adoption"></div>
+    <div class="aq-wrap" id="adoption"></div>
+    <p class="legend-note" id="adopt-legend"></p>
   </section>
 
   <h2 class="sec" id="details">设计细节对照</h2>
   <section class="card">
     <p class="sub">同一个位置上各家怎么写：每种写法的公式、来源，和用它的配置。门、sigmoid、归一化和缩放的细节多数在建模代码里，这里逐个对照 config 和代码核对，规则在 <code>details.yaml</code>。点型号可以加入上面的并排对比；随上面的筛选变化。</p>
     <div class="chips col-groups" id="det-secs" role="group" aria-label="位置分组"></div>
+    <div class="dd" id="det-dist"></div>
     <p class="pick-note" id="det-picked"></p>
     <div id="det"></div>
   </section>
@@ -134,6 +145,7 @@
   <section class="card">
     <p class="sub">2024 年以来的结构和训练改动（加上几项还在扩散的老方法）：最早的出处、独立实验测到的效果、收录的模型里谁在用。采用数从 config 自动统计，随上面的筛选变化；config 看不出的（比如优化器）只列技术报告里写明的。</p>
     <div class="chips col-groups" id="tech-cats" role="group" aria-label="技术分类"></div>
+    <div class="tl" id="tech-tl"></div>
     <div class="table-wrap">
       <table id="tech">
         <colgroup><col class="c-name"><col class="c-src"><col><col class="c-use"></colgroup>
@@ -146,8 +158,9 @@
 
   <section class="card">
     <h2>各厂家的演化</h2>
-    <p class="sub">纵轴 E/k（对数），横轴首发时间；同一档位的型号连成一条线，颜色同上。</p>
-    <div class="multiples" id="multiples"></div>
+    <p class="sub">每行一家厂家，按第一次出现的时间排；每个点是一个配置，横轴是首发时间，点越大总参数越大（对数），颜色是注意力类型，和逐层结构同色：混了线性层的算线性，其次是稀疏注意力、滑窗。悬停看配置，点击加入并排对比；随上面的筛选变化。<span class="take" id="vendor-take"></span></p>
+    <p class="legend-note" id="vendor-legend"></p>
+    <div class="vl" id="vendors"></div>
   </section>
 
   <section class="card">

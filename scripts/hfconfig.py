@@ -75,17 +75,22 @@ def _summary(counts):
 
 def _mixers(c, n_layers):
     """Count token-mixer layers by type, e.g. Counter(linear=36, full=12)."""
-    counts = _mixer_counts(c, n_layers)
+    return Counter(_mixer_seq(c, n_layers))
+
+
+def _mixer_seq(c, n_layers):
+    """Token-mixer type of each layer, in order, e.g. ['linear', 'linear', 'linear', 'full', ...]."""
+    seq = _mixer_types(c, n_layers)
     # An indexer that picks which keys each query reads turns the global layers sparse:
     # Step-5 (`sparse_config`, block-compressed CSA) and Qwen3.8 (`indexer_*`, QSA).
     sc = c.get("sparse_config")
     indexed = isinstance(sc, dict) and sc.get("enabled") and "full_attention" in (sc.get("apply_to_layer_types") or ["full_attention"])
-    if (indexed or c.get("indexer_budget")) and counts.get("full"):
-        counts["sparse"] += counts.pop("full")
-    return counts
+    if indexed or c.get("indexer_budget"):
+        seq = ["sparse" if t == "full" else t for t in seq]
+    return seq
 
 
-def _mixer_counts(c, n_layers):
+def _mixer_types(c, n_layers):
     full = "MLA" if c.get("kv_lora_rank") else "full"
     types = c.get("layer_types") or c.get("layers_block_type")
     pattern = c.get("hybrid_override_pattern")
@@ -101,56 +106,104 @@ def _mixer_counts(c, n_layers):
                  "indexed_attention": "DSA"}  # Mistral Large 4
         if c.get("index_topk") or c.get("index_n_heads"):  # dots3-note: the full layers carry a DSA indexer
             short["full_attention"] = "DSA"
-        return Counter(short.get(t, t) for t in types)
+        return [short.get(t, t) for t in types]
     if isinstance(c.get("local_layer_ids"), list) and n_layers:  # Inkling: the other layers are global
-        n_local = len(c["local_layer_ids"])
-        return Counter(sliding=n_local, full=n_layers - n_local)
+        local = set(c["local_layer_ids"])
+        return ["sliding" if i in local else "full" for i in range(n_layers)]
     if isinstance(c.get("gqa_layers"), list) and isinstance(c.get("linear_attn_config"), dict) and n_layers:
-        n_full = len(c["gqa_layers"])  # Solar Open 2: KDA everywhere else
-        return Counter(KDA=n_layers - n_full, full=n_full)
+        gqa = set(c["gqa_layers"])  # Solar Open 2: KDA everywhere else
+        return ["full" if i in gqa else "KDA" for i in range(n_layers)]
     if isinstance(c.get("no_rope_layers"), list) and c.get("attention_chunk_size") and n_layers:
         # Llama 4: the RoPE layers attend within fixed chunks, the NoPE layers see the whole context
-        nr = c["no_rope_layers"][:n_layers]
-        return Counter(chunked=sum(1 for x in nr if x), full=sum(1 for x in nr if not x))
+        return ["chunked" if x else "full" for x in c["no_rope_layers"][:n_layers]]
     if isinstance(c.get("hybrid_layer_pattern"), list):  # MiMo: 1 = sliding window
-        hp = c["hybrid_layer_pattern"]
-        return Counter(sliding=sum(1 for x in hp if x), full=sum(1 for x in hp if not x))
+        return ["sliding" if x else "full" for x in c["hybrid_layer_pattern"]]
     if isinstance(c.get("linear_attention_pattern"), list):  # Youtu: 1 = KDA
-        lp = c["linear_attention_pattern"][:n_layers or None]
-        return Counter(KDA=sum(1 for x in lp if x), **{full: sum(1 for x in lp if not x)})
+        return ["KDA" if x else full for x in c["linear_attention_pattern"][:n_layers or None]]
     if isinstance(c.get("attn_type_list"), list):  # MiniMax: 0 = lightning (linear)
-        at = c["attn_type_list"]
-        return Counter(linear=sum(1 for x in at if not x), full=sum(1 for x in at if x))
-    if c.get("full_attention_interval") and n_layers:  # Qwen3-Next
-        n_full = n_layers // c["full_attention_interval"]
-        return Counter(linear=n_layers - n_full, full=n_full)
+        return ["full" if x else "linear" for x in c["attn_type_list"]]
+    if c.get("full_attention_interval") and n_layers:  # Qwen3-Next: every k-th layer is full
+        k = c["full_attention_interval"]
+        return ["linear" if (i + 1) % k else "full" for i in range(n_layers)]
     lac = c.get("linear_attn_config")
-    if isinstance(lac, dict) and lac.get("kda_layers") is not None:  # Kimi Linear / K3
-        n_full = len(lac.get("full_attn_layers") or [])
+    if isinstance(lac, dict) and lac.get("kda_layers") is not None:  # Kimi Linear / K3, 1-indexed
+        kda, mla = set(lac["kda_layers"]), set(lac.get("full_attn_layers") or [])
         dsa = c["dsa_config"].get("dsa_layers") if isinstance(c.get("dsa_config"), dict) else None
-        n_dsa = len(dsa) if isinstance(dsa, list) else 0  # K3.1 Pro: the MLA layers gain a top-k indexer
-        return Counter(KDA=len(lac["kda_layers"]), **{full: n_full - n_dsa}, DSA=n_dsa)
-    if c.get("layer_group_size") and any(k.startswith("kda") for k in c) and n_layers:  # Ling 3
-        n_full = n_layers // c["layer_group_size"]
-        return Counter(KDA=n_layers - n_full, **{full: n_full})
+        dsa = set(dsa) if isinstance(dsa, list) else set()  # K3.1 Pro: the MLA layers gain a top-k indexer
+        return ["KDA" if i in kda else "DSA" if i in dsa else full for i in sorted(kda | mla)]
+    if c.get("layer_group_size") and any(k.startswith("kda") for k in c) and n_layers:
+        g = c["layer_group_size"]  # Ling 3: the last layer of each group, and any leftover layers, are MLA
+        return [full if (i + 1) % g == 0 or i >= n_layers // g * g else "KDA" for i in range(n_layers)]
     kind = full
     if any(a.lower().startswith("longcat") for a in c.get("architectures") or []) and n_layers:
-        return Counter({kind if not c.get("index_topk") else "DSA": 2 * n_layers})  # two attention sublayers per layer
+        return [kind if not c.get("index_topk") else "DSA"] * (2 * n_layers)  # two attention sublayers per layer
     if isinstance(c.get("compress_ratios"), list) and n_layers:
         # DeepSeek V4: 0 = sliding window only, otherwise sliding window + compressed KV (CSA / HCA).
         # ERNIE 5.5 Flash marks its MLA + DSA layers with a negative ratio.
         ratios = c["compress_ratios"][:n_layers]  # trailing entries are MTP layers
-        return Counter(sliding=sum(1 for r in ratios if not r), compressed=sum(1 for r in ratios if r and r > 0),
-                       DSA=sum(1 for r in ratios if r and r < 0))
+        return ["sliding" if not r else "compressed" if r > 0 else "DSA" for r in ratios]
     if isinstance(c.get("sparse_attention_config"), dict) and c["sparse_attention_config"].get("use_sparse_attention"):
         freq = c["sparse_attention_config"].get("sparse_attention_freq")  # MiniMax M3: 0 = dense layer
         if isinstance(freq, list) and n_layers:
-            freq = freq[:n_layers]
-            return Counter(sparse=sum(1 for x in freq if x), **{full: sum(1 for x in freq if not x)})
+            return ["sparse" if x else full for x in freq[:n_layers]]
         kind = "sparse"
     elif c.get("index_topk") or c.get("index_n_heads"):
         kind = "DSA"
-    return Counter({kind: n_layers or 0})
+    return [kind] * (n_layers or 0)
+
+
+# One character per token-mixer layer for the site's layer strips.
+LAYOUT_CODE = {"full": "A", "attention": "A", "MLA": "X", "DSA": "D", "sparse": "S", "sliding": "W", "chunked": "U",
+               "GDN": "G", "KDA": "K", "Lightning": "N", "mamba": "B", "conv": "V", "linear": "L"}
+
+
+def _layout(c, seq, linear_label):
+    """The mixer sequence as a string of LAYOUT_CODE characters; DeepSeek V4's compressed layers are C (CSA,
+    a few tokens per entry) or H (HCA, 128 tokens per entry), by their compress ratio."""
+    ratios = c.get("compress_ratios") if isinstance(c.get("compress_ratios"), list) else []
+    out = []
+    for i, t in enumerate(seq):
+        if t == "compressed":
+            r = ratios[i] if i < len(ratios) else None
+            out.append("C" if r and r <= 16 else "H")
+        else:
+            out.append(LAYOUT_CODE.get(linear_label if t == "linear" and linear_label else t, "?"))
+    return "".join(out) or None
+
+
+def _dense_layers(c, n_layers, moe_layers):
+    """0-based indices of the layers whose FFN is dense rather than MoE, when the config says so per layer.
+    None when it can't be told, or when the MoE blocks aren't paired with the mixer layers (Nemotron)."""
+    if not n_layers or c.get("hybrid_override_pattern") or isinstance(c.get("block_configs"), list):
+        return None
+    if isinstance(c.get("mlp_layer_types"), list):
+        dense = [i for i, t in enumerate(c["mlp_layer_types"][:n_layers]) if t != "sparse"]
+    elif isinstance(c.get("layers_block_type"), list):
+        return None
+    elif isinstance(c.get("moe_layer_freq"), list):
+        dense = [i for i, x in enumerate(c["moe_layer_freq"][:n_layers]) if not x]
+    elif isinstance(c.get("moe_layers"), list):  # Llama 4
+        moe = set(c["moe_layers"])
+        dense = [i for i in range(n_layers) if i not in moe]
+    elif c.get("num_dense_layers") is not None:
+        dense = list(range(c["num_dense_layers"]))
+    elif c.get("dense_mlp_idx") is not None:
+        dense = list(range(c["dense_mlp_idx"]))
+    elif isinstance(c.get("moe_layers_enum"), str):
+        moe = {int(x) for x in c["moe_layers_enum"].split(",") if x.strip()}
+        dense = [i for i in range(n_layers) if i not in moe]
+    elif isinstance(c.get("moe_layer_list"), list):
+        moe = set(c["moe_layer_list"])
+        dense = [i for i in range(n_layers) if i not in moe]
+    elif c.get("moe_layer_start_index") is not None:
+        start, end = c["moe_layer_start_index"], c.get("moe_layer_end_index", n_layers - 1)
+        moe = set(range(start, (n_layers - 1 if end in (None, -1) else end) + 1, c.get("moe_layer_interval", 1) or 1))
+        dense = [i for i in range(n_layers) if i not in moe]
+    elif c.get("mlp_only_layers"):
+        dense = sorted(c["mlp_only_layers"])
+    else:
+        dense = list(range(c.get("first_k_dense_replace") or 0))
+    return dense if n_layers - len(dense) == moe_layers else None
 
 
 def _kv_bytes_per_global_layer(c):
@@ -751,10 +804,14 @@ def parse(raw):
     if not out["layers"] and isinstance(c.get("layers_block_type"), list):
         out["layers"] = len(c["layers_block_type"])
     out["moe_layers"] = _moe_layers(c, out["layers"])
-    mixers = _mixers(c, out["layers"])
+    seq = _mixer_seq(c, out["layers"])
+    mixers = Counter(seq)
     label = ARCH.get(family(c), {}).get("linear")
     if label and "linear" in mixers:  # name the linear-attention kind, e.g. GDN or Lightning
         mixers[label] = mixers.pop("linear")
+    out["layout"] = _layout(c, seq, label)
+    # dense-FFN layers, drawn under the layer strip when each mixer layer has its own FFN
+    out["dense_layers"] = _dense_layers(c, out["layers"], out["moe_layers"]) if len(seq) == out["layers"] else None
     out["attention"] = _summary(mixers)
     n_mix = sum(mixers.values())
     n_global = sum(v for k, v in mixers.items() if k in GLOBAL)

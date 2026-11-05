@@ -8,11 +8,10 @@ const TIERS = [
 const state = {
   q: "", tiers: new Set(), years: new Set(), vendor: "", group: "sparsity", sort: { key: "latest", dir: -1 },
   fpMode: "model", fpGroup: "all", fpSort: { key: "vendor", dir: -1 }, compare: [], adoptGroup: "all", techCat: "all", detSec: "gate",
+  laySort: "vendor",
 };
 let DATA = [];
 const charts = [];
-const multCharts = [];
-const adoptCharts = [];
 
 const $ = (sel) => document.querySelector(sel);
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -155,25 +154,6 @@ function tooltip() {
   };
 }
 
-function scatterSeries(rows, xf, yf) {
-  return TIERS.map((t) => ({
-    name: t.id,
-    type: "scatter",
-    symbolSize: 9,
-    data: rows.filter((m) => m.tier === t.id && xf(m) != null && yf(m) != null).map((m) => ({
-      value: [xf(m), yf(m)],
-      m,
-      itemStyle: m.year >= 2026
-        ? { color: tierColor(t.id), borderColor: css("--surface"), borderWidth: 1.5 }
-        : { color: css("--surface"), borderColor: tierColor(t.id), borderWidth: 1.8 },
-    })),
-    emphasis: {
-      scale: 1.4,
-      label: { show: true, formatter: (p) => p.data.m.name, position: "top", color: css("--ink"), fontSize: 11 },
-    },
-  }));
-}
-
 function chart(id, list = charts) {
   const el = document.getElementById(id);
   let c = echarts.getInstanceByDom(el);
@@ -194,123 +174,530 @@ const sizeAxis = (name) => baseAxis({
   axisLabel: { color: css("--muted"), fontSize: 11, formatter: (v) => fmtParams(v) },
 });
 
-function renderCharts(rows) {
-  chart("c-param").setOption({
-    grid, tooltip: tooltip(),
-    xAxis: sizeAxis("总参数"),
-    yAxis: baseAxis({ type: "value", min: 0, axisLabel: { color: css("--muted"), fontSize: 11, formatter: "{value}%" } }),
-    series: scatterSeries(rows, (m) => m.total, (m) => m.param_activation),
-  }, true);
+const picked = (m) => state.compare.includes(m.name);
+const halo = () => ({ textBorderColor: css("--surface"), textBorderWidth: 3 }); // keeps a name readable over points and lines
 
-  chart("c-ek").setOption({
-    grid, tooltip: tooltip(),
-    xAxis: sizeAxis("总参数"),
-    yAxis: baseAxis({ type: "log", logBase: 2, min: 4, max: 128 }),
-    series: scatterSeries(rows, (m) => m.total, (m) => m.E_over_k),
-  }, true);
-
-  const ratios = [8, 16, 32, 64];
-  const refLines = ratios.map((r) => ({
-    type: "line", silent: true, symbol: "none", z: 1,
-    lineStyle: { color: css("--axis"), width: 1, type: "dashed" },
-    data: [[2, 2 * r], [Math.min(32, 1024 / r), Math.min(32, 1024 / r) * r]],
-    endLabel: { show: true, formatter: `E/k=${r}`, color: css("--muted"), fontSize: 10 },
+// The configs at the two ends of the y range are named on the chart as landmarks, and the configs picked for
+// the side-by-side comparison are drawn bigger and named in bold (a bigger symbol also wins label collisions).
+function scatterSeries(rows, xf, yf, c) {
+  const ok = rows.filter((m) => xf(m) != null && yf(m) != null);
+  const byY = ok.slice().sort((a, b) => yf(a) - yf(b));
+  const n = byY.length;
+  const ends = new Set(); // only an end no other config ties with, else the name would be an arbitrary pick
+  if (n > 2 && yf(byY[0]) < yf(byY[1])) ends.add(byY[0].name);
+  if (n > 2 && yf(byY[n - 1]) > yf(byY[n - 2])) ends.add(byY[n - 1].name);
+  const W = c.getWidth();
+  // names go right of the point, or left of it where they would run off the plot
+  const labelLayout = (p) => (p.labelRect.x + p.labelRect.width > W - 4 ? { hideOverlap: true, x: p.rect.x - 3, align: "right" } : { hideOverlap: true });
+  return TIERS.map((t) => ({
+    name: t.id,
+    type: "scatter",
+    symbolSize: 9,
+    z: 3,
+    labelLayout,
+    data: ok.filter((m) => m.tier === t.id).map((m) => {
+      const pick = picked(m);
+      const d = {
+        value: [xf(m), yf(m)], m, symbolSize: pick ? 13 : 9,
+        itemStyle: m.year >= 2026
+          ? { color: tierColor(t.id), borderColor: css("--surface"), borderWidth: 1.5 }
+          : { color: css("--surface"), borderColor: tierColor(t.id), borderWidth: pick ? 2.5 : 1.8 },
+      };
+      if (pick || ends.has(m.name)) {
+        d.label = { show: true, formatter: m.name, position: "right", distance: 4, fontSize: 11,
+          color: css(pick ? "--ink" : "--ink-2"), fontWeight: pick ? 600 : 400, ...halo() };
+      }
+      return d;
+    }),
+    emphasis: {
+      focus: "self",
+      scale: 1.4,
+      label: { show: true, formatter: (p) => p.data.m.name, position: "top", color: css("--ink"), fontSize: 11, fontWeight: 600, ...halo() },
+    },
+    blur: { itemStyle: { opacity: 0.18 }, label: { show: false } },
   }));
-  chart("c-ek2").setOption({
-    grid: { ...grid, right: 56 }, tooltip: tooltip(),
-    xAxis: baseAxis({ type: "log", logBase: 2, min: 2, max: 32, name: "每 token 选中的路由专家数 k", nameLocation: "middle", nameGap: 26 }),
-    yAxis: baseAxis({ type: "log", logBase: 2, min: 16, max: 1024, name: "E", nameGap: 8 }),
-    series: refLines.concat(scatterSeries(rows, (m) => m.k, (m) => m.E)),
-  }, true);
+}
 
-  chart("c-gran").setOption({
-    grid, tooltip: tooltip(),
-    xAxis: sizeAxis("总参数"),
-    yAxis: baseAxis({ type: "value", min: 0 }),
-    series: scatterSeries(rows, (m) => m.total, (m) => m.granularity),
-  }, true);
+// Hovering a config in one chart lights it up in all of them; clicking adds it to the comparison.
+const chartIndex = new WeakMap(); // chart -> Map(model name -> [seriesIndex, dataIndex])
+let linked = null;
+function linkHover(name) {
+  if (linked === name) return;
+  linked = name;
+  for (const c of charts) {
+    c.dispatchAction({ type: "downplay" });
+    const at = name && chartIndex.get(c)?.get(name);
+    if (at) c.dispatchAction({ type: "highlight", seriesIndex: at[0], dataIndex: at[1] });
+  }
+}
+function scatterChart(id) {
+  const fresh = !echarts.getInstanceByDom(document.getElementById(id));
+  const c = chart(id);
+  if (fresh) {
+    c.on("mouseover", { seriesType: "scatter" }, (p) => linkHover(p.data.m.name));
+    c.on("mouseout", { seriesType: "scatter" }, () => linkHover(null));
+    c.on("globalout", () => linkHover(null));
+    c.on("click", { seriesType: "scatter" }, (p) => togglePick(p.data.m.name));
+  }
+  return c;
+}
+function plot(id, build) {
+  const c = scatterChart(id);
+  const opt = build(c);
+  c.setOption(opt, true);
+  const map = new Map();
+  opt.series.forEach((s, si) => (s.data || []).forEach((d, di) => { if (d && d.m) map.set(d.m.name, [si, di]); }));
+  chartIndex.set(c, map);
+  linked = null;
+}
+function chartTake(id, html) {
+  const cap = document.getElementById(id).closest("figure").querySelector("figcaption");
+  let t = cap.querySelector(".take");
+  if (!t) { t = document.createElement("span"); t.className = "take"; cap.append(t); }
+  t.innerHTML = html;
+}
 
-  chart("c-aspect").setOption({
-    grid, tooltip: tooltip(),
-    xAxis: baseAxis({ type: "log", name: "激活参数", nameLocation: "middle", nameGap: 26, min: 1, max: 128,
-      axisLabel: { color: css("--muted"), fontSize: 11, formatter: (v) => fmtParams(v) } }),
-    yAxis: baseAxis({ type: "value", min: 0 }),
-    series: scatterSeries(rows, (m) => m.active, (m) => m.aspect),
-  }, true);
+// Trend lines. Against size: least squares of y (or log2 y) on log10 x, a straight line on these log axes.
+function logFit(rows, xf, yf, ylog) {
+  const pts = rows.map((m) => [xf(m), yf(m)]).filter(([x, y]) => x > 0 && y != null && (!ylog || y > 0));
+  if (pts.length < 8) return null;
+  const X = pts.map(([x]) => Math.log10(x)), Y = pts.map(([, y]) => (ylog ? Math.log2(y) : y));
+  const n = X.length, mx = X.reduce((a, b) => a + b) / n, my = Y.reduce((a, b) => a + b) / n;
+  let sxx = 0, sxy = 0, syy = 0;
+  for (let i = 0; i < n; i++) { sxx += (X[i] - mx) ** 2; sxy += (X[i] - mx) * (Y[i] - my); syy += (Y[i] - my) ** 2; }
+  if (!sxx || !syy) return null;
+  const b = sxy / sxx, a = my - b * mx;
+  const at = (lx) => (ylog ? 2 ** (a + b * lx) : a + b * lx);
+  const lo = Math.min(...X), hi = Math.max(...X);
+  return { b, r2: (sxy * sxy) / (sxx * syy), n, line: [[10 ** lo, at(lo)], [10 ** hi, at(hi)]] };
+}
+// Against time: a moving average over the seven months around each month (geometric on log axes). Medians
+// jump between the clusters these charts have (100% or 25% global layers, 1x or 2x width), averages don't.
+function movingMean(rows, yf, ylog) {
+  const pts = rows.map((m) => [mon(m.released), yf(m)]).filter(([, y]) => y != null && (!ylog || y > 0));
+  if (pts.length < 8) return [];
+  const lo = Math.min(...pts.map(([t]) => t)), hi = Math.max(...pts.map(([t]) => t));
+  const out = [];
+  for (let t = lo; t <= hi; t++) {
+    const ys = pts.filter(([u]) => Math.abs(u - t) <= 3).map(([, y]) => (ylog ? Math.log2(y) : y));
+    if (ys.length < 6) continue;
+    const mean = ys.reduce((a, b) => a + b) / ys.length;
+    out.push([Date.UTC(Math.floor(t / 12), t % 12, 1), ylog ? 2 ** mean : mean]);
+  }
+  return out;
+}
+const trendLine = (data) => ({
+  type: "line", silent: true, symbol: "none", z: 2, data, smooth: 0.3,
+  lineStyle: { color: css("--ink-2"), width: 1.5, type: [6, 4], opacity: 0.8 },
+});
+const spaced = (s) => (/[A-Za-z0-9)]$/.test(s) ? `${s} ` : s); // a space between Latin and Chinese
+// below this the size explains too little of the spread to draw or quote a line
+const WEAK_FIT = 0.1;
+const fitText = (fit, what, { ylog, unit = "", xname = "总参数" } = {}) => {
+  if (!fit) return "";
+  const stats = `<span class="muted">（对数回归，${fit.n} 个配置，R² = ${fit.r2.toFixed(2)}）</span>`;
+  if (fit.r2 < WEAK_FIT) return `${spaced(what)}和${xname}基本无关${stats}`;
+  return `${xname}每大 10 倍，${spaced(what)}平均${ylog ? `变成 <b>${num(2 ** fit.b, 2)}</b> 倍` : `${fit.b < 0 ? "低" : "高"} <b>${num(Math.abs(fit.b))}</b>${unit}`}${stats}`;
+};
+const fitLine = (fit) => (fit && fit.r2 >= WEAK_FIT ? [trendLine(fit.line)] : []);
+function yearText(rows, yf, what, fmt) {
+  const ys = [...new Set(rows.map((m) => m.year))].sort()
+    .map((y) => [y, median(rows.filter((m) => m.year === y).map(yf))]).filter(([, v]) => v != null);
+  return ys.length ? `${what}的中位数：${ys.map(([y, v]) => `${y} 年 <b>${fmt(v)}</b>`).join("，")}` : "";
+}
 
-  chart("c-global").setOption({
-    grid, tooltip: tooltip(),
-    xAxis: timeAxis(),
-    yAxis: baseAxis({ type: "value", min: 0, max: 100, axisLabel: { color: css("--muted"), fontSize: 11, formatter: "{value}%" } }),
-    series: scatterSeries(rows, releaseTime, (m) => m.global_attn_frac),
-  }, true);
+function renderCharts(rows) {
+  plot("c-param", (c) => {
+    const fit = logFit(rows, (m) => m.total, (m) => m.param_activation);
+    chartTake("c-param", fitText(fit, "激活比", { unit: " 个百分点" }));
+    return {
+      grid, tooltip: tooltip(),
+      xAxis: sizeAxis("总参数"),
+      yAxis: baseAxis({ type: "value", min: 0, axisLabel: { color: css("--muted"), fontSize: 11, formatter: "{value}%" } }),
+      series: fitLine(fit).concat(scatterSeries(rows, (m) => m.total, (m) => m.param_activation, c)),
+    };
+  });
 
-  chart("c-attn").setOption({
-    grid, tooltip: tooltip(),
-    xAxis: timeAxis(),
-    yAxis: baseAxis({ type: "log", logBase: 2, min: 0.5, max: 16, axisLabel: { color: css("--muted"), fontSize: 11, formatter: (v) => `${v}×` } }),
-    series: scatterSeries(rows, releaseTime, (m) => m.attn_ratio),
-  }, true);
+  plot("c-ek", (c) => {
+    const fit = logFit(rows, (m) => m.total, (m) => m.E_over_k, true);
+    chartTake("c-ek", fitText(fit, "E/k", { ylog: true }));
+    return {
+      grid, tooltip: tooltip(),
+      xAxis: sizeAxis("总参数"),
+      yAxis: baseAxis({ type: "log", logBase: 2, min: 4, max: 128 }),
+      series: fitLine(fit).concat(scatterSeries(rows, (m) => m.total, (m) => m.E_over_k, c)),
+    };
+  });
+
+  plot("c-ek2", (c) => {
+    const ratios = [8, 16, 32, 64];
+    const refLines = ratios.map((r) => ({
+      type: "line", silent: true, symbol: "none", z: 1,
+      lineStyle: { color: css("--axis"), width: 1, type: "dashed" },
+      data: [[2, 2 * r], [Math.min(32, 1024 / r), Math.min(32, 1024 / r) * r]],
+      endLabel: { show: true, formatter: `E/k=${r}`, color: css("--muted"), fontSize: 10 },
+    }));
+    const count = (f) => { const n = new Map(); for (const m of rows) if (f(m) != null) n.set(f(m), (n.get(f(m)) || 0) + 1); return [...n].sort((a, b) => b[1] - a[1])[0]; };
+    const [k, nk] = count((m) => m.k) || [], [e, ne] = count((m) => m.E) || [];
+    chartTake("c-ek2", k ? `最常见的是 k = <b>${k}</b>（${nk} 个配置）和 E = <b>${e}</b>（${ne} 个）` : "");
+    return {
+      grid: { ...grid, right: 56 }, tooltip: tooltip(),
+      xAxis: baseAxis({ type: "log", logBase: 2, min: 2, max: 32, name: "每 token 选中的路由专家数 k", nameLocation: "middle", nameGap: 26 }),
+      yAxis: baseAxis({ type: "log", logBase: 2, min: 16, max: 1024, name: "E", nameGap: 8 }),
+      series: refLines.concat(scatterSeries(rows, (m) => m.k, (m) => m.E, c)),
+    };
+  });
+
+  plot("c-gran", (c) => {
+    const fit = logFit(rows, (m) => m.total, (m) => m.granularity);
+    chartTake("c-gran", fitText(fit, "G"));
+    return {
+      grid, tooltip: tooltip(),
+      xAxis: sizeAxis("总参数"),
+      yAxis: baseAxis({ type: "value", min: 0 }),
+      series: fitLine(fit).concat(scatterSeries(rows, (m) => m.total, (m) => m.granularity, c)),
+    };
+  });
+
+  plot("c-aspect", (c) => {
+    const fit = logFit(rows, (m) => m.active, (m) => m.aspect);
+    chartTake("c-aspect", fitText(fit, "d/L", { xname: "激活参数" }));
+    return {
+      grid, tooltip: tooltip(),
+      xAxis: baseAxis({ type: "log", name: "激活参数", nameLocation: "middle", nameGap: 26, min: 1, max: 128,
+        axisLabel: { color: css("--muted"), fontSize: 11, formatter: (v) => fmtParams(v) } }),
+      yAxis: baseAxis({ type: "value", min: 0 }),
+      series: fitLine(fit).concat(scatterSeries(rows, (m) => m.active, (m) => m.aspect, c)),
+    };
+  });
+
+  plot("c-global", (c) => {
+    const med = movingMean(rows, (m) => m.global_attn_frac);
+    chartTake("c-global", yearText(rows, (m) => m.global_attn_frac, "全局层占比", (v) => `${num(v)}%`));
+    return {
+      grid, tooltip: tooltip(),
+      xAxis: timeAxis(),
+      yAxis: baseAxis({ type: "value", min: 0, max: 100, axisLabel: { color: css("--muted"), fontSize: 11, formatter: "{value}%" } }),
+      series: (med.length > 1 ? [trendLine(med)] : []).concat(scatterSeries(rows, releaseTime, (m) => m.global_attn_frac, c)),
+    };
+  });
+
+  plot("c-attn", (c) => {
+    const med = movingMean(rows, (m) => m.attn_ratio, true);
+    chartTake("c-attn", yearText(rows, (m) => m.attn_ratio, "宽度比", (v) => `${num(v, 2)}×`));
+    return {
+      grid, tooltip: tooltip(),
+      xAxis: timeAxis(),
+      yAxis: baseAxis({ type: "log", logBase: 2, min: 0.5, max: 16, axisLabel: { color: css("--muted"), fontSize: 11, formatter: (v) => `${v}×` } }),
+      series: (med.length > 1 ? [trendLine(med)] : []).concat(scatterSeries(rows, releaseTime, (m) => m.attn_ratio, c)),
+    };
+  });
 
   // Attention width (query heads x per-head QK dims) against d_model; dashed lines are equal ratios.
-  const widthRefs = [1, 2, 4, 8].map((r) => ({
-    type: "line", silent: true, symbol: "none", z: 1,
-    lineStyle: { color: css("--axis"), width: 1, type: "dashed" },
-    data: [[1024, 1024 * r], [16384, 16384 * r]],
-    endLabel: { show: true, formatter: `${r}×`, color: css("--muted"), fontSize: 10 },
-  }));
-  const kFmt = (v) => (v >= 1024 ? `${v / 1024}K` : v);
-  chart("c-heads").setOption({
-    grid: { ...grid, right: 40 }, tooltip: tooltip(),
-    xAxis: baseAxis({ type: "log", logBase: 2, min: 1024, max: 16384, name: "d_model", nameLocation: "middle", nameGap: 26,
-      axisLabel: { color: css("--muted"), fontSize: 11, formatter: kFmt } }),
-    yAxis: baseAxis({ type: "log", logBase: 2, min: 1024, max: 131072, axisLabel: { color: css("--muted"), fontSize: 11, formatter: kFmt } }),
-    series: widthRefs.concat(scatterSeries(rows, (m) => m.d_model, (m) => (m.heads && m.qk_dim ? m.heads * m.qk_dim : null))),
-  }, true);
+  plot("c-heads", (c) => {
+    const widthRefs = [1, 2, 4, 8].map((r) => ({
+      type: "line", silent: true, symbol: "none", z: 1,
+      lineStyle: { color: css("--axis"), width: 1, type: "dashed" },
+      data: [[1024, 1024 * r], [16384, 16384 * r]],
+      endLabel: { show: true, formatter: `${r}×`, color: css("--muted"), fontSize: 10 },
+    }));
+    const kFmt = (v) => (v >= 1024 ? `${v / 1024}K` : v);
+    const rs = rows.filter((m) => m.attn_ratio != null);
+    chartTake("c-heads", rs.length ? `头数 × 头维超过 d_model 的（宽度比 > 1×）：<b>${rs.filter((m) => m.attn_ratio > 1.001).length}</b> / ${rs.length}` : "");
+    return {
+      grid: { ...grid, right: 40 }, tooltip: tooltip(),
+      xAxis: baseAxis({ type: "log", logBase: 2, min: 1024, max: 16384, name: "d_model", nameLocation: "middle", nameGap: 26,
+        axisLabel: { color: css("--muted"), fontSize: 11, formatter: kFmt } }),
+      yAxis: baseAxis({ type: "log", logBase: 2, min: 1024, max: 131072, axisLabel: { color: css("--muted"), fontSize: 11, formatter: kFmt } }),
+      series: widthRefs.concat(scatterSeries(rows, (m) => m.d_model, (m) => (m.heads && m.qk_dim ? m.heads * m.qk_dim : null), c)),
+    };
+  });
 
-  chart("c-kv").setOption({
-    grid, tooltip: tooltip(),
-    xAxis: sizeAxis("总参数"),
-    yAxis: baseAxis({ type: "log", logBase: 2, min: 4, max: 512, axisLabel: { color: css("--muted"), fontSize: 11, formatter: "{value} KiB" } }),
-    series: scatterSeries(rows, (m) => m.total, (m) => m.kv_kib_per_token),
-  }, true);
+  plot("c-kv", (c) => {
+    const fit = logFit(rows, (m) => m.total, (m) => m.kv_kib_per_token, true);
+    chartTake("c-kv", fitText(fit, "每 token 的 KV", { ylog: true }));
+    return {
+      grid, tooltip: tooltip(),
+      xAxis: sizeAxis("总参数"),
+      yAxis: baseAxis({ type: "log", logBase: 2, min: 4, max: 512, axisLabel: { color: css("--muted"), fontSize: 11, formatter: "{value} KiB" } }),
+      series: fitLine(fit).concat(scatterSeries(rows, (m) => m.total, (m) => m.kv_kib_per_token, c)),
+    };
+  });
 
-  chart("c-ctx").setOption({
-    grid, tooltip: tooltip(),
-    xAxis: timeAxis(),
-    yAxis: baseAxis({ type: "log", logBase: 4, min: 4096, max: 16 * (1 << 20), axisLabel: { color: css("--muted"), fontSize: 11, formatter: fmtCtx } }),
-    series: scatterSeries(rows, releaseTime, (m) => m.context),
-  }, true);
+  plot("c-ctx", (c) => {
+    const med = movingMean(rows, (m) => m.context, true);
+    chartTake("c-ctx", yearText(rows, (m) => m.context, "最大上下文", fmtCtx));
+    return {
+      grid, tooltip: tooltip(),
+      xAxis: timeAxis(),
+      yAxis: baseAxis({ type: "log", logBase: 4, min: 4096, max: 16 * (1 << 20), axisLabel: { color: css("--muted"), fontSize: 11, formatter: fmtCtx } }),
+      series: (med.length > 1 ? [trendLine(med)] : []).concat(scatterSeries(rows, releaseTime, (m) => m.context, c)),
+    };
+  });
 
   const legend = TIERS.map((t) => `<span><i style="background:${tierColor(t.id)}"></i>${t.label}</span>`).join("") +
-    `<span><i style="background:${css("--ink-2")}"></i>实心 2026 年首发</span><span><i class="hollow"></i>空心 2025 年首发</span>`;
+    `<span><i style="background:${css("--ink-2")}"></i>实心 2026 年首发</span><span><i class="hollow"></i>空心 2025 年首发</span>` +
+    `<span><i class="trend"></i>虚线：趋势（对规模取对数做回归；横轴是时间的，取前后 3 个月的滑动平均）</span>` +
+    `<span><i class="big"></i>大点、粗体名字：并排对比里的型号；悬停一个点，其他图里同一个配置也亮起来，点击加入或移出对比</span>`;
   document.querySelectorAll("#legend, .legend-copy").forEach((el) => { el.innerHTML = legend; });
 }
 
-function renderMultiples(rows) {
-  const box = $("#multiples");
-  for (const c of multCharts.splice(0)) c.dispose();
-  const vendors = [...new Set(rows.map((m) => m.vendor))].sort();
-  box.innerHTML = vendors.map((v, i) => `<div class="mult"><h4>${esc(v)}</h4><div class="m" id="mult-${i}"></div></div>`).join("");
-  const minT = Date.UTC(2025, 0, 1);
-  const maxT = Math.max(...DATA.map((m) => Date.parse(m.released + "-01"))) + 40 * 864e5;
-  vendors.forEach((v, i) => {
-    const ms = rows.filter((m) => m.vendor === v && m.E_over_k).sort((a, b) => a.released.localeCompare(b.released));
-    const c = chart(`mult-${i}`, multCharts);
-    c.setOption({
-      grid: { left: 30, right: 10, top: 10, bottom: 22 },
-      tooltip: tooltip(),
-      xAxis: baseAxis({ type: "time", min: minT, max: maxT, splitNumber: 3,
-        axisLabel: { color: css("--muted"), fontSize: 10, formatter: (t) => { const d = new Date(t); return `${String(d.getUTCFullYear()).slice(2)}.${d.getUTCMonth() + 1}`; } } }),
-      yAxis: baseAxis({ type: "log", logBase: 2, min: 4, max: 128, axisLabel: { color: css("--muted"), fontSize: 10 } }),
-      // One line per size tier, as a stand-in for a product line.
-      series: TIERS.map((t) => ({
-        type: "line", symbolSize: 7, symbol: "circle",
-        lineStyle: { color: tierColor(t.id), width: 1.5, opacity: 0.6 },
-        itemStyle: { color: tierColor(t.id), borderColor: css("--surface"), borderWidth: 1 },
-        data: ms.filter((m) => m.tier === t.id).map((m) => ({ value: [Date.parse(m.released + "-01"), m.E_over_k], m })),
-      })),
-    }, true);
+// One lane per lab, one dot per config at its release month: size is total parameters (log), colour is the
+// attention family, using the layer-strip colours and the same precedence (any linear layer, then sparse, then
+// sliding window, else all global).
+const FAMILIES = [["linear", "混线性层"], ["sparse", "稀疏注意力"], ["local", "混滑窗"], ["global", "纯全局注意力"]];
+const FAMILY_LABEL = Object.fromEntries(FAMILIES);
+function attnFamily(m) {
+  const cats = new Set([...(m.layout || "")].map(layerCat));
+  return FAMILIES.map(([id]) => id).find((c) => cats.has(c)) || null;
+}
+let vl = null;
+function renderVendors(rows) {
+  const box = $("#vendors");
+  const labs = [...new Set(rows.map((m) => m.vendor))].map((v) => {
+    const ms = rows.filter((m) => m.vendor === v).sort((a, b) => a.released.localeCompare(b.released) || b.total - a.total);
+    return { v, ms };
+  }).sort((a, b) => a.ms[0].released.localeCompare(b.ms[0].released) || b.ms.length - a.ms.length || a.v.localeCompare(b.v));
+  if (!labs.length) { vl = null; box.innerHTML = `<p class="muted">当前筛选下没有配置。</p>`; $("#vendor-take").innerHTML = ""; return; }
+  const narrow = box.clientWidth < 560;
+  const W = box.clientWidth, nameW = narrow ? 76 : 128, padR = 12, LH = 22, top = 20;
+  const t0 = mon(DATA.reduce((a, m) => (m.released < a ? m.released : a), "9999")) - 0.5;
+  const t1 = mon(DATA.reduce((a, m) => (m.released > a ? m.released : a), "0")) + 1.5;
+  const x = (t) => nameW + 8 + (W - padR - nameW - 8) * (t - t0) / (t1 - t0);
+  const sizes = DATA.map((m) => Math.log10(m.total));
+  const lo = Math.min(...sizes), hi = Math.max(...sizes);
+  const rad = (total) => 3.5 + 6.5 * (Math.log10(total) - lo) / (hi - lo);
+  const H = top + labs.length * LH + 4;
+  let svg = "";
+  for (let t = Math.ceil(t0); t < t1; t++) {
+    if (t % 3) continue;
+    const major = !(t % 12), px = x(t);
+    svg += `<line class="vl-g${major ? " major" : ""}" x1="${px}" x2="${px}" y1="${top - 4}" y2="${H}"/>`;
+    if (!narrow || !(t % 6)) svg += `<text class="vl-t" x="${px + 3}" y="12">${Math.floor(t / 12)}.${t % 12 + 1}</text>`;
+  }
+  const dots = [];
+  labs.forEach((lab, i) => {
+    const cy = top + i * LH + LH / 2;
+    svg += `<line class="vl-lane" x1="0" x2="${W}" y1="${top + (i + 1) * LH}" y2="${top + (i + 1) * LH}"/>`;
+    svg += `<text class="vl-name" x="${nameW}" y="${cy + 4}" text-anchor="end"><title>${esc(lab.v)}</title>${esc(clip(lab.v, nameW - 16, narrow ? 11 : 12))}<tspan class="vl-n" dx="4">${lab.ms.length}</tspan></text>`;
+    const xs = [...new Set(lab.ms.map((m) => x(mon(m.released) + 0.5)))].sort((a, b) => a - b);
+    if (xs.length > 1) svg += `<line class="vl-line" x1="${xs[0]}" x2="${xs[xs.length - 1]}" y1="${cy}" y2="${cy}"/>`;
+    // bigger first, so a smaller config out the same month sits inside the bigger one
+    for (const m of lab.ms.slice().sort((a, b) => b.total - a.total)) {
+      const d = { m, cx: x(mon(m.released) + 0.5), cy, r: rad(m.total), lane: i };
+      dots.push(d);
+      const fam = attnFamily(m);
+      svg += `<circle class="vl-dot ${fam ? `k-${fam}` : "unk"}${picked(m) ? " pick" : ""}" cx="${d.cx}" cy="${cy}" r="${d.r}" data-name="${esc(m.name)}"/>`;
+    }
+  });
+  vl = { dots, top, LH };
+  const legendSize = [10, 100, 1000].map((b) => `<svg width="${2 * rad(b) + 2}" height="22" aria-hidden="true"><circle class="vl-dot sz" cx="${rad(b) + 1}" cy="11" r="${rad(b)}"/></svg>${fmtParams(b)}`).join(" ");
+  $("#vendor-legend").innerHTML = FAMILIES.map(([id, label]) => `<span><i class="vk k-${id}"></i>${label}</span>`).join("") +
+    `<span class="vl-sizes">总参数 ${legendSize}</span><span><i class="vk pick"></i>带圈的：并排对比里的型号</span>`;
+  box.innerHTML = `<svg class="vl-svg" width="${W}" height="${H}" role="img" aria-label="各厂家每个配置的首发时间、总参数和注意力类型">${svg}</svg>`;
+  // takeaway: labs whose latest config uses a different attention family than their first one
+  const fam1 = (ms) => attnFamily(ms.slice().sort((a, b) => b.total - a.total)[0]);
+  const moved = labs.map((lab) => {
+    const first = lab.ms.filter((m) => m.released === lab.ms[0].released);
+    const last = lab.ms.filter((m) => m.released === lab.ms[lab.ms.length - 1].released);
+    return { v: lab.v, n: lab.ms.length, a: fam1(first), b: fam1(last) };
+  }).filter((l) => l.n > 1 && l.a && l.b && l.a !== l.b);
+  const years = [...new Set(labs.map((l) => l.ms[0].released.slice(0, 4)))].sort();
+  const joined = years.map((y) => `${y} 年 <b>${labs.filter((l) => l.ms[0].released.startsWith(y)).length}</b> 家`).join("，");
+  const moves = new Map(); // "a>b" -> labs
+  for (const l of moved) moves.set(`${l.a}>${l.b}`, (moves.get(`${l.a}>${l.b}`) || []).concat(l.v));
+  const moveText = [...moves.entries()].sort((p, q) => q[1].length - p[1].length).map(([k, vs]) => {
+    const [a, b] = k.split(">").map((id) => FAMILY_LABEL[id]);
+    return vs.length > 2 ? `<b>${vs.length}</b> 家从${a}换成${b}（${vs.map(esc).join("、")}）` : `${vs.map(esc).join("、")} 从${a}换成${b}`;
+  });
+  $("#vendor-take").innerHTML = `第一次出现在这里的厂家：${joined}。` +
+    (moved.length ? `有不止一个配置的厂家里，最新一个和第一个的注意力类型不同的有 <b>${moved.length}</b> 家：${moveText.join("；")}。` : "");
+}
+
+function clip(t, w, size) {
+  if (textWidth(t, size) <= w) return t;
+  while (t.length > 1 && textWidth(`${t}…`, size) > w) t = t.slice(0, -1);
+  return `${t}…`;
+}
+function syncVendorPicks() {
+  document.querySelectorAll("#vendors .vl-dot").forEach((c) => c.classList.toggle("pick", state.compare.includes(c.dataset.name)));
+}
+
+function initVendors() {
+  const box = $("#vendors");
+  const at = (e) => {
+    const svg = box.querySelector("svg");
+    if (!svg || !vl) return null;
+    const r = svg.getBoundingClientRect();
+    const px = e.clientX - r.left, py = e.clientY - r.top;
+    const lane = Math.floor((py - vl.top) / vl.LH);
+    const near = vl.dots.filter((d) => d.lane === lane).map((d) => ({ d, dist: Math.hypot(d.cx - px, d.cy - py) - d.r }))
+      .filter((o) => o.dist <= 4).sort((p, q) => p.dist - q.dist || p.d.r - q.d.r)[0];
+    return near ? near.d : null;
+  };
+  box.addEventListener("pointermove", (e) => {
+    const d = at(e);
+    box.style.cursor = d ? "pointer" : "";
+    if (!d) return hideTip();
+    const fam = attnFamily(d.m);
+    showTip(tooltip().formatter({ data: { m: d.m } }) + `<br><span class="muted">注意力类型：${fam ? FAMILY_LABEL[fam] : "未知"} · 点击加入或移出并排对比</span>`, e);
+  });
+  box.addEventListener("pointerleave", hideTip);
+  box.addEventListener("click", (e) => { const d = at(e); if (d) togglePick(d.m.name); });
+}
+
+/* ---------- layer strips: one row per config, one cell per token-mixer layer ---------- */
+
+// Cell height says how the layer's cache grows with context: global and sparse layers keep every
+// token, windowed layers keep a window, linear layers keep a fixed-size state.
+const LAYER_CATS = [
+  { id: "global", label: "全局注意力", h: 1 },
+  { id: "sparse", label: "稀疏注意力", h: 1 },
+  { id: "local", label: "滑窗 / 分块", h: 0.55 },
+  { id: "linear", label: "线性注意力 / Mamba / 短卷积", h: 0.3 },
+];
+const LAYER_H = Object.fromEntries(LAYER_CATS.map((c) => [c.id, c.h]));
+// the characters of models.json "layout", see LAYOUT_CODE in scripts/hfconfig.py
+const LAYER_KIND = {
+  A: ["global", "全注意力"], X: ["global", "MLA"], D: ["sparse", "DSA"], S: ["sparse", "稀疏注意力"],
+  C: ["sparse", "CSA（压缩后再稀疏）"], H: ["sparse", "HCA（重度压缩）"], W: ["local", "滑窗注意力"], U: ["local", "分块注意力"],
+  G: ["linear", "Gated DeltaNet"], K: ["linear", "KDA"], N: ["linear", "Lightning Attention"], B: ["linear", "Mamba-2"],
+  V: ["linear", "门控短卷积"], L: ["linear", "线性注意力"],
+};
+const layerCat = (code) => (LAYER_KIND[code] || ["global"])[0];
+function layerName(m, code) {
+  const name = (LAYER_KIND[code] || [null, "?"])[1];
+  if (code === "D") return `${m.mla ? "MLA + " : ""}${/LSA/.test(m.sparse_attn ?? "") ? "LSA" : "DSA"}（索引器给每个 query 选 top-k）`;
+  if (code === "S") return typeof m.sparse_attn === "string" ? `${m.sparse_attn}（稀疏注意力）` : name;
+  if (code === "W") return `${name}${m.window ? `，窗口 ${m.window}` : ""}`;
+  if (code === "U") return `${name}${m.window ? `，块大小 ${m.window}` : ""}`;
+  if (code === "C" || code === "H") return `${name}${m.window ? `，另带窗口 ${m.window} 的滑窗` : ""}`;
+  return name;
+}
+const LAY_SORTS = [["vendor", "按厂家"], ["released", "按时间"], ["global", "按全局层占比"]];
+let layGeom = { cw: 8, gap: 1, H: 13 };
+
+function layerOrder(rows) {
+  if (state.laySort === "released") return rows.slice().sort((a, b) => b.released.localeCompare(a.released) || a.name.localeCompare(b.name));
+  if (state.laySort === "global") {
+    return rows.slice().sort((a, b) => (a.global_attn_frac ?? 101) - (b.global_attn_frac ?? 101) || b.released.localeCompare(a.released));
+  }
+  const count = {};
+  for (const m of rows) count[m.vendor] = (count[m.vendor] || 0) + 1;
+  return rows.slice().sort((a, b) => count[b.vendor] - count[a.vendor] || a.vendor.localeCompare(b.vendor) ||
+    a.released.localeCompare(b.released) || a.total - b.total);
+}
+
+function renderLayers(rows) {
+  groupChips($("#lay-sort"), state.laySort, LAY_SORTS.map(([id, label]) => ({ id, label })),
+    (id) => { state.laySort = id; renderLayers(filtered()); });
+  $("#lay-legend").innerHTML = LAYER_CATS.map((c) => `<span><i class="lk k-${c.id}"></i>${c.label}</span>`).join("") +
+    `<span><i class="lk csa"></i><i class="lk hca"></i>压缩注意力（CSA / HCA）</span><span><i class="lk dense"></i>格子下的短线：dense FFN 层</span><span><i class="lk mtp"></i>MTP 层</span>`;
+  const ms = layerOrder(rows.filter((m) => m.layout));
+  const box = $("#lay");
+  const hybrid = (m) => [...m.layout].some((c) => ["local", "linear"].includes(layerCat(c)));
+  const byYear = [...new Set(ms.map((m) => m.year))].sort().map((y) => {
+    const ys = ms.filter((m) => m.year === y);
+    return `${y} 年首发的 <b>${ys.filter(hybrid).length}/${ys.length}</b>`;
+  });
+  $("#lay-take").innerHTML = ms.length ? `混入了线性或滑窗层的配置：${byYear.join("，")}。` : "";
+  const missing = rows.length - ms.length;
+  $("#lay-note").textContent = missing ? `另有 ${missing} 个配置的 config 未公开，看不出逐层结构。` : "";
+  if (!ms.length) { box.innerHTML = `<p class="muted">当前筛选下没有配置。</p>`; return; }
+
+  const narrow = box.clientWidth < 560;
+  const label = narrow ? 104 + 6 : 76 + 164 + 16;
+  const maxL = Math.max(...ms.map((m) => m.layout.length));
+  const maxMtp = Math.max(0, ...ms.map((m) => m.mtp || 0));
+  const avail = box.clientWidth - 22 - label - 26; // padding, labels, layer count
+  const fit = avail / (maxL + (maxMtp ? maxMtp + 1 : 0));
+  const cw = fit >= 5 ? Math.min(10, Math.floor(fit)) : Math.max(1.2, Math.floor(fit * 10) / 10); // phones get sub-pixel cells
+  const gap = cw >= 5 ? 1 : 0;
+  const H = 13;
+  layGeom = { cw, gap, H };
+  let prev = null;
+  box.innerHTML = ms.map((m) => {
+    const n = m.layout.length;
+    let svg = "";
+    for (let i = 0; i < n; i++) {
+      const code = m.layout[i], cat = layerCat(code), h = Math.round(H * LAYER_H[cat]);
+      svg += `<rect class="k-${cat}${code === "C" ? " csa" : code === "H" ? " hca" : ""}" x="${i * cw}" y="${H - h}" width="${cw - gap}" height="${h}"/>`;
+    }
+    for (const i of m.dense_layers || []) if (i < n) svg += `<rect class="dense" x="${i * cw}" y="${H + 1.5}" width="${cw - gap}" height="2"/>`;
+    const x0 = (n + 1) * cw;
+    for (let j = 0; j < (m.mtp || 0); j++) {
+      svg += `<rect class="mtp" x="${x0 + j * cw + 0.5}" y="${H - 8.5}" width="${Math.max(1, cw - gap - 1)}" height="8"/>`;
+    }
+    const end = (m.mtp ? x0 + m.mtp * cw : n * cw) + 4;
+    svg += `<text x="${end}" y="${H - 1}">${n}</text>`;
+    const grouped = state.laySort === "vendor";
+    const grp = grouped && prev != null && prev !== m.vendor;
+    const showVendor = !grouped || prev !== m.vendor;
+    prev = m.vendor;
+    const on = state.compare.includes(m.name);
+    return `<div class="lay-row${grp ? " grp" : ""}${on ? " picked" : ""}" data-row="${esc(m.name)}">` +
+      `<span class="lv">${showVendor ? esc(m.vendor) : ""}</span>` +
+      `<button type="button" class="lay-name" data-name="${esc(m.name)}" title="${esc(m.vendor)} · ${m.released} · 点击加入或移出并排对比">${esc(m.name)}</button>` +
+      `<svg class="lay-strip" width="${end + 22}" height="${H + 4}" data-name="${esc(m.name)}" role="img" aria-label="${esc(m.name)}：${esc(m.attention ?? "")}">` +
+      `${svg}<rect class="cur" hidden/></svg></div>`;
+  }).join("");
+}
+
+function syncLayerPicks() {
+  document.querySelectorAll("#lay .lay-row").forEach((r) => r.classList.toggle("picked", state.compare.includes(r.dataset.row)));
+}
+
+// One tooltip element for the hand-drawn views (the ECharts ones bring their own).
+let vtip = null;
+function showTip(html, e) {
+  if (!vtip) { vtip = document.createElement("div"); vtip.className = "vtip"; document.body.append(vtip); }
+  vtip.innerHTML = html;
+  vtip.hidden = false;
+  const r = vtip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = e.clientX - 14 - r.width;
+  if (y + r.height > innerHeight - 8) y = e.clientY - 14 - r.height;
+  vtip.style.left = `${Math.max(8, x)}px`;
+  vtip.style.top = `${Math.max(8, y)}px`;
+}
+function hideTip() { if (vtip) vtip.hidden = true; }
+
+function layerTip(m, i) {
+  const n = m.layout.length;
+  const head = `<b>${esc(m.name)}</b> <span class="muted">${esc(m.vendor)} · ${m.released}</span><br>`;
+  const foot = `<br><span class="muted">全部 ${n} 层：${esc(m.attention ?? "–")} · 全局层 ${num(m.global_attn_frac)}%</span>`;
+  if (i >= n) return `${head}第 ${i - n} 个 MTP 层（多 token 预测，推理时可做投机解码）${foot}`;
+  const where = m.layers && n === 2 * m.layers ? `第 ${Math.floor(i / 2) + 1} 层的第 ${i % 2 + 1} 个注意力子层` : `第 ${i + 1} / ${n} 层`;
+  const ffn = m.dense_layers ? ` · FFN：${m.dense_layers.includes(i) ? "dense" : "MoE"}` : m.layers > n ? " · MoE 是独立的块，不在条上" : "";
+  return `${head}${where}：${esc(layerName(m, m.layout[i]))}${ffn}${foot}`;
+}
+
+function initLayers() {
+  const box = $("#lay");
+  const clear = (keep) => box.querySelectorAll(".lay-strip .cur:not([hidden])").forEach((c) => { if (c.parentNode !== keep) c.setAttribute("hidden", ""); });
+  box.addEventListener("pointermove", (e) => {
+    const svg = e.target.closest ? e.target.closest(".lay-strip") : null;
+    clear(svg);
+    const m = svg && DATA.find((d) => d.name === svg.dataset.name);
+    if (!m) return hideTip();
+    const { cw, gap, H } = layGeom;
+    const n = m.layout.length;
+    let i = Math.floor((e.clientX - svg.getBoundingClientRect().left) / cw);
+    const mtpAt = i - (n + 1);
+    const cur = svg.querySelector(".cur");
+    if (i >= n && !(m.mtp && mtpAt >= 0 && mtpAt < m.mtp)) { cur.setAttribute("hidden", ""); return hideTip(); }
+    const tipIndex = i >= n ? n + 1 + mtpAt : i;
+    cur.removeAttribute("hidden");
+    cur.setAttribute("x", i * cw - 1);
+    cur.setAttribute("y", -1);
+    cur.setAttribute("width", Math.max(2, cw - gap + 2));
+    cur.setAttribute("height", H + 2);
+    showTip(layerTip(m, i >= n ? n + mtpAt + 1 : tipIndex), e);
+  });
+  box.addEventListener("pointerleave", () => { hideTip(); clear(null); });
+  box.addEventListener("click", (e) => {
+    const t = e.target.closest ? e.target.closest("[data-name]") : null;
+    if (t) togglePick(t.dataset.name);
   });
 }
 
@@ -417,46 +804,65 @@ function groupChips(box, current, opts, onPick) {
   for (const g of opts) box.append(chip(g.label, current === g.id, () => onPick(g.id)));
 }
 
+// One row per feature, one column per quarter: the share of that quarter's new configs that use it.
+// Rows are sorted by how much the share grew from the first year to the last.
+let aqCells = [];
 function renderAdoption(rows) {
   groupChips($("#adopt-groups"), state.adoptGroup, [{ id: "all", label: "全部" }, ...FEATURE_GROUPS],
     (id) => { state.adoptGroup = id; renderAdoption(filtered()); });
   const box = $("#adoption");
-  for (const c of adoptCharts.splice(0)) c.dispose();
   const qs = quarters();
-  const feats = shownFeatures(state.adoptGroup);
-  box.innerHTML = feats.map((f, i) => {
-    const ks = rows.filter((m) => f.has(m) != null);
-    const n = ks.filter((m) => f.has(m)).length;
-    return `<div class="mult"><h4 title="${esc(f.title)}">${esc(f.label)} <span class="muted">${n}/${ks.length}</span></h4><div class="m" id="adopt-${i}"></div></div>`;
-  }).join("");
-  feats.forEach((f, i) => {
-    const data = qs.map((q) => {
+  const years = [...new Set(qs.map((q) => q.slice(0, 4)))];
+  const share = (ms, f) => { const ks = ms.filter((m) => f.has(m) != null); return ks.length ? ks.filter((m) => f.has(m)).length / ks.length : null; };
+  const lines = shownFeatures(state.adoptGroup).map((f) => {
+    const cells = qs.map((q) => {
       const ms = rows.filter((m) => quarter(m) === q && f.has(m) != null);
-      const yes = ms.filter((m) => f.has(m));
-      const no = ms.filter((m) => !f.has(m));
-      return { value: ms.length ? Math.round(100 * yes.length / ms.length) : null, q, yes, no, ms };
+      return { f, q, ms, yes: ms.filter((m) => f.has(m)), no: ms.filter((m) => !f.has(m)) };
     });
-    chart(`adopt-${i}`, adoptCharts).setOption({
-      grid: { left: 34, right: 6, top: 10, bottom: 22 },
-      tooltip: {
-        ...tipStyle(),
-        formatter: (p) => {
-          const d = p.data;
-          if (!d.ms.length) return `${d.q}：没有新配置`;
-          return `<b>${esc(f.label)}</b> · ${d.q}<br>${d.yes.length}/${d.ms.length}（${d.value}%）` +
-            (d.yes.length ? `<br>用了：${names(d.yes)}` : "") + (d.no.length ? `<br><span style="color:${css("--muted")}">没用：${names(d.no)}</span>` : "");
-        },
-      },
-      xAxis: baseAxis({ type: "category", data: qs, axisLabel: { color: css("--muted"), fontSize: 10, interval: 3, formatter: (q) => q.replace(" Q1", "") } }),
-      yAxis: baseAxis({ type: "value", min: 0, max: 100, interval: 50, axisLabel: { color: css("--muted"), fontSize: 10, formatter: "{value}%" } }),
-      series: [{
-        type: "bar", barCategoryGap: "18%",
-        itemStyle: { color: css("--accent"), borderRadius: [3, 3, 0, 0] },
-        // keep empty quarters hoverable so the tooltip can say there was nothing new
-        data: data.map((d) => ({ ...d, value: d.value ?? 0, itemStyle: d.value == null ? { color: "transparent" } : undefined })),
-      }],
-    }, true);
+    const ys = years.map((y) => share(rows.filter((m) => m.released.startsWith(y)), f));
+    const delta = ys.length > 1 && ys[0] != null && ys[ys.length - 1] != null ? ys[ys.length - 1] - ys[0] : null;
+    return { f, cells, ys, delta };
+  }).sort((a, b) => (b.delta ?? -2) - (a.delta ?? -2) || a.f.label.localeCompare(b.f.label));
+  aqCells = [];
+  const pctText = (x) => (x == null ? "–" : `${Math.round(100 * x)}%`);
+  const body = lines.map(({ f, cells, ys, delta }) => {
+    const tds = cells.map((c) => {
+      const k = aqCells.push(c) - 1;
+      if (!c.ms.length) return `<td class="e" data-k="${k}"></td>`;
+      const sh = c.yes.length / c.ms.length;
+      const b = sh ? Math.min(4, Math.floor(sh * 5 - 1e-9)) + 1 : 0;
+      return b ? `<td class="q${b}" data-k="${k}">${c.yes.length}<span>/${c.ms.length}</span></td>` : `<td class="z" data-k="${k}"></td>`;
+    }).join("");
+    const d = delta == null ? `<td class="d muted">–</td>`
+      : `<td class="d" title="${years[0]} 年 ${pctText(ys[0])} → ${years[years.length - 1]} 年 ${pctText(ys[ys.length - 1])}">` +
+        `<i class="${delta < 0 ? "dn" : "up"}" style="width:${Math.round(Math.abs(delta) * 44)}px"></i>${delta > 0 ? "+" : delta < 0 ? "−" : ""}${Math.abs(Math.round(100 * delta))}</td>`;
+    return `<tr><th class="f" title="${esc(f.title)}">${esc(f.label)}</th>${tds}${d}</tr>`;
+  }).join("");
+  const head = `<tr><th class="f"></th>${qs.map((q) => `<th>${q.slice(2, 4)}<br>${q.slice(5)}<small>${rows.filter((m) => quarter(m) === q).length}</small></th>`).join("")}<th class="d">${years.length > 1 ? `${years[0].slice(2)}→${years[years.length - 1].slice(2)}` : ""}</th></tr>`;
+  box.innerHTML = `<table class="aq">${head}${body}</table>`;
+  const ok = lines.filter((l) => l.delta != null);
+  const up = ok.filter((l) => l.delta > 0).slice(0, 3), down = ok.filter((l) => l.delta < 0).slice(-2).reverse();
+  const fmt = (l) => `${esc(l.f.label)}（${pctText(l.ys[0])} → ${pctText(l.ys[l.ys.length - 1])}）`;
+  $("#adopt-take").innerHTML = years.length > 1 && ok.length
+    ? `${years[0]} 到 ${years[years.length - 1]} 年涨得最多：${up.map(fmt).join("、") || "无"}${down.length ? `；跌得最多：${down.map(fmt).join("、")}` : ""}。`
+    : "";
+  $("#adopt-legend").innerHTML = `<span class="muted">当季用了的比例</span>` +
+    ["0–20%", "20–40%", "40–60%", "60–80%", "80–100%"].map((t, i) => `<span><i class="sw q${i + 1}"></i>${t}</span>`).join("") +
+    `<span><i class="sw off"></i>没有用的</span><span><i class="sw na"></i>当季没有新配置</span>` +
+    `<span>格子里是“用了的 / 当季新配置”，表头是当季新配置数；最后一列是 ${years[0] ?? ""} 年到 ${years[years.length - 1] ?? ""} 年的占比变化（百分点）</span>`;
+}
+
+function initAdoption() {
+  const box = $("#adoption");
+  box.addEventListener("pointermove", (e) => {
+    const td = e.target.closest ? e.target.closest("td[data-k]") : null;
+    const c = td && aqCells[+td.dataset.k];
+    if (!c) return hideTip();
+    if (!c.ms.length) return showTip(`<b>${esc(c.f.label)}</b> · ${c.q}<br>这一季没有新配置`, e);
+    showTip(`<b>${esc(c.f.label)}</b> · ${c.q}<br>${c.yes.length}/${c.ms.length}（${Math.round(100 * c.yes.length / c.ms.length)}%）` +
+      (c.yes.length ? `<br>用了：${names(c.yes)}` : "") + (c.no.length ? `<br><span class="muted">没用：${names(c.no)}</span>` : ""), e);
   });
+  box.addEventListener("pointerleave", hideTip);
 }
 
 /* ---------- fingerprint: one row per config, or aggregated by vendor / tier ---------- */
@@ -625,6 +1031,9 @@ function togglePick(name) {
   if (state.fpMode === "model") renderMatrix(filtered());
   renderCompare();
   syncDetailPicks();
+  syncLayerPicks();
+  syncVendorPicks();
+  renderCharts(filtered());
 }
 function saveHash() {
   const url = location.pathname + location.search + (state.compare.length ? `#cmp=${state.compare.map(encodeURIComponent).join(",")}` : "");
@@ -764,6 +1173,7 @@ function renderTechniques(rows) {
     (id) => { state.techCat = id; renderTechniques(filtered()); });
   const ts = TECHS.filter((t) => state.techCat === "all" || t.cat === state.techCat)
     .sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+  renderTimeline(rows, ts);
   const link = (url, text) => `<a href="${esc(url)}" target="_blank" rel="noopener">${text}</a>`;
   $("#tech tbody").innerHTML = ts.map((t) => {
     const a = adopters(t, rows);
@@ -776,12 +1186,157 @@ function renderTechniques(rows) {
       use = `<b>${a.list.length}</b>${a.of != null ? `<span class="muted"> / ${a.of}</span>` : ""}<div class="who" title="${esc(a.list.map((x) => x.m.name).join("、"))}">${shown}${more}</div>`;
     }
     const ev = (t.evidence || []).map((e) => `<div><span class="by">${esc(e.by)}</span>${esc(e.text)}${e.url ? ` ${link(e.url, "↗")}` : ""}</div>`).join("") || `<span class="muted">–</span>`;
-    return `<tr>
+    return `<tr id="tech-${TECHS.indexOf(t)}">
       <td class="l"><b>${esc(t.name)}</b><div class="muted cat">${esc(CAT_LABEL[t.cat])}${t.note ? ` · ${esc(t.note)}` : ""}</div></td>
       <td class="l src"><span class="date">${esc(t.date)}</span>${link(t.source.url, esc(t.source.title))}</td>
       <td class="l ev">${ev}</td>
       <td class="l use">${use}</td></tr>`;
   }).join("");
+}
+
+/* ---------- technique timeline: from the paper to the configs that use it ---------- */
+
+const mon = (s) => { const [y, m = 1] = String(s).split("-").map(Number); return y * 12 + m - 1; };
+const monText = (i) => `${Math.floor(i / 12)}-${String(i % 12 + 1).padStart(2, "0")}`;
+const lagText = (d) => (d > 0 ? `隔 ${d} 个月` : d === 0 ? "和论文同月" : `比论文早 ${-d} 个月`);
+let tl = null; // geometry and rows of the last render, for the hover layer
+
+function renderTimeline(rows, ts) {
+  const box = $("#tech-tl");
+  const all = ts.map((t) => ({ t, a: adopters(t, rows) }));
+  const shown = all.filter((x) => x.a && x.a.list.length);
+  const none = all.filter((x) => x.a && !x.a.list.length).sort((x, y) => y.t.date.localeCompare(x.t.date));
+  const blind = all.filter((x) => !x.a).length;
+  if (!shown.length) {
+    tl = null;
+    box.innerHTML = `<p class="muted">当前筛选下，这一类技术在收录的配置里都还没有出现。</p>`;
+    return;
+  }
+  // Configs start in 2025 (DATA, not the filtered rows, so the axis holds still while filtering); the years
+  // before are squeezed into a shaded band, since only paper dates fall there.
+  const split = mon(`${DATA.reduce((a, m) => (m.released < a ? m.released : a), "9999").slice(0, 4)}-01`);
+  const start = Math.min(split - 12, mon(`${TECHS.reduce((a, t) => (t.date < a ? t.date : a), "9999").slice(0, 4)}-01`));
+  const lastYear = Math.max(...DATA.map((m) => +m.released.slice(0, 4)), ...TECHS.map((t) => +t.date.slice(0, 4)));
+  const end = mon(`${lastYear + 1}-01`);
+  const narrow = box.clientWidth < 560;
+  const nameW = narrow ? 104 : 196, countW = narrow ? 0 : 30;
+  const W = Math.max(160, box.clientWidth - 24 - nameW - countW - (narrow ? 6 : 16) - 2); // padding, columns, gaps
+  const f = narrow ? 0.16 : 0.2;
+  const x = (t) => (t <= split ? f * W * Math.max(0, t - start) / (split - start) : f * W + (1 - f) * W * (t - split) / (end - split));
+  const perMonth = (1 - f) * W / (end - split);
+  const step = perMonth >= 11 ? 1 : 3; // months per dot: a month on desktop, a quarter on phones
+  const binW = perMonth * step;
+  const H = 20, cy = H / 2;
+
+  const items = shown.map(({ t, a }) => {
+    const paper = mon(t.date);
+    const bins = new Map();
+    for (const { m } of a.list) {
+      const b = Math.floor(mon(m.released) / step) * step;
+      if (!bins.has(b)) bins.set(b, []);
+      bins.get(b).push(m);
+    }
+    const list = [...bins.entries()].sort((p, q) => p[0] - q[0])
+      .map(([b, ms]) => ({ b, ms: ms.sort((p, q) => p.name.localeCompare(q.name)), cx: x(b + step / 2), r: Math.min(binW / 2 - 0.75, 4 + 1.5 * (Math.sqrt(ms.length) - 1)) }));
+    const first = Math.min(...a.list.map(({ m }) => mon(m.released)));
+    return { t, a, paper, first, bins: list, firstMs: a.list.filter(({ m }) => mon(m.released) === first).map(({ m }) => m) };
+  }).sort((p, q) => p.paper - q.paper || p.first - q.first || p.t.name.localeCompare(q.t.name));
+  tl = { x, items, step, H, split };
+
+  const grid = [];
+  for (let t = split; t < end; t += 6) grid.push(`<line class="${t % 12 ? "tl-g half" : "tl-g"}" x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H}"/>`);
+  const back = `<rect class="tl-old" x="0" y="0" width="${x(split)}" height="${H}"/>${grid.join("")}<line class="tl-lead" x1="0" x2="${W}" y1="${cy}" y2="${cy}"/>`;
+  const ticks = [];
+  if (narrow) ticks.push([0, "更早"]);
+  else for (let y = Math.floor(start / 12); y < Math.floor(split / 12); y++) ticks.push([x(y * 12), String(y)]);
+  for (let t = split; t < end; t += 6) if (!(t % 12) || !narrow) ticks.push([x(t), t % 12 ? `${t % 12 + 1} 月` : String(t / 12)]);
+  const axis = `<div class="tl-row tl-axis"><span></span><svg width="${W}" height="16" aria-hidden="true">` +
+    ticks.map(([px, s]) => `<text x="${px + 3}" y="12">${s}</text>`).join("") + `</svg>${countW ? "<span></span>" : ""}</div>`;
+  const short = (n) => n.replace(/（.*）$/, "");
+  const fits = (s) => textWidth(s, 12) <= nameW - 10;
+  const body = items.map((it, i) => {
+    const { t, a, paper, first, bins } = it;
+    let svg = back;
+    const px = x(paper + 0.5);
+    const fx = bins[0].cx, lx = bins[bins.length - 1].cx;
+    if (first > paper) svg += `<line class="tl-wait" x1="${px}" x2="${fx}" y1="${cy}" y2="${cy}"/>`;
+    if (lx > fx) svg += `<line class="tl-span" x1="${fx}" x2="${lx}" y1="${cy}" y2="${cy}"/>`;
+    svg += bins.map((b) => `<circle class="tl-dot" cx="${b.cx}" cy="${cy}" r="${b.r}"/>`).join("");
+    // where a config came out the same month (quarter on phones), the diamond becomes an outline around its dot
+    const on = bins.find((b) => b.b === Math.floor(paper / tl.step) * tl.step);
+    const dh = on ? Math.min(9.5, (on.r + 1.5) * Math.SQRT2) : 5.5;
+    svg += `<path class="tl-paper${on ? " ring" : ""}" d="M${on ? on.cx : px} ${cy - dh}l${dh} ${dh}-${dh} ${dh}-${dh}-${dh}z"/><circle class="tl-cur" r="0" cy="${cy}" hidden/>`;
+    const name = fits(t.name) || items.filter((o) => short(o.t.name) === short(t.name)).length > 1 ? t.name : short(t.name);
+    return `<div class="tl-row" data-i="${i}"><a class="tl-name" href="#tech-${TECHS.indexOf(t)}" title="${esc(t.name)}">${esc(name)}</a>` +
+      `<svg class="tl-track" width="${W}" height="${H}" role="img" aria-label="${esc(t.name)}：论文 ${t.date}，第一个配置 ${monText(first)}，共 ${a.list.length} 个">${svg}</svg>` +
+      (countW ? `<span class="tl-n">${a.list.length}</span>` : "") + `</div>`;
+  }).join("");
+
+  // takeaway: among techniques published while the configs were being collected, how long until the first one
+  const fresh = items.filter((it) => it.paper >= split);
+  const lags = fresh.map((it) => it.first - it.paper);
+  const waited = lags.filter((d) => d > 0);
+  const same = lags.filter((d) => d === 0).length, before = lags.filter((d) => d < 0).length;
+  const year = Math.floor(split / 12);
+  const top = (fresh.length ? fresh : items).slice().sort((p, q) => q.a.list.length - p.a.list.length).slice(0, 3)
+    .map((it) => `${esc(short(it.t.name))}（${it.a.list.length}）`);
+  let take = "";
+  if (fresh.length) {
+    const parts = [];
+    if (same) parts.push(`<b>${same}</b> 项的论文和第一个用它的配置同月发出`);
+    if (before) parts.push(`<b>${before}</b> 项是配置先出、论文后发`);
+    if (waited.length) parts.push(`其余 ${waited.length} 项从论文到第一个配置的中位数是 <b>${median(waited)}</b> 个月`);
+    take = `${year} 年以后发表、已经有配置在用的 <b>${fresh.length}</b> 项里，${parts.join("，")}。` +
+      `其中用得最多的是${top.join("、")}。`;
+  } else take = `用得最多的是${top.join("、")}。`;
+  const noneText = none.length ? `还没有收录的配置用上的 ${none.length} 项：${none.slice(0, 10).map((x) => esc(short(x.t.name))).join("、")}${none.length > 10 ? " 等" : ""}。` : "";
+  box.innerHTML = `<h3>从论文到落地：每行一项技术</h3><span class="take">${take}</span>` +
+    `<p class="legend-note tl-legend"><span><i class="tl-k paper"></i>论文或技术报告</span><span><i class="tl-k wait"></i>到第一个收录配置之前</span>` +
+    `<span><i class="tl-k dot"></i><i class="tl-k dot big"></i>收录配置的首发，圆越大这${step === 1 ? "个月" : "个季度"}越多</span>` +
+    `<span><svg class="tl-k ring" width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4"/><path d="M8 0.5l7.5 7.5-7.5 7.5-7.5-7.5z"/></svg>论文和配置同${step === 1 ? "月" : "季度"}</span>` +
+    `<span><i class="tl-k old"></i>${monText(split).slice(0, 4)} 年以前：只有论文，压缩显示</span></p>` +
+    `<div class="tl-wrap">${axis}${body}</div>` +
+    `<p class="muted tl-note">${noneText}${blind ? `另有 ${blind} 项从 config 看不出、也没有核对过的采用记录，只在下表列出。` : ""}点技术名跳到下表那一行。</p>`;
+}
+
+function timelineTip(it, hit) {
+  const { t, a, paper, first, firstMs } = it;
+  const head = `<b>${esc(t.name)}</b> <span class="muted">${esc(CAT_LABEL[t.cat])}</span><br>`;
+  if (hit && hit.b !== Math.floor(paper / tl.step) * tl.step) { // the paper's own bin gets the summary, which names its configs
+    const when = tl.step === 1 ? monText(hit.b) : `${Math.floor(hit.b / 12)} Q${(hit.b % 12) / 3 + 1}`;
+    const list = hit.ms.map((m) => esc(m.name));
+    return `${head}${when} 首发的 ${hit.ms.length} 个配置：<br><span class="muted">${list.slice(0, 16).join("、")}${list.length > 16 ? ` 等 ${list.length} 个` : ""}</span>`;
+  }
+  const early = paper < tl.split ? `<br><span class="muted">收录的配置从 ${Math.floor(tl.split / 12)} 年开始，更早的采用不在这里。</span>` : "";
+  return `${head}论文 ${t.date}：${esc(t.source.title)}<br>第一个收录的配置：${monText(first)}，${esc(firstMs.map((m) => m.name).slice(0, 6).join("、"))}${firstMs.length > 6 ? ` 等 ${firstMs.length} 个` : ""}（${lagText(first - paper)}）` +
+    `<br>共 ${a.list.length} 个配置${a.of != null ? `<span class="muted">（config 能看出来的 ${a.of} 个里）</span>` : ""}${early}`;
+}
+
+function initTimeline() {
+  const box = $("#tech-tl");
+  const clear = () => box.querySelectorAll(".tl-cur:not([hidden])").forEach((c) => c.setAttribute("hidden", ""));
+  box.addEventListener("pointermove", (e) => {
+    const row = e.target.closest ? e.target.closest(".tl-row[data-i]") : null;
+    clear();
+    const it = row && tl && tl.items[+row.dataset.i];
+    if (!it) return hideTip();
+    const svg = row.querySelector(".tl-track");
+    const px = e.clientX - svg.getBoundingClientRect().left;
+    let hit = null;
+    if (e.target.closest(".tl-track")) {
+      const near = it.bins.map((b) => ({ b, d: Math.abs(b.cx - px) })).sort((p, q) => p.d - q.d)[0];
+      const dPaper = Math.abs(tl.x(it.paper + 0.5) - px);
+      if (near && near.d <= Math.max(near.b.r + 3, 7) && near.d < dPaper) {
+        hit = near.b;
+        const cur = svg.querySelector(".tl-cur");
+        cur.setAttribute("cx", hit.cx);
+        cur.setAttribute("r", hit.r + 2.5);
+        cur.removeAttribute("hidden");
+      }
+    }
+    showTip(timelineTip(it, hit), e);
+  });
+  box.addEventListener("pointerleave", () => { hideTip(); clear(); });
 }
 
 /* ---------- design details: one position, the variants each model uses ---------- */
@@ -854,6 +1409,94 @@ function syncDetailPicks() {
   });
 }
 
+// Which variant one model counts under in the share bars: its first match, or for a multi position its first
+// match other than the default; -1 when the position doesn't apply to it.
+function detailBucket(p, m) {
+  if (!applies(p, m)) return -1;
+  const hits = p.variants.map((v, i) => [v, i]).filter(([v]) => !v.related && matchAll(m, v.match));
+  if (!hits.length) return -1;
+  return (p.multi ? hits.find(([v]) => !v.default) || hits[0] : hits[0])[1];
+}
+
+let measureCtx = null;
+function textWidth(t, size = 11) {
+  if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
+  measureCtx.font = `${size}px system-ui, -apple-system, "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif`;
+  return measureCtx.measureText(t).width;
+}
+
+const ddSegs = new Map();
+function renderDetailDist(rows, ps) {
+  const box = $("#det-dist");
+  const years = [...new Set(rows.map((m) => m.year))].sort();
+  ddSegs.clear();
+  if (!ps.length || !rows.length) { box.hidden = true; return; }
+  box.hidden = false;
+  const narrow = box.clientWidth < 560;
+  const trackW = Math.max(120, box.clientWidth - 26 - (narrow ? 0 : 162) - 34 - 26 - 12);
+  const moves = [];
+  const html = ps.map((p) => {
+    const slot = new Map();
+    p.variants.forEach((v, i) => { if (!v.default && !v.related) slot.set(i, Math.min(8, slot.size + 1)); });
+    const order = [...p.variants.keys()].filter((i) => p.variants[i].default).concat([...slot.keys()]);
+    const shares = {};
+    const used = new Set();
+    const bars = years.map((y) => {
+      const ms = rows.filter((m) => m.year === y);
+      const groups = new Map(order.map((i) => [i, []]).concat([[-1, []]]));
+      for (const m of ms) groups.get(detailBucket(p, m))?.push(m);
+      const segs = [...groups.entries()].filter(([, g]) => g.length);
+      shares[y] = Object.fromEntries([...groups.entries()].map(([i, g]) => [i, ms.length ? g.length / ms.length : 0]));
+      const inner = segs.map(([i, g]) => {
+        const v = p.variants[i];
+        const label = v ? v.label : p.when ? "没有这一项" : "不适用";
+        const w = (trackW - 2 * (segs.length - 1)) * g.length / ms.length;
+        const full = `${label} ${g.length}`;
+        const text = textWidth(full) + 10 <= w ? full : textWidth(String(g.length)) + 10 <= w ? String(g.length) : "";
+        const key = `${p.id}|${y}|${i}`;
+        ddSegs.set(key, { p, y, label, ms: g, total: ms.length });
+        if (i < 0) return `<i class="dd-seg none" style="flex-grow:${g.length}" data-k="${esc(key)}">${esc(text)}</i>`;
+        if (v.default) return `<i class="dd-seg dflt" style="flex-grow:${g.length}" data-k="${esc(key)}">${esc(text)}</i>`;
+        used.add(i);
+        return `<i class="dd-seg${slot.get(i) === 4 ? " dark-ink" : ""}" style="flex-grow:${g.length};background:var(--cat-${slot.get(i)})" data-k="${esc(key)}">${esc(text)}</i>`;
+      }).join("");
+      return `<div class="dd-bar"><span class="yr">${y}</span><div class="dd-track">${inner}</div><span class="tot">${ms.length}</span></div>`;
+    }).join("");
+    if (years.length > 1) { // the variant whose share grew the most between the first and the last year
+      const [a, b] = [shares[years[0]], shares[years[years.length - 1]]];
+      const cands = Object.keys(b).map((i) => ({ label: p.variants[i]?.label ?? "没有这一项", from: a[i] ?? 0, to: b[i], bonus: 0 }));
+      // where the position is optional, having it at all can be the bigger change than any one way of doing it
+      if (p.when) cands.push({ label: "有这一项", from: 1 - (a[-1] ?? 0), to: 1 - (b[-1] ?? 0), bonus: -0.02 });
+      const best = cands.reduce((x, c) => (x && x.to - x.from + x.bonus >= c.to - c.from + c.bonus ? x : c), null);
+      if (best && best.to > best.from) {
+        moves.push({ d: best.to - best.from, text: `${p.name}「${best.label}」${Math.round(100 * best.from)}% → ${Math.round(100 * best.to)}%` });
+      }
+    }
+    const key = [...slot.entries()].filter(([i]) => used.has(i))
+      .map(([i, k]) => `<span><i style="background:var(--cat-${k})"></i>${esc(p.variants[i].label)}</span>`).join("");
+    const app = rows.filter((m) => applies(p, m)).length;
+    return `<div class="dd-row"><div class="dd-name"><a href="#pos-${p.id}">${esc(p.name)}</a><small>${app} / ${rows.length} 个配置适用</small></div>` +
+      `<div>${bars}${key ? `<div class="dd-key">${key}</div>` : ""}</div></div>`;
+  }).join("");
+  const top = moves.sort((x, y) => y.d - x.d).slice(0, 3).map((x) => esc(x.text));
+  box.innerHTML = `<h3>各写法的占比：${years.join(" 年和 ")} 年首发的配置分开算</h3>` +
+    (top.length ? `<span class="take">涨得最多：${top.join("；")}。</span>` : "") + html +
+    `<p class="legend-note dd-legend"><span><i class="sw on"></i>灰色：多数做法</span><span><i class="sw off"></i>空白：没有这一项或不适用</span><span>彩色：其他写法，悬停看型号，点名称跳到下面的详细对照</span></p>`;
+}
+
+function initDetailDist() {
+  const box = $("#det-dist");
+  box.addEventListener("pointermove", (e) => {
+    const seg = e.target.closest ? e.target.closest(".dd-seg") : null;
+    const d = seg && ddSegs.get(seg.dataset.k);
+    if (!d) return hideTip();
+    const list = d.ms.map((m) => esc(m.name));
+    showTip(`<b>${esc(d.p.name)}</b> <span class="muted">${d.y} 年首发</span><br>${esc(d.label)}：${d.ms.length}/${d.total}（${Math.round(100 * d.ms.length / d.total)}%）` +
+      `<br><span class="muted">${list.slice(0, 24).join("、")}${list.length > 24 ? ` 等 ${list.length} 个` : ""}</span>`, e);
+  });
+  box.addEventListener("pointerleave", hideTip);
+}
+
 function renderDetails(rows) {
   const inTab = (p, id) => id === "all" || (id === "gate" ? p.gate : p.sec === id);
   groupChips($("#det-secs"), state.detSec,
@@ -861,6 +1504,7 @@ function renderDetails(rows) {
     (id) => { state.detSec = id; renderDetails(filtered()); });
   const link = (src) => (src ? ` <a href="${esc(src.url)}" target="_blank" rel="noopener" title="${esc(src.title)}">出处 ↗</a>` : "");
   let hidden = 0;
+  renderDetailDist(rows, DPOS.filter((p) => inTab(p, state.detSec) && rows.some((m) => applies(p, m))));
   const cards = DPOS.filter((p) => inTab(p, state.detSec)).map((p) => {
     const app = rows.filter((m) => applies(p, m));
     if (!app.length) { hidden++; return ""; }
@@ -883,7 +1527,7 @@ function renderDetails(rows) {
       }
       return `<div class="dv${v.related ? " rel" : ""}">${head}<div class="dw">${who}</div></div>`;
     }).join("");
-    return `<article class="dpos"><h3>${esc(p.name)}<span class="muted">${app.length} 个配置适用</span></h3>` +
+    return `<article class="dpos" id="pos-${esc(p.id)}"><h3>${esc(p.name)}<span class="muted">${app.length} 个配置适用</span></h3>` +
       `<p class="what">${esc(p.what ?? "")}${p.formula ? `<span class="f pf">${fmla(p.formula)}</span>` : ""}</p>${vars}</article>`;
   });
   $("#det").innerHTML = cards.join("") + (hidden ? `<p class="muted det-hidden">当前筛选下有 ${hidden} 个位置没有适用的配置，已隐藏。</p>` : "");
@@ -1018,12 +1662,13 @@ function update() {
   renderControls();
   renderTiles(rows);
   renderCharts(rows);
+  renderLayers(rows);
   renderFingerprint(rows);
   renderCompare();
   renderAdoption(rows);
   renderDetails(rows);
   renderTechniques(rows);
-  renderMultiples(rows);
+  renderVendors(rows);
   renderColGroups();
   renderTable(rows);
 }
@@ -1049,6 +1694,7 @@ async function main() {
   DPOS = dres.ok ? await dres.json() : [];
   CMP_SECTIONS.push({ label: "设计细节", rows: DPOS.map((p) => ({ label: p.name, title: p.what, f: (m) => esc(detailText(p, m)) })) });
   computeBins();
+  $("#fp-n").textContent = FEATURES.length;
   initCompare();
   $("#meta").textContent = `${data.count} 种 MoE 配置 · ${new Set(DATA.map((m) => m.vendor)).size} 家厂家 · 数据更新于 ${data.generated}`;
   const sel = $("#vendor");
@@ -1056,8 +1702,20 @@ async function main() {
   sel.onchange = () => { state.vendor = sel.value; update(); };
   $("#q").oninput = (e) => { state.q = e.target.value; update(); };
   initTheme();
+  initLayers();
+  initDetailDist();
+  initAdoption();
+  initVendors();
+  initTimeline();
   update();
-  addEventListener("resize", () => charts.concat(multCharts, adoptCharts).forEach((c) => c.resize()));
+  let lastWidth = innerWidth, resizeTimer = null;
+  addEventListener("resize", () => {
+    charts.forEach((c) => c.resize());
+    if (innerWidth === lastWidth) return; // mobile browsers fire resize when the toolbar hides
+    lastWidth = innerWidth;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { const rows = filtered(); renderLayers(rows); renderDetails(rows); renderTechniques(rows); renderVendors(rows); }, 150);
+  });
 }
 
 main().catch((e) => { $("#meta").textContent = `数据加载失败：${e.message}`; });
