@@ -165,29 +165,32 @@
       <dt>d/L</dt><dd>宽深比：隐藏维度除以 token mixer 层数（注意力、线性注意力或 Mamba 层）。LongCat 每层有两个注意力子层，按两层计。</dd>
       <dt>注意力宽度比</dt><dd>全局注意力层的 query 头数 × 每个头的 Q·K 维度，再除以 d_model。头数 × 头维 = d 的 Llama 式设计为 1；MLA 的 Q·K 维度是不加位置的部分加 RoPE 部分（DeepSeek V3 是 128 + 64），DeepSeek V4 系每头 512 维，所以到 6.4–9.1。比值越大，注意力相对残差流越宽。</dd>
       <dt>Q/KV</dt><dd>全局层每个 KV 头对应几个 query 头（GQA 的分组大小），越大 KV cache 越省。MLA 缓存的是压缩潜向量，不适用。</dd>
-      <dt>RoPE 维度占比</dt><dd>全局层每个头里加 RoPE 的维度比例。1 是全部维度；1/4、1/3 之类是部分 RoPE，其余维度不带位置；0 记为 NoPE，位置信息交给滑窗层、线性层或 Mamba 层。MLA 按 RoPE 维度 / Q·K 维度算。</dd>
-      <dt>全局注意力层占比</dt><dd>KV 缓存随上下文增长的层（full、MLA、DSA、稀疏或压缩注意力）占全部 token mixer 层的比例。线性注意力、Mamba 的状态大小固定，滑窗层只缓存窗口内的 token。</dd>
+      <dt>RoPE 维度占比</dt><dd>全局层每个头里加 RoPE 的维度比例。1 是全部维度；1/4、1/3 之类是部分 RoPE，其余维度不带位置；0 记为 NoPE，位置信息交给滑窗层、分块层、线性层或 Mamba 层，括号里是例外（Inkling 改用学到的相对位置 logit；North Mini Code 的第一个全局层是 dense 层，仍加 RoPE）。MLA 按 RoPE 维度 / Q·K 维度算。</dd>
+      <dt>全局注意力层占比</dt><dd>KV 缓存随上下文增长的层（full、MLA、DSA、稀疏或压缩注意力）占全部 token mixer 层的比例。线性注意力、Mamba、短卷积的状态大小固定，滑窗层和 Llama 4 的分块层只缓存窗口或块内的 token。</dd>
       <dt>KV cache / token</dt><dd>上下文足够长时每多一个 token 要多存的 bf16 KV：全局层数 × 每层每 token 的 K、V 维度 × 2 字节。MLA 按 kv_lora_rank + RoPE 维度算；DeepSeek V4 的压缩层按压缩率摊到每个 token（CSA 每 4 个 token 存一条，HCA 每 128 个）。不含线性层状态、滑窗缓存和稀疏注意力的索引键；DeepSeek V4.1 改了压缩配置的写法，暂不计算。</dd>
       <dt>注意力</dt><dd>按 config.json 里的层类型字段推断（layer_types、kda_layers、full_attention_interval 等），只数 token mixer 的种类和层数，细节以技术报告为准。</dd>
       <dt>结构特征</dt><dd>按 config.json 的字段识别，config 里没有写的部分（比如 Qwen3 的 QK-norm、gpt-oss 的 sink、各家的路由打分函数）对照 transformers 5.21 和厂家仓库里的建模代码核对，规则在 <code>scripts/hfconfig.py</code> 的 <code>ARCH</code> 里。config 未公开或看不出的记为"?"，不计入采用率。</dd>
       <dt>结构指纹</dt><dd>形状数值按全部配置的五分位上色，只表示在收录范围内的相对大小；格子里的值和全表一致。按厂家或档位汇总时，格子是用了该特征的配置数 / 该组配置数。</dd>
-      <dt>线性注意力</dt><dd>状态大小固定的 token mixer：Gated DeltaNet（GDN）、Kimi Delta Attention（KDA）、MiniMax 的 Lightning Attention、Mamba-2。</dd>
+      <dt>线性注意力</dt><dd>状态大小固定的 token mixer：Gated DeltaNet（GDN）、Kimi Delta Attention（KDA）、MiniMax 的 Lightning Attention、Mamba-2，以及 LFM2 的门控短卷积（表中记为“门控卷积”）。</dd>
       <dt>稀疏注意力</dt><dd>每个 query 只看部分 KV：DeepSeek 的 DSA、Qwen3.8-Flash-Next 的 QSA、Step-5 的 CSA、MiniMax M3 的块稀疏、DeepSeek V4 的压缩注意力（CSA + HCA）。</dd>
-      <dt>输出门</dt><dd>softmax 注意力层的输出乘一个由输入算出的 sigmoid 门（Gated Attention），每个头一个标量的记"逐头"，每个元素一个的记"逐元素"，config 没写明的记 ✓。线性注意力层自带的门不算。</dd>
-      <dt>Sink / QK-norm</dt><dd>Sink 是每个头一个可学习的 logit，让注意力可以"什么都不看"；QK-norm 是对每个头的 Q、K 做 RMSNorm。MLA 对低秩潜向量的归一化不算 QK-norm。</dd>
+      <dt>输出门</dt><dd>softmax 注意力层的输出乘一个由输入算出的门（Gated Attention，多数用 sigmoid，Laguna 用 softplus），每个头一个标量的记"逐头"，每个元素一个的记"逐元素"，config 没写明的记 ✓。线性注意力层自带的门不算。</dd>
+      <dt>Sink / QK-norm</dt><dd>Sink 是每个头一个可学习的 logit，让注意力可以"什么都不看"；QK-norm 是对每个头的 Q、K 做 RMSNorm（Llama 4 Scout 和 ZAYA1 用 L2 归一化，Scout 只在 RoPE 层用）。MLA 对低秩潜向量的归一化不算 QK-norm。</dd>
       <dt>K=V / 跨层 KV / 索引复用</dt><dd>K=V：K 和 V 用同一个投影，只缓存一份。跨层 KV：后面的层直接读前面源层的 KV，自己不再存。索引复用：稀疏注意力的 top-k 选择由几层共用（IndexShare、跨层索引），省掉索引器的计算。</dd>
+      <dt>QKV 短卷积</dt><dd>softmax 注意力的 Q、K、V 先沿序列过一个因果深度卷积（Primer 提出）。Inkling 对 K、V 和两个子层的输出各加一个 4 抽头卷积；ZAYA1 的 CCA 在压缩的潜空间里对 Q、K 做卷积。线性注意力层里自带的短卷积不算。</dd>
+      <dt>长度缩放（SSMax）</dt><dd>全局层把 query 按位置的 log 放大，长上下文里注意力不被摊平（Scalable-Softmax）。Llama 4 叫温度调节，Beam、Inkling 也只用在不加 RoPE 的全局层。</dd>
       <dt>超连接</dt><dd>把残差流扩成 n 路并用可学习的权重混合（Hyper-Connections）；mHC 用 Sinkhorn 把混合矩阵约束成双随机矩阵；iHC 是 Hy4 的写法。</dd>
       <dt>AttnRes</dt><dd>Attention Residuals：每层的输入由对前面各层（按块）输出的注意力加权得到，代替固定的残差相加。</dd>
-      <dt>残差门 / 后置 norm</dt><dd>残差门：子层输出和残差按可学习的门加权相加。后置 norm：子层输出再过一次 norm，前后都有的叫三明治，只在残差相加之后的叫 Post-LN。</dd>
-      <dt>共享专家门</dt><dd>共享专家的输出再乘一个由输入算出的 sigmoid 门（Qwen 系）。</dd>
-      <dt>零计算专家</dt><dd>直接输出输入的空专家，路由选中它就等于这个 token 少算一个专家（LongCat），格子里是个数。</dd>
-      <dt>路由</dt><dd>打分函数（softmax、sigmoid、sqrtsoftplus）、无辅助损失的专家偏置（按分位数更新的记"分位数"）、先选组再选专家的分组路由、前几层按 token id 哈希分配专家的哈希路由。</dd>
+      <dt>残差门 / 后置 norm</dt><dd>残差门：子层输出和残差按逐通道的可学习权重相加（Muse Spark 是保方差的门，ZAYA1 是两边各一组缩放）。后置 norm：子层输出再过一次 norm，前后都有的叫三明治，只在残差相加之后的叫 Post-LN，A.X K1 只在 MoE 输出后加。</dd>
+      <dt>GatedNorm / 并行块</dt><dd>GatedNorm：RMSNorm 的输出再乘一个由它算出的低秩 sigmoid 门，格子里是秩。并行块：注意力和 FFN 读同一个输入，输出一起加回残差（Cohere）。</dd>
+      <dt>共享专家门</dt><dd>共享专家的输出再乘一个由输入算出的门：Qwen 系是单独的 sigmoid 门，Inkling 让路由器给共享专家也打分（"路由加权"）。</dd>
+      <dt>零计算专家</dt><dd>不做计算的空专家，路由选中它就等于这个 token 少算一个专家（LongCat 的零计算专家、ZAYA1 的跳过专家），格子里是个数。</dd>
+      <dt>路由</dt><dd>打分函数（softmax、sigmoid、sqrtsoftplus）、无辅助损失的专家偏置（按分位数更新的记"分位数"，只在训练时用、权重里没有的记"仅训练"）、先选组再选专家的分组路由、前几层按 token id 哈希分配专家的哈希路由。</dd>
       <dt>FFN 激活 / 限幅</dt><dd>多数是 SwiGLU；Gemma 4 用 GeGLU，gpt-oss 和 MiniMax M3 用带限幅和偏移的 SwiGLU（SwiGLU-OAI），Nemotron 3 用 ReLU²，Kimi K3 用 SiTU。限幅是把 SwiGLU 的输出截到上限，括号里是只在部分层；SiTU 用 β·tanh(x/β) 软限幅。</dd>
-      <dt>MTP</dt><dd>多 token 预测模块的层数；config 没写的从权重索引里数 mtp 层，仓库需申请访问的记"?"。</dd>
+      <dt>MTP</dt><dd>多 token 预测模块的层数；config 没写的从权重索引里数 mtp 层（需申请访问的仓库读公开副本的索引），读不到的记"?"。</dd>
       <dt>softcap</dt><dd>输出 logit 过 c·tanh(x/c) 的软截断，格子里是 c。</dd>
       <dt>N-gram 记忆</dt><dd>用哈希过的 n-gram 查一张大嵌入表：Engram 和 Qwen3.8-Flash-Next 在中间层注入，LongCat 加在输入嵌入上。</dd>
       <dt>前沿技术追踪</dt><dd>名单在 <code>techniques.yaml</code>，每条有最早出处、独立实验的结果和链接。采用数由结构特征自动统计；config 看不出的技术（优化器、损失函数）只列技术报告里写明的，没有就留空，不靠猜。</dd>
-      <dt>config 来源</dt><dd>仓库需申请访问时，config 取自 transformers 里对应的默认配置，存档在本仓库的 <code>configs/</code> 下，并在表格详情里注明。</dd>
+      <dt>config 来源</dt><dd>仓库需申请访问时，config 取自 transformers 里对应的默认配置或公开副本，存档在本仓库的 <code>configs/</code> 下，并在表格详情里注明。</dd>
       <dt>档位</dt><dd>按总参数：小 ≤ 50B，中 50–500B，大 ≥ 500B。</dd>
       <dt>收录范围</dt><dd>2025 年及以后首次上传的开源 MoE；只改了后训练、注意力或量化而 MoE 配置不变的版本合并为一行。</dd>
     </dl>

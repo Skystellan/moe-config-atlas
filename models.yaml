@@ -431,6 +431,215 @@
   released: 2025-06
   total: 300
   active: 47
+
+# Labs outside the first discovery list, added 2026-11 after scanning every MoE
+# architecture in transformers 5.21.
+- vendor: Meta
+  name: Llama 4 Scout
+  repo: meta-llama/Llama-4-Scout-17B-16E-Instruct
+  variants: [meta-llama/Llama-4-Scout-17B-16E]
+  released: 2025-04
+  total: 109
+  active: 17
+- vendor: Meta
+  name: Llama 4 Maverick
+  repo: meta-llama/Llama-4-Maverick-17B-128E-Instruct
+  variants: [meta-llama/Llama-4-Maverick-17B-128E]
+  released: 2025-04
+  total: 400
+  active: 17
+
+- vendor: Thinking Machines
+  name: Inkling
+  repo: thinkingmachines/Inkling
+  released: 2026-07
+  total: 975
+  active: 41
+  notes: 文本、图像、音频多模态。全局层不用 RoPE，而用学到的相对位置 logit（只覆盖 1024 个 token 以内的距离）。
+- vendor: Thinking Machines
+  name: Inkling-Small
+  repo: thinkingmachines/Inkling-Small
+  released: 2026-07
+  total: 276
+  active: 12
+
+- vendor: Arcee
+  name: Trinity-Large
+  repo: arcee-ai/Trinity-Large-Preview
+  variants: [arcee-ai/Trinity-Large-Thinking]
+  released: 2026-01
+  total: 398
+  active: 13
+- vendor: Arcee
+  name: Trinity-Mini
+  repo: arcee-ai/Trinity-Mini
+  released: 2025-12
+  total: 26
+  active: 3
+- vendor: Arcee
+  name: Trinity-Nano
+  repo: arcee-ai/Trinity-Nano-Preview
+  released: 2025-12
+  total: 6
+  active: 1
+
+- vendor: Reflection
+  name: Beam 1.0
+  repo: reflection/Beam-1.0-501B-A23B
+  released: 2026-10
+  total: 501.3
+  active: 23.4
+  notes: 残差相加按层深缩放：子层输出乘 1/√i，残差乘 √((i−1)/i)。
+
+- vendor: Cohere
+  name: Command A+
+  repo: CohereLabs/command-a-plus-05-2026-bf16
+  released: 2026-05
+  total: 218
+  active: 25
+  override: {expert_bias: 仅训练}
+  notes: 共享专家是一个 16384 宽的 MLP，这里按路由专家的宽度折成 4 个。模型卡说训练时用加性偏置做负载均衡，但发布的权重里没有这个偏置。
+- vendor: Cohere
+  name: North Mini Code
+  repo: CohereLabs/North-Mini-Code-1.0
+  released: 2026-06
+  total: 30.5
+  active: 3
+
+- vendor: EXAONE
+  name: K-EXAONE 236B-A23B
+  repo: LGAI-EXAONE/K-EXAONE-236B-A23B
+  released: 2025-12
+  total: 236
+  active: 23
+- vendor: EXAONE
+  name: K-EXAONE 2.0 750B-A37B
+  repo: LGAI-EXAONE/K-EXAONE-2.0-750B-A37B
+  variants: [LGAI-EXAONE/K-EXAONE-2.0-750B-A37B-DSpark]
+  released: 2026-07
+  total: 750
+  active: 37
+
+- vendor: SKT
+  name: A.X K1
+  repo: skt/A.X-K1
+  released: 2025-12
+  total: 519
+  active: 33
+- vendor: SKT
+  name: A.X K2
+  repo: skt/A.X-K2
+  released: 2026-07
+  total: 688
+  active: 33
+
+- vendor: Poolside
+  name: Laguna XS.2
+  repo: poolside/Laguna-XS.2
+  variants: [poolside/Laguna-XS-2.1]
+  released: 2026-04
+  total: 33
+  active: 3
+  notes: 输出门用 softplus；滑窗层 64 个 Q 头，全局层 48 个。
+- vendor: Poolside
+  name: Laguna M.1
+  repo: poolside/Laguna-M.1
+  released: 2026-06
+  total: 225
+  active: 23
+  notes: 输出门用 softplus。
+- vendor: Poolside
+  name: Laguna S 2.1
+  repo: poolside/Laguna-S-2.1
+  released: 2026-07
+  total: 118
+  active: 8
+  notes: 输出门用 softplus；滑窗层 72 个 Q 头，全局层 48 个。
+
+- vendor: Liquid AI
+  name: LFM2-8B-A1B
+  repo: LiquidAI/LFM2-8B-A1B
+  variants: [LiquidAI/LFM2.5-8B-A1B]
+  released: 2025-10
+  total: 8.3
+  active: 1.5
+- vendor: Liquid AI
+  name: LFM2-24B-A2B
+  repo: LiquidAI/LFM2-24B-A2B
+  variants: [LiquidAI/LFM2.5-24B-A2B]
+  released: 2026-02
+  total: 24
+  active: 2.3
+
+- vendor: IBM
+  name: Granite 4.0-H-Small
+  repo: ibm-granite/granite-4.0-h-small
+  released: 2025-09
+  total: 32
+  active: 9
+- vendor: IBM
+  name: Granite 4.0-H-Tiny
+  repo: ibm-granite/granite-4.0-h-tiny
+  released: 2025-09
+  total: 7
+  active: 1
+- vendor: IBM
+  name: Granite-SWASH-3B-A600M
+  repo: ibm-granite/granite-swash-3b-a600m
+  released: 2026-07
+  total: 3
+  active: 0.6
+
+- vendor: Zyphra
+  name: ZAYA1-8B
+  repo: Zyphra/ZAYA1-8B
+  released: 2026-05
+  total: 8.4
+  active: 0.76
+  notes: 路由器是一个小 MLP，路由状态逐层往下传（EDA）。
+- vendor: Zyphra
+  name: ZAYA1-74B-Preview
+  repo: Zyphra/ZAYA1-74B-preview
+  released: 2026-05
+  total: 74
+  active: 4
+
+- vendor: Upstage
+  name: Solar Open 100B
+  repo: upstage/Solar-Open-100B
+  released: 2025-12
+  total: 102.6
+  active: 12
+- vendor: Upstage
+  name: Solar Open 2 250B
+  repo: upstage/Solar-Open2-250B
+  released: 2026-07
+  total: 250
+  active: 15
+  notes: 没有公开建模代码，结构按 config 和权重名推断。
+
+- vendor: JetBrains
+  name: Mellum2-12B-A2.5B
+  repo: JetBrains/Mellum2-12B-A2.5B-Instruct
+  variants: [JetBrains/Mellum2-12B-A2.5B-Thinking, JetBrains/Mellum2.1-12B-A2.5B-Thinking, JetBrains/Mellum2.1-12B-A2.5B-Thinking-MTP]
+  released: 2026-05
+  total: 12
+  active: 2.5
+
+- vendor: Aleph Alpha
+  name: Kolibri-1
+  repo: Aleph-Alpha/Kolibri-1
+  released: 2026-10
+  total: 78.1
+  active: 3.5
+
+- vendor: Recursive
+  name: flint
+  repo: RecursiveSI/flint
+  released: 2026-10
+  total: 39.8
+  active: 2.5
+
 - vendor: Kimi
   name: Moonlight-16B-A3B
   repo: moonshotai/Moonlight-16B-A3B

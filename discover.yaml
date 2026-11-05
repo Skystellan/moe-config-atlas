@@ -17,6 +17,21 @@ orgs:
   google: Google
   meta-models: Meta
   baidu: ERNIE
+  meta-llama: Meta
+  thinkingmachines: Thinking Machines
+  arcee-ai: Arcee
+  reflection: Reflection
+  CohereLabs: Cohere
+  LGAI-EXAONE: EXAONE
+  skt: SKT
+  poolside: Poolside
+  LiquidAI: Liquid AI
+  ibm-granite: IBM
+  Zyphra: Zyphra
+  upstage: Upstage
+  JetBrains: JetBrains
+  Aleph-Alpha: Aleph Alpha
+  RecursiveSI: Recursive
 
 # Only repos created on/after this date are considered.
 since: "2025-01-01"

@@ -327,22 +327,26 @@ const FEATURE_GROUPS = [
 ];
 const SHORT = { sqrtsoftplus: "√softplus" };
 const FEATURES = [
-  { key: "linear_attn", group: "attn", label: "线性注意力", th: "线性", title: "GDN、KDA、Lightning 或 Mamba-2 层" },
-  { key: "window", group: "attn", label: "滑窗", title: "滑动窗口注意力层（窗口大小）" },
+  { key: "linear_attn", group: "attn", label: "线性注意力", th: "线性", title: "GDN、KDA、Lightning、Mamba-2 或门控短卷积层（状态大小固定）" },
+  { key: "window", group: "attn", label: "滑窗", title: "滑动窗口注意力层（窗口大小）；Llama 4 是固定分块", value: (m) => windowLabel(m) },
   { key: "sparse_attn", group: "attn", label: "稀疏注意力", th: "稀疏", title: "DSA、QSA、CSA、块稀疏或压缩注意力" },
   { key: "mla", group: "attn", label: "MLA", title: "多头潜注意力" },
-  { key: "attn_gate", group: "attn", label: "输出门", title: "softmax 注意力输出上的 sigmoid 门（逐头或逐元素）" },
+  { key: "attn_gate", group: "attn", label: "输出门", title: "softmax 注意力输出上的门（sigmoid，Laguna 用 softplus；逐头或逐元素）" },
   { key: "attn_sink", group: "attn", label: "Sink", title: "可学习的 attention sink" },
   { key: "qk_norm", group: "attn", label: "QK-norm", title: "对每个头的 Q、K 做 RMSNorm", nullUnknown: true },
   { key: "k_eq_v", group: "attn", label: "K=V", title: "K 和 V 用同一个向量，只存一份" },
   { key: "kv_share", group: "attn", label: "跨层 KV", title: "后面的层直接读前面源层的 KV，自己不再存" },
   { key: "index_share", group: "attn", label: "索引复用", title: "稀疏注意力的 top-k 选择由几层共用（IndexShare、跨层索引）" },
+  { key: "attn_conv", group: "attn", label: "QKV 短卷积", th: "QKV 卷积", title: "softmax 注意力的 Q/K/V（或子层输出）先过因果短卷积；值是加卷积的位置" },
   { key: "partial_rope", group: "pos", label: "部分 RoPE", title: "全局注意力层每个头只有这一比例的维度加 RoPE" },
-  { key: "nope", group: "pos", label: "NoPE", title: "全局注意力层不加位置编码，位置信息来自局部层或线性层" },
+  { key: "nope", group: "pos", label: "NoPE", title: "全局注意力层不加 RoPE，位置信息来自局部层或线性层（Inkling 改用学到的相对位置 logit）" },
+  { key: "len_scale", group: "pos", label: "长度缩放", th: "SSMax", title: "全局层按位置的 log 放大 query（Scalable-Softmax / Llama 4 的温度调节）" },
   { key: "hyper_conn", group: "resid", label: "超连接", title: "多路残差流（HC / mHC / iHC）" },
   { key: "attn_res", group: "resid", label: "AttnRes", title: "Attention Residuals：用注意力聚合前面各层的输出（块大小）" },
-  { key: "res_gate", group: "resid", label: "残差门", title: "子层输出和残差按可学习的门加权相加" },
-  { key: "post_norm", group: "resid", label: "后置 norm", title: "子层输出再过一次 norm：三明治（前后都有）或 Post-LN" },
+  { key: "res_gate", group: "resid", label: "残差门", title: "子层输出和残差按逐通道的可学习权重相加（门或缩放）" },
+  { key: "gated_norm", group: "resid", label: "GatedNorm", th: "门控 norm", title: "RMSNorm 后乘一个输入相关的低秩 sigmoid 门（秩）" },
+  { key: "post_norm", group: "resid", label: "后置 norm", title: "子层输出再过一次 norm：三明治（前后都有）、Post-LN，或只在 FFN 后" },
+  { key: "parallel", group: "resid", label: "并行块", th: "并行", title: "注意力和 FFN 读同一个输入，输出一起加回残差" },
   { key: "s", group: "moe", label: "共享专家", th: "共享", title: "共享专家数" },
   { key: "shared_gate", group: "moe", label: "共享专家门", th: "共享门", title: "共享专家的输出乘一个 sigmoid 门" },
   { key: "latent", group: "moe", label: "LatentMoE", th: "Latent", title: "专家在低维潜空间里计算（潜空间维度）" },
@@ -371,7 +375,9 @@ function featureCell(f, m) {
   if (!h) return v && v !== true ? `<span class="muted">${esc(featureText(f, m))}</span>` : `<span class="muted">·</span>`;
   return esc(featureText(f, m));
 }
-const ropeLabel = (m) => (m.rope_frac == null ? "–" : m.rope_frac === 0 ? "NoPE" : m.rope_frac >= 1 ? "全部" : m.partial_rope || num(m.rope_frac, 2));
+const ropeLabel = (m) => (m.rope_frac == null ? "–" : m.rope_frac === 0 ? `NoPE${typeof m.nope === "string" ? `（${m.nope}）` : ""}`
+  : m.rope_frac >= 1 ? "全部" : m.partial_rope || num(m.rope_frac, 2));
+const windowLabel = (m) => (m.window && /chunked/.test(m.attention ?? "") ? `分块 ${m.window}` : m.window);
 
 // Shape numbers shown next to the features, colored by quintile over all configs.
 const SHAPE_COLS = [
@@ -805,7 +811,7 @@ const COL_GROUPS = {
     { key: "attention", label: "层构成", title: "按 config.json 字段推断的层类型", l: true, f: (m) => esc(m.attention ?? "–") },
     { key: "global_attn_frac", label: "全局层", title: "全局注意力层占 token mixer 层的比例", f: (m) => m.global_attn_frac == null ? "–" : `${num(m.global_attn_frac)}%` },
     { key: "kv_kib_per_token", label: "KV/token", title: "长上下文下每 token 的 bf16 KV 缓存", f: (m) => m.kv_kib_per_token == null ? "–" : `${num(m.kv_kib_per_token)} KiB` },
-    { key: "window", label: "滑窗", f: (m) => m.window ?? "–" },
+    { key: "window", label: "滑窗", f: (m) => windowLabel(m) ?? "–" },
     { key: "context", label: "上下文", f: (m) => fmtCtx(m.context) },
   ] },
   attnShape: { label: "注意力形状", cols: [

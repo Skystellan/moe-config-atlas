@@ -74,14 +74,23 @@
   evidence:
   - {by: Pavlichenko 2026, text: "收益到 d=768 消失", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
 
-- name: KV 短卷积
+- name: QKV 短卷积
   cat: attn
-  date: 2026-07
-  source: [Thinking Machines Inkling, https://huggingface.co/thinkingmachines/Inkling]
-  note: Inkling 系列还没收录
+  date: 2021-09
+  source: [Primer, https://arxiv.org/abs/2109.08668]
+  feature: attn_conv
+  note: softmax 注意力的 Q/K/V 先过因果深度卷积（线性注意力层里自带的不算）；Inkling 还在两个子层的输出上各加一个
   evidence:
   - {by: Pavlichenko 2026, text: "对 K、V 做 4 抽头因果卷积：−1.0% / −0.7% / −0.7%，最终架构保留在全局层", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
   - {by: Marin, text: "535B 在 K、注意力输出、MoE 输出三处加 4 抽头短卷积", url: "https://github.com/marin-community/marin/issues/8435"}
+
+- name: CCA（压缩卷积注意力）
+  cat: attn
+  date: 2025-10
+  source: ["Compressed Convolutional Attention", https://arxiv.org/abs/2510.04476]
+  feature: attn_conv
+  match: [Q、K（CCA）]
+  note: 在压缩的潜空间里算注意力，并对 Q、K 做卷积混合；ZAYA1 用的是分组版 CCGQA
 
 - name: Canon 层
   cat: attn
@@ -102,9 +111,16 @@
   date: 2025-01
   source: [Rope to Nope and Back Again, https://arxiv.org/abs/2501.18795]
   feature: nope
-  note: 全局层不加位置编码，位置信息交给滑窗层或线性层；Llama 4 的 iRoPE 是同一思路
+  note: 全局层不加位置编码，位置信息交给滑窗、分块或线性层（Llama 4 叫 iRoPE）
   evidence:
   - {by: Pavlichenko 2026, text: "混合模型的全局层去掉位置编码没问题，加回部分 RoPE 反而 +0.2%；所有层都去掉则训练崩坏", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
+
+- name: SSMax（按长度放大 query）
+  cat: pos
+  date: 2025-01
+  source: [Scalable-Softmax Is Superior for Attention, https://arxiv.org/abs/2501.19399]
+  feature: len_scale
+  note: 按位置的 log 放大 query，长上下文里注意力不被摊平；收录的模型都只用在不加 RoPE 的全局层。Step-5 把它用在稀疏索引器的打分上
 
 - name: 部分 RoPE
   cat: pos
@@ -237,6 +253,7 @@
   cat: resid
   date: 2026-01
   source: [A Unified View of Attention and Residual Sinks, https://arxiv.org/abs/2601.22966]
+  feature: gated_norm
   evidence:
   - {by: Pavlichenko 2026, text: "第二轮里唯一保住收益的改动（d=512 −0.71%，d=768 −0.49%），还消除了梯度尖峰", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
   - {by: Marin, text: "535B 在每个 RMSNorm 后都加，秩 128", url: "https://github.com/marin-community/marin/issues/8435"}

@@ -235,9 +235,8 @@ tbody tr.detail td { text-align: left; white-space: normal; color: var(--ink-2);
 @media (max-width: 560px) {
   .top { flex-direction: column; }
   .tiles { grid-template-columns: 1fr; }
-  .multiples { grid-template-columns: 1fr; }
-  #adoption { grid-template-columns: 1fr 1fr; gap: 8px; }
-  #adoption .m { height: 120px; }
+  .multiples { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mult .m { height: 120px; }
   .filters input { width: 100%; }
   .count { margin-left: 0; }
   .defs dl, .detail dl { grid-template-columns: 1fr; }
