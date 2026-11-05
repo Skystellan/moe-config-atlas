@@ -111,6 +111,22 @@
   ]
  },
  {
+  "name": "VHA（Virtual Head Attention）",
+  "cat": "attn",
+  "date": "2026-10",
+  "source": {
+   "title": "Virtual Head Attention",
+   "url": "https://arxiv.org/abs/2610.17959"
+  },
+  "models": [
+   {
+    "name": "ERNIE-5.5-Flash",
+    "cite": "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base-BF16"
+   }
+  ],
+  "note": "先把少量物理 query 头线性混成更多\"虚拟头\"，输出再做一次低秩的跨头混合；两步都是线性的，推理时并进 Q 和输出投影，跑起来仍是普通 GQA"
+ },
+ {
   "name": "差分注意力",
   "cat": "attn",
   "date": "2024-10",
@@ -222,7 +238,7 @@
    "url": "https://arxiv.org/abs/2501.19399"
   },
   "feature": "len_scale",
-  "note": "按位置的 log 放大 query，长上下文里注意力不被摊平；收录的模型都只用在不加 RoPE 的全局层。Step-5 把它用在稀疏索引器的打分上"
+  "note": "按位置的 log 放大 query，长上下文里注意力不被摊平。Llama 4、Beam、Inkling 只用在不加 RoPE 的全局层，Mistral Large 4 每层都用、系数按头学习；Step-5 把它用在稀疏索引器的打分上"
  },
  {
   "name": "部分 RoPE",
@@ -367,6 +383,8 @@
   "match": [
    "CSA+HCA",
    "CSA",
+   "HCA",
+   "DSA+HCA",
    "压缩"
   ],
   "evidence": [
@@ -396,6 +414,30 @@
     "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
    }
   ]
+ },
+ {
+  "name": "LSA（LongCat Sparse Attention）",
+  "cat": "mixer",
+  "date": "2026-08",
+  "source": {
+   "title": "LongCat Sparse Attention: Taming the Lightning via Streaming-aware Hierarchical Cross-Layer Indexing",
+   "url": "https://arxiv.org/abs/2608.01662"
+  },
+  "feature": "sparse_attn",
+  "match": [
+   "LSA"
+  ],
+  "note": "DSA 的三处改动：top-k 预算里固定留开头 16 个和最近 1024 个 token，读 KV 时更连续；相邻层复用一次索引；推理时先按块粗选再逐 token 细选。LongCat-Flash-Lite-Sparse 也用它，归在 LongCat-Flash-Lite 一行"
+ },
+ {
+  "name": "LSA（Latent Sparse Attention）",
+  "cat": "mixer",
+  "date": "2026-10",
+  "source": {
+   "title": "Latent Sparse Attention: Towards Subquadratic Ultra-Long Context Attention",
+   "url": "https://arxiv.org/abs/2610.42147"
+  },
+  "note": "key 在学到的潜空间里分层聚类，query 每一层只给少数几个簇打分，参与注意力的 key 数和上下文长度无关。D-LSA 冻结原模型、只蒸馏新加的索引器（作者在 GLM-5.3-Flash 和 Qwen-3.8-27B 上做了，权重没有放出），N-LSA 从头训练；代码和 SGLang 实现已开源"
  },
  {
   "name": "索引跨层复用（IndexShare / IndexCache）",
@@ -508,6 +550,22 @@
    "url": "https://github.com/huggingface/transformers/blob/main/src/transformers/models/muse_spark/modeling_muse_spark.py"
   },
   "feature": "res_gate"
+ },
+ {
+  "name": "FarSkip-Collective",
+  "cat": "resid",
+  "date": "2025-11",
+  "source": {
+   "title": "FarSkip-Collective: Unhobbling Blocking Communication in Mixture of Experts Models",
+   "url": "https://arxiv.org/abs/2511.11505"
+  },
+  "models": [
+   {
+    "name": "Instella-MoE-16B-A3B",
+    "cite": "https://arxiv.org/abs/2609.00791"
+   }
+  ],
+  "note": "下一层注意力读的是还没加路由专家输出的残差，MoE 的 all-to-all 合并可以和它同时跑；已有模型可以靠自蒸馏改成这种连接"
  },
  {
   "name": "GatedNorm",
@@ -671,6 +729,22 @@
   ]
  },
  {
+  "name": "Multi-Router（多视角 Latent MoE）",
+  "cat": "moe",
+  "date": "2026-10",
+  "source": {
+   "title": "Multi-View Latent MoE: Letting Every Router Shape Expert Computation",
+   "url": "https://arxiv.org/abs/2610.40577"
+  },
+  "models": [
+   {
+    "name": "ERNIE-5.5-Flash",
+    "cite": "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base-BF16"
+   }
+  ],
+  "note": "几个独立初始化的 sigmoid 路由器一起打分选专家，再按各路由器给这个专家的相对分数，混合出它的潜空间输入"
+ },
+ {
   "name": "哈希路由层",
   "cat": "moe",
   "date": "2021-06",
@@ -755,6 +829,22 @@
   ]
  },
  {
+  "name": "ECHO（主干自递归多 token 预测）",
+  "cat": "io",
+  "date": "2026-10",
+  "source": {
+   "title": "ECHO: Efficient Causal Self-Recursion Beyond Auxiliary Multi-Token Prediction",
+   "url": "https://arxiv.org/abs/2610.24766"
+  },
+  "models": [
+   {
+    "name": "ERNIE-5.5-Flash",
+    "cite": "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base-BF16"
+   }
+  ],
+  "note": "不另加 MTP 模块，让主干自己的最后一层预测后面几个 token，多步损失直接作用在生成下一个 token 的参数上；推理时模型自己当草稿模型"
+ },
+ {
   "name": "Soft-MTP",
   "cat": "io",
   "date": "2026-10",
@@ -829,6 +919,14 @@
    {
     "name": "GLM-4.5-Air",
     "cite": "https://arxiv.org/abs/2508.06471"
+   },
+   {
+    "name": "JoyAI-LLM Flash",
+    "cite": "https://huggingface.co/jdopensource/JoyAI-LLM-Flash"
+   },
+   {
+    "name": "ERNIE-5.5-Flash",
+    "cite": "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base-BF16"
    }
   ],
   "note": "优化器只能从技术报告里看，这里只列核对过的",

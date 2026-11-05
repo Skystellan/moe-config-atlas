@@ -97,7 +97,10 @@ def _mixer_counts(c, n_layers):
             types = types[:n_layers]  # some configs append MTP layers
         types = [t for t in types if t not in ("moe", "mlp", "dense")]
         short = {"linear_attention": "linear", "full_attention": "full", "sliding_attention": "sliding",
-                 "deepseek_sparse_attention": "DSA", "hybrid": "full", "hybrid_sliding": "sliding"}  # ZAYA1
+                 "deepseek_sparse_attention": "DSA", "hybrid": "full", "hybrid_sliding": "sliding",  # ZAYA1
+                 "indexed_attention": "DSA"}  # Mistral Large 4
+        if c.get("index_topk") or c.get("index_n_heads"):  # dots3-note: the full layers carry a DSA indexer
+            short["full_attention"] = "DSA"
         return Counter(short.get(t, t) for t in types)
     if isinstance(c.get("local_layer_ids"), list) and n_layers:  # Inkling: the other layers are global
         n_local = len(c["local_layer_ids"])
@@ -123,7 +126,10 @@ def _mixer_counts(c, n_layers):
         return Counter(linear=n_layers - n_full, full=n_full)
     lac = c.get("linear_attn_config")
     if isinstance(lac, dict) and lac.get("kda_layers") is not None:  # Kimi Linear / K3
-        return Counter(KDA=len(lac["kda_layers"]), **{full: len(lac.get("full_attn_layers") or [])})
+        n_full = len(lac.get("full_attn_layers") or [])
+        dsa = c["dsa_config"].get("dsa_layers") if isinstance(c.get("dsa_config"), dict) else None
+        n_dsa = len(dsa) if isinstance(dsa, list) else 0  # K3.1 Pro: the MLA layers gain a top-k indexer
+        return Counter(KDA=len(lac["kda_layers"]), **{full: n_full - n_dsa}, DSA=n_dsa)
     if c.get("layer_group_size") and any(k.startswith("kda") for k in c) and n_layers:  # Ling 3
         n_full = n_layers // c["layer_group_size"]
         return Counter(KDA=n_layers - n_full, **{full: n_full})
@@ -132,8 +138,10 @@ def _mixer_counts(c, n_layers):
         return Counter({kind if not c.get("index_topk") else "DSA": 2 * n_layers})  # two attention sublayers per layer
     if isinstance(c.get("compress_ratios"), list) and n_layers:
         # DeepSeek V4: 0 = sliding window only, otherwise sliding window + compressed KV (CSA / HCA).
+        # ERNIE 5.5 Flash marks its MLA + DSA layers with a negative ratio.
         ratios = c["compress_ratios"][:n_layers]  # trailing entries are MTP layers
-        return Counter(sliding=sum(1 for r in ratios if not r), compressed=sum(1 for r in ratios if r))
+        return Counter(sliding=sum(1 for r in ratios if not r), compressed=sum(1 for r in ratios if r and r > 0),
+                       DSA=sum(1 for r in ratios if r and r < 0))
     if isinstance(c.get("sparse_attention_config"), dict) and c["sparse_attention_config"].get("use_sparse_attention"):
         freq = c["sparse_attention_config"].get("sparse_attention_freq")  # MiniMax M3: 0 = dense layer
         if isinstance(freq, list) and n_layers:
@@ -168,10 +176,16 @@ def _kv_bytes_per_global_layer(c):
 
 def _compressed_kv_bytes(c, n_layers):
     """DeepSeek V4: one shared K=V entry per `ratio` tokens in each compressed layer."""
-    ratios = [r for r in c["compress_ratios"][:n_layers] if r]
+    ratios = [r for r in c["compress_ratios"][:n_layers] if r and r > 0]
+    n_mla = sum(1 for r in c["compress_ratios"][:n_layers] if r and r < 0)  # ERNIE 5.5 Flash: MLA + DSA layers
     if not ratios or min(ratios) < 4 or not c.get("head_dim"):
         return None  # V4.1 switched to a different encoding; don't guess
-    return sum(c["head_dim"] * 2 / r for r in ratios)
+    mla = 0
+    if n_mla:
+        if not c.get("hybrid_mla_kv_lora_rank"):
+            return None
+        mla = n_mla * (c["hybrid_mla_kv_lora_rank"] + (c.get("hybrid_mla_qk_rope_head_dim") or 64)) * 2
+    return sum(c["head_dim"] * 2 / r for r in ratios) + mla
 
 
 def _attn_shape(c):
@@ -333,6 +347,15 @@ ARCH = {
     "mellum": dict(qk_norm=True, router="softmax", expert_bias=False),
     "kolibri1": dict(qk_norm=True, router="sigmoid", expert_bias=True, post_norm="三明治"),
     "flint": dict(qk_norm=True, expert_bias=False),
+    "dots1": dict(qk_norm=True),
+    # Mistral Large 4: softmax router without a bias; every layer scales queries by a learned per-head
+    # a·log(pos+1)+b, and RoPE frequencies are learned (LeRoPE).
+    "mistral_large4_text": dict(qk_norm=False, router="softmax", expert_bias=False, len_scale="逐头可学习"),
+    # dots3-note: MLA with a per-head sigmoid gate; only the shared RoPE key is normalized, not each head's Q/K.
+    "dots3_note": dict(qk_norm=False),
+    "sarvam_mla": dict(qk_norm=False, router="sigmoid"),  # use_qk_norm is set but the MLA code never reads it
+    # Instella-MoE: gated MLA (sigmoid of a full-width projection); qk_layernorm only names the latent norms.
+    "instella_moe": dict(qk_norm=False, attn_gate="逐元素"),
 }
 
 # These put RoPE only on the sliding-window layers whenever a model has both kinds (global NoPE).
@@ -346,9 +369,11 @@ FEATURES = ("linear_attn", "sparse_attn", "attn_gate", "attn_sink", "qk_norm", "
 
 
 def family(c):
+    arch = ((c.get("architectures") or [""])[0]).lower()
+    if arch.startswith("instellamoe"):  # model_type says deepseek_v3, but the attention and residuals differ
+        return "instella_moe"
     if c.get("model_type"):
         return c["model_type"]
-    arch = ((c.get("architectures") or [""])[0]).lower()
     if arch.startswith("longcat"):
         return "longcat"
     if c.get("d_expert_moe"):  # Mistral params.json; Large 3 shares Small 4's MoE block
@@ -370,19 +395,26 @@ def features(c, mixers):
     kind = ("mamba" if "mamba" in linear else sorted(linear)[0]) if linear else None
     f["linear_attn"] = LINEAR_NAMES.get(kind, kind) if kind else False
     sc = c.get("sparse_config") if isinstance(c.get("sparse_config"), dict) else {}
+    comp = None
+    if "compressed" in kinds:
+        ratios = {r for r in c.get("compress_ratios") or [] if r and r > 0}
+        comp = {frozenset({4, 128}): "CSA+HCA", frozenset({128}): "HCA", frozenset({4}): "CSA"}.get(frozenset(ratios), "压缩")
     if "DSA" in kinds:
-        f["sparse_attn"] = "DSA"
-    elif "compressed" in kinds:
-        ratios = {r for r in c.get("compress_ratios") or [] if r}
-        f["sparse_attn"] = "CSA+HCA" if ratios <= {4, 128} else "压缩"
+        # LongCat Sparse Attention: DSA plus a fixed sink and local window in the top-k budget
+        dsa = "LSA" if c.get("index_local_tokens") else "DSA"
+        f["sparse_attn"] = f"{dsa}+{comp}" if comp else dsa  # ERNIE 5.5 Flash: DSA+HCA
+    elif comp:
+        f["sparse_attn"] = comp
     elif "sparse" in kinds:
         f["sparse_attn"] = ("QSA" if c.get("indexer_budget")
                             else "CSA" if str(sc.get("compression_method", "")).startswith("csa") else "块稀疏")
     else:
         f["sparse_attn"] = False
     gate = _flag(c, "attn_output_gate", "use_head_wise_attn_gate", "mla_use_output_gate", "gated_mla",
-                 "attention_output_gate", "gated_attention_proj_granularity_type", "use_gqa_gate", "gating")
+                 "attention_output_gate", "gated_attention_proj_granularity_type", "use_gqa_gate", "gating",
+                 "gated_attention", "attention_gate_type", "use_gated_attn")
     granularity = (c.get("gating_type") or c.get("mla_output_gate_type")
+                   or {"headwise": "head_wise"}.get(c.get("attention_gate_type"), c.get("attention_gate_type"))
                    or ("head_wise" if c.get("use_head_wise_attn_gate") else None))
     if _flag(c, "gating"):  # Laguna: True / "per-head" / "per-element" (a softplus gate)
         granularity = "elementwise" if c["gating"] == "per-element" else "head_wise"
@@ -390,11 +422,15 @@ def features(c, mixers):
     f["attn_sink"] = (_flag(c, "learnable_sink", "add_swa_attention_sink_bias", "add_full_attention_sink_bias", "sink")
                       or c.get("softmax_type") == "learnable")
     f["qk_norm"] = _flag(c, "use_qk_norm", "qk_norm", "qk_layernorm", "qk_norm_type")
-    if f["qk_norm"] and isinstance(c.get("no_rope_layers"), list):  # Llama 4 Scout: L2 norm on the RoPE layers only
+    if f["qk_norm"] and isinstance(c.get("no_rope_layers"), list) and c.get("attention_chunk_size"):
+        # Llama 4 Scout: L2 norm on the RoPE layers only
         f["qk_norm"] = "仅局部层"
     f["k_eq_v"] = "全局层" if c.get("attention_k_eq_v") else False
     if c.get("kv_source_layer_ids"):  # DeepSeek V4.1: later layers read KV from the nearest source layer
         f["kv_share"] = f"{len(c['kv_source_layer_ids'])} 个源层"
+    elif isinstance(c.get("kv_source_layers"), list):  # Mistral Large 4: some layers read an earlier layer's KV
+        n = sum(1 for i, src in enumerate(c["kv_source_layers"]) if src != i)
+        f["kv_share"] = f"{n} 层复用" if n else False
     elif c.get("num_kv_shared_layers"):
         f["kv_share"] = f"后 {c['num_kv_shared_layers']} 层"
     elif c.get("use_cla"):
@@ -429,6 +465,10 @@ def features(c, mixers):
         roped = [i for i in full if i < (c.get("first_k_dense_replace") or 0)]
         if roped:
             f["nope"] = f"{len(full) - len(roped)}/{len(full)} 层"
+    nr = c.get("no_rope_layers")
+    if isinstance(nr, list) and not c.get("attention_chunk_size") and 0 in nr and rope:
+        # Mistral Large 4: every 4th global layer skips RoPE
+        f["nope"] = f"{nr.count(0)}/{len(nr)} 层"
     # Query scaled up with log(position) on the global layers (Scalable-Softmax): Llama 4, Inkling
     f["len_scale"] = _flag(c, "attn_temperature_tuning", "log_scaling_n_floor")
 
@@ -450,7 +490,8 @@ def features(c, mixers):
     else:
         f["ngram_mem"] = False
     router = (c.get("scoring_func") or c.get("moe_router_activation_func") or c.get("moe_router_activation")
-              or c.get("score_func") or c.get("expert_selection_fn") or c.get("router_score_function")
+              or c.get("score_func") or c.get("score_function") or c.get("expert_selection_fn")
+              or c.get("router_score_function")
               or c.get("gate_activation")
               or ("sigmoid" if c.get("moe_router_use_sigmoid") or c.get("use_moe_router_bias") else None))
     if fam == "bailing_moe":  # Ling 1.x routes with softmax, Ling 2.0 with sigmoid + expert bias

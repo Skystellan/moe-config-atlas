@@ -329,7 +329,7 @@ const SHORT = { sqrtsoftplus: "√softplus" };
 const FEATURES = [
   { key: "linear_attn", group: "attn", label: "线性注意力", th: "线性", title: "GDN、KDA、Lightning、Mamba-2 或门控短卷积层（状态大小固定）" },
   { key: "window", group: "attn", label: "滑窗", title: "滑动窗口注意力层（窗口大小）；Llama 4 是固定分块", value: (m) => windowLabel(m) },
-  { key: "sparse_attn", group: "attn", label: "稀疏注意力", th: "稀疏", title: "DSA、QSA、CSA、块稀疏或压缩注意力" },
+  { key: "sparse_attn", group: "attn", label: "稀疏注意力", th: "稀疏", title: "DSA、LSA、QSA、CSA、块稀疏或压缩注意力（CSA / HCA）" },
   { key: "mla", group: "attn", label: "MLA", title: "多头潜注意力" },
   { key: "attn_gate", group: "attn", label: "输出门", title: "softmax 注意力输出上的门（sigmoid，Laguna 用 softplus；逐头或逐元素）" },
   { key: "attn_sink", group: "attn", label: "Sink", title: "可学习的 attention sink" },
@@ -340,7 +340,7 @@ const FEATURES = [
   { key: "attn_conv", group: "attn", label: "QKV 短卷积", th: "QKV 卷积", title: "softmax 注意力的 Q/K/V（或子层输出）先过因果短卷积；值是加卷积的位置" },
   { key: "partial_rope", group: "pos", label: "部分 RoPE", title: "全局注意力层每个头只有这一比例的维度加 RoPE" },
   { key: "nope", group: "pos", label: "NoPE", title: "全局注意力层不加 RoPE，位置信息来自局部层或线性层（Inkling 改用学到的相对位置 logit）" },
-  { key: "len_scale", group: "pos", label: "长度缩放", th: "SSMax", title: "全局层按位置的 log 放大 query（Scalable-Softmax / Llama 4 的温度调节）" },
+  { key: "len_scale", group: "pos", label: "长度缩放", th: "SSMax", title: "按位置的 log 放大 query（Scalable-Softmax / Llama 4 的温度调节；Mistral Large 4 的系数按头学习）" },
   { key: "hyper_conn", group: "resid", label: "超连接", title: "多路残差流（HC / mHC / iHC）" },
   { key: "attn_res", group: "resid", label: "AttnRes", title: "Attention Residuals：用注意力聚合前面各层的输出（块大小）" },
   { key: "res_gate", group: "resid", label: "残差门", title: "子层输出和残差按逐通道的可学习权重相加（门或缩放）" },

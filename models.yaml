@@ -68,14 +68,13 @@
   total: 48
   active: 3
 - vendor: Kimi
-  name: Kimi K3
-  repo: moonshotai/Kimi-K3
-  variants:
-  - {name: K3.1 Pro, released: 2026-10-23, note: 10 月 23 日上线 API，权重 11 月 4 日前放出}
-  released: 2026-06
+  name: Kimi K3.1 Pro
+  repo: moonshotai/Kimi-K3.1-Pro
+  variants: [moonshotai/Kimi-K3]
+  released: 2026-11
   total: 2780
   active: 104
-  notes: K3.1 Pro 是 K3 的后训练版本，权重未放出，按 K3 计。
+  notes: 在 K3 上继续后训练，并把 24 个门控 MLA 全局层换成门控 DSA（加 top-2048 索引器），MoE 配置不变，所以 K3 算作同一配置的早期版本。
 
 - vendor: Qwen
   name: Qwen3-30B-A3B
@@ -344,11 +343,18 @@
   released: 2026-03
   total: 119
   active: 6.5
+- vendor: Mistral
+  name: Mistral Large 4
+  repo: mistralai/Mistral-Large-4-1T-A52B
+  released: 2026-10
+  total: 1000
+  active: 52
+  notes: 图文多模态，激活 52B 含嵌入（不含为 49B）。72 层都是带 DSA 索引器的 MLA；每 4 层有一层不加 RoPE，第 39 层起的 9 个这种层直接读第 35 层的 KV。RoPE 频率可学习（LeRoPE）；权重里带一个 DSpark 投机解码草稿头。
 
 - vendor: NVIDIA
   name: Nemotron 3 Nano
   repo: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
-  variants: [nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16, nvidia/Nemotron-Cascade-2-30B-A3B, nvidia/NVIDIA-Nemotron-Labs-3-Elastic-30B-A3B-BF16, nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16, nvidia/NVIDIA-NemotronLabs-AI-for-Media-Sports-Tennis]
+  variants: [nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16, nvidia/Nemotron-Cascade-2-30B-A3B, nvidia/NVIDIA-Nemotron-Labs-3-Elastic-30B-A3B-BF16, nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16, nvidia/NVIDIA-NemotronLabs-AI-for-Media-Sports-Tennis, nvidia/NVIDIA-NemotronLabs-AI-for-Media-Sports-Basketball]
   released: 2025-12
   total: 30
   active: 3.5
@@ -431,9 +437,17 @@
   released: 2025-06
   total: 300
   active: 47
+- vendor: ERNIE
+  name: ERNIE-5.5-Flash
+  repo: baidu/ERNIE-5.5-Flash-Base-BF16
+  released: 2026-10
+  total: 280
+  active: 14
+  notes: 目前只放出预训练结束时的 Base。37 层 HCA（每 128 个 token 存一条 KV）+ 6 层 MLA+DSA，输出门由 query 的低秩潜向量算出，路由用多个路由器（Multi-Router Latent MoE），MTP 直接用主干最后一层（ECHO）。
 
 # Labs outside the first discovery list, added 2026-11 after scanning every MoE
-# architecture in transformers 5.21.
+# architecture in transformers 5.21 and Hugging Face's most-liked, most-downloaded
+# and trending text and multimodal models.
 - vendor: Meta
   name: Llama 4 Scout
   repo: meta-llama/Llama-4-Scout-17B-16E-Instruct
@@ -639,6 +653,47 @@
   released: 2026-10
   total: 39.8
   active: 2.5
+- vendor: dots
+  name: dots.llm1
+  repo: dots-studio/dots.llm1.inst
+  released: 2025-06
+  total: 142
+  active: 14
+- vendor: dots
+  name: dots3-note Preview
+  repo: dots-studio/dots3-note-prev
+  released: 2026-08
+  total: 280
+  active: 16
+  notes: 文本、图像、视频、音频多模态。13 个 DSA 层和 33 个滑窗层都是 MLA，滑窗层另用一套维度（64 头、潜维度 1024）；MTP 是一个共享层。
+- vendor: Sarvam
+  name: Sarvam-30B
+  repo: sarvamai/sarvam-30b
+  released: 2026-03
+  total: 30
+  active: 2.4
+  notes: 总参数和激活参数都按模型卡，不含嵌入。
+- vendor: Sarvam
+  name: Sarvam-105B
+  repo: sarvamai/sarvam-105b
+  variants: [sarvamai/prism]
+  released: 2026-03
+  total: 105
+  active: 10.3
+  notes: config 里写了 use_qk_norm，但 MLA 的建模代码没有用到。
+- vendor: AMD
+  name: Instella-MoE-16B-A3B
+  repo: amd/Instella-MoE-16B-A3B-Think
+  released: 2026-07
+  total: 16
+  active: 2.8
+  notes: 层间用 FarSkip-Collective 连接：下一层注意力读的是不含路由专家输出的残差，专家的 all-to-all 通信可以和它重叠。
+- vendor: JoyAI
+  name: JoyAI-LLM Flash
+  repo: jdopensource/JoyAI-LLM-Flash
+  released: 2026-02
+  total: 48
+  active: 3
 
 - vendor: Kimi
   name: Moonlight-16B-A3B
