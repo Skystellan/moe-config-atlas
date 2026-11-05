@@ -5,9 +5,10 @@ const TIERS = [
   { id: "M", label: "中（50–500B）" },
   { id: "L", label: "大（≥500B）" },
 ];
+const FP_SORT_DEFAULT = { key: "vendor", dir: -1 };
 const state = {
   q: "", tiers: new Set(), years: new Set(), vendor: "", group: "sparsity", sort: { key: "latest", dir: -1 },
-  fpMode: "model", fpGroup: "all", fpSort: { key: "vendor", dir: -1 }, compare: [], adoptGroup: "all", techCat: "all", detSec: "gate",
+  fpMode: "model", fpGroup: "all", fpSort: { ...FP_SORT_DEFAULT }, compare: [], adoptGroup: "all", techCat: "all", detSec: "gate",
   laySort: "vendor",
 };
 let DATA = [];
@@ -36,6 +37,38 @@ function fmtCtx(n) {
   if (n >= 1 << 20) return `${+(n / (1 << 20)).toFixed(1)}M`;
   return `${Math.round(n / 1024)}K`;
 }
+
+/* ---------- leaderboard scores: Epoch's ECI and the Arena text leaderboard (scripts/bench.py) ---------- */
+
+const BENCH_KEYS = ["eci", "arena"];
+let BENCH = {}; // per source: label, name, url, date, n
+const benchFmt = (k, v) => (v == null ? "–" : k === "eci" ? v.toFixed(1) : String(Math.round(v)));
+// the name key scripts/bench.py matches on: no org, no "(...)", no -Instruct / -it / precision / date tail
+function nameKey(s) {
+  const parts = s.split("/").pop().toLowerCase().replace(/\(.*?\)/g, " ").split(/[\s_-]+/).filter(Boolean);
+  while (parts.length > 1 && /^(instruct|chat|it|bf16|fp8|nvfp4|base|pt|hf|\d{4,8})$/.test(parts[parts.length - 1])) parts.pop();
+  return parts.join("");
+}
+// the version a score came from when it isn't the row's own model, e.g. GLM-5.3 on the GLM-5 row
+function benchFrom(m, k) {
+  const as = m[`${k}_as`];
+  if (!as || [m.name, m.repo].some((n) => nameKey(n) === nameKey(as))) return null;
+  return as.replace(/\s*\(.*?\)/g, "").trim();
+}
+function benchTip(m, k) {
+  const b = BENCH[k] || {};
+  if (m[k] == null) return `${m.name}：${b.name ?? k} 上没有这个配置的任何版本`;
+  const ci = m[`${k}_ci`];
+  return `${m.name} · ${b.name}：${benchFmt(k, m[k])}${ci ? `（区间 ${benchFmt(k, ci[0])}–${benchFmt(k, ci[1])}）` : ""}\n` +
+    `取自 ${m[`${k}_as`]}${k === "arena" && m.arena_votes ? `，${m.arena_votes.toLocaleString("en-US")} 票` : ""}${b.date ? ` · 榜单日期 ${b.date}` : ""}`;
+}
+// best first; configurations no leaderboard has scored go last, newest first
+const benchOrder = (k, dir = -1) => (a, b) => {
+  const x = a[k], y = b[k];
+  if (x == null || y == null) return (x == null) - (y == null) || b.released.localeCompare(a.released);
+  return (x - y) * dir || b.released.localeCompare(a.released);
+};
+const benchSortTitle = (k) => (BENCH[k] ? `${BENCH[k].name}：${BENCH[k].n} 个配置有分数，没有分数的排在最后（榜单日期 ${BENCH[k].date}）` : "");
 function median(xs) {
   const v = xs.filter((x) => x != null).sort((a, b) => a - b);
   if (!v.length) return null;
@@ -579,10 +612,11 @@ function layerName(m, code) {
   if (code === "C" || code === "H") return `${name}${m.window ? `，另带窗口 ${m.window} 的滑窗` : ""}`;
   return name;
 }
-const LAY_SORTS = [["vendor", "按厂家"], ["released", "按时间"], ["global", "按全局层占比"]];
+const LAY_SORTS = [["vendor", "按厂家"], ["released", "按时间"], ["global", "按全局层占比"], ["eci", "按 ECI"], ["arena", "按 Arena"]];
 let layGeom = { cw: 8, gap: 1, H: 13 };
 
 function layerOrder(rows) {
+  if (BENCH_KEYS.includes(state.laySort)) return rows.slice().sort(benchOrder(state.laySort));
   if (state.laySort === "released") return rows.slice().sort((a, b) => b.released.localeCompare(a.released) || a.name.localeCompare(b.name));
   if (state.laySort === "global") {
     return rows.slice().sort((a, b) => (a.global_attn_frac ?? 101) - (b.global_attn_frac ?? 101) || b.released.localeCompare(a.released));
@@ -594,10 +628,15 @@ function layerOrder(rows) {
 }
 
 function renderLayers(rows) {
-  groupChips($("#lay-sort"), state.laySort, LAY_SORTS.map(([id, label]) => ({ id, label })),
+  const sorts = LAY_SORTS.filter(([id]) => !BENCH_KEYS.includes(id) || BENCH[id]);
+  if (!sorts.some(([id]) => id === state.laySort)) state.laySort = "vendor";
+  groupChips($("#lay-sort"), state.laySort, sorts.map(([id, label]) => ({ id, label })),
     (id) => { state.laySort = id; renderLayers(filtered()); });
+  $("#lay-sort").querySelectorAll("button").forEach((b, i) => { if (BENCH[sorts[i][0]]) b.title = benchSortTitle(sorts[i][0]); });
+  const bk = BENCH_KEYS.includes(state.laySort) ? state.laySort : null;
   $("#lay-legend").innerHTML = LAYER_CATS.map((c) => `<span><i class="lk k-${c.id}"></i>${c.label}</span>`).join("") +
-    `<span><i class="lk csa"></i><i class="lk hca"></i>压缩注意力（CSA / HCA）</span><span><i class="lk dense"></i>格子下的短线：dense FFN 层</span><span><i class="lk mtp"></i>MTP 层</span>`;
+    `<span><i class="lk csa"></i><i class="lk hca"></i>压缩注意力（CSA / HCA）</span><span><i class="lk dense"></i>格子下的短线：dense FFN 层</span><span><i class="lk mtp"></i>MTP 层</span>` +
+    (bk ? `<span>左边的数是 ${esc(BENCH[bk].name)}，带 * 的取自同一配置的另一个版本（悬停看是哪个）；空出一行以下的没有分数</span>` : "");
   const ms = layerOrder(rows.filter((m) => m.layout));
   const box = $("#lay");
   const hybrid = (m) => [...m.layout].some((c) => ["local", "linear"].includes(layerCat(c)));
@@ -611,7 +650,7 @@ function renderLayers(rows) {
   if (!ms.length) { box.innerHTML = `<p class="muted">当前筛选下没有配置。</p>`; return; }
 
   const narrow = box.clientWidth < 560;
-  const label = narrow ? 104 + 6 : 76 + 164 + 16;
+  const label = narrow ? (bk ? 44 + 92 + 12 : 104 + 6) : 76 + 164 + 16;
   const maxL = Math.max(...ms.map((m) => m.layout.length));
   const maxMtp = Math.max(0, ...ms.map((m) => m.mtp || 0));
   const avail = box.clientWidth - 22 - label - 26; // padding, labels, layer count
@@ -620,7 +659,8 @@ function renderLayers(rows) {
   const gap = cw >= 5 ? 1 : 0;
   const H = 13;
   layGeom = { cw, gap, H };
-  let prev = null;
+  box.classList.toggle("bench", !!bk);
+  let prev = null, prevScored = false;
   box.innerHTML = ms.map((m) => {
     const n = m.layout.length;
     let svg = "";
@@ -636,12 +676,14 @@ function renderLayers(rows) {
     const end = (m.mtp ? x0 + m.mtp * cw : n * cw) + 4;
     svg += `<text x="${end}" y="${H - 1}">${n}</text>`;
     const grouped = state.laySort === "vendor";
-    const grp = grouped && prev != null && prev !== m.vendor;
+    const grp = grouped ? prev != null && prev !== m.vendor : bk ? prevScored && m[bk] == null : false;
     const showVendor = !grouped || prev !== m.vendor;
     prev = m.vendor;
+    prevScored = bk && m[bk] != null;
     const on = state.compare.includes(m.name);
-    return `<div class="lay-row${grp ? " grp" : ""}${on ? " picked" : ""}" data-row="${esc(m.name)}">` +
-      `<span class="lv">${showVendor ? esc(m.vendor) : ""}</span>` +
+    const from = bk && benchFrom(m, bk);
+    const left = bk ? `<span class="lv sc" title="${esc(benchTip(m, bk))}">${benchFmt(bk, m[bk])}${from ? "*" : ""}</span>` : `<span class="lv">${showVendor ? esc(m.vendor) : ""}</span>`;
+    return `<div class="lay-row${grp ? " grp" : ""}${on ? " picked" : ""}" data-row="${esc(m.name)}">` + left +
       `<button type="button" class="lay-name" data-name="${esc(m.name)}" title="${esc(m.vendor)} · ${m.released} · 点击加入或移出并排对比">${esc(m.name)}</button>` +
       `<svg class="lay-strip" width="${end + 22}" height="${H + 4}" data-name="${esc(m.name)}" role="img" aria-label="${esc(m.name)}：${esc(m.attention ?? "")}">` +
       `${svg}<rect class="cur" hidden/></svg></div>`;
@@ -783,9 +825,9 @@ const SHAPE_COLS = [
 ];
 const bins = {};
 function computeBins() {
-  for (const c of SHAPE_COLS) {
-    const v = DATA.map((m) => m[c.key]).filter((x) => x != null).sort((a, b) => a - b);
-    bins[c.key] = [0.2, 0.4, 0.6, 0.8].map((q) => v[Math.min(v.length - 1, Math.floor(q * v.length))]);
+  for (const key of [...SHAPE_COLS.map((c) => c.key), ...BENCH_KEYS]) {
+    const v = DATA.map((m) => m[key]).filter((x) => x != null).sort((a, b) => a - b);
+    bins[key] = [0.2, 0.4, 0.6, 0.8].map((q) => v[Math.min(v.length - 1, Math.floor(q * v.length))]);
   }
 }
 const binOf = (key, x) => (x == null ? -1 : bins[key].filter((t) => x >= t).length);
@@ -898,6 +940,7 @@ function sortMatrix(rows, col) {
       return (x - y) * dir || b.released.localeCompare(a.released);
     });
   }
+  if (BENCH_KEYS.includes(key)) return rows.slice().sort(benchOrder(key, dir));
   if (key === "released") return rows.slice().sort((a, b) => b.released.localeCompare(a.released) || b.total - a.total);
   // vendors with more configs first, each vendor oldest to newest
   const count = {};
@@ -906,29 +949,49 @@ function sortMatrix(rows, col) {
     a.released.localeCompare(b.released) || a.total - b.total);
 }
 
+const FP_SORTS = [["vendor", "按厂家"], ["released", "按时间"], ["eci", "按 ECI"], ["arena", "按 Arena"]];
+
 function renderMatrix(rows) {
   const g = state.fpGroup;
   const shape = g === "all" || g === "shape" ? SHAPE_COLS : [];
   const feats = g === "shape" ? [] : shownFeatures(g);
-  const cols = shape.map((c, i) => ({ ...c, num: true, gs: i === 0 })).concat(feats.map((f, i) =>
-    ({ key: f.key, label: f.th ?? f.label, title: f.title, f, gs: i === 0 || feats[i - 1].group !== f.group })));
-  const heads = (shape.length ? [{ label: "形状", n: shape.length }] : []).concat(
+  // sorted by a leaderboard: its score becomes the first column
+  const bench = BENCH_KEYS.includes(state.fpSort.key) && BENCH[state.fpSort.key] ? state.fpSort.key : null;
+  const cols = (bench ? [{ key: bench, label: BENCH[bench].label, title: `${BENCH[bench].name}，越高越好`, bench: true, gs: true }] : [])
+    .concat(shape.map((c, i) => ({ ...c, num: true, gs: i === 0 }))).concat(feats.map((f, i) =>
+      ({ key: f.key, label: f.th ?? f.label, title: f.title, f, gs: i === 0 || feats[i - 1].group !== f.group })));
+  const heads = (bench ? [{ label: "榜单", n: 1 }] : []).concat(shape.length ? [{ label: "形状", n: shape.length }] : []).concat(
     FEATURE_GROUPS.map((fg) => ({ label: fg.label, n: feats.filter((f) => f.group === fg.id).length })).filter((x) => x.n));
 
-  const col = cols.find((c) => c.key === state.fpSort.key);
+  // A column sort only lives while its column is on screen: switching to a group without it
+  // drops the sort instead of leaving it to come back later.
+  const col = cols.find((c) => !c.bench && c.key === state.fpSort.key);
+  if (!col && !bench && state.fpSort.key !== "released") state.fpSort = { ...FP_SORT_DEFAULT };
   const sorted = sortMatrix(rows, col);
-  const grouped = !col && state.fpSort.key !== "released";
+  const grouped = state.fpSort.key === "vendor";
 
   const sortBox = $("#fp-sort");
   sortBox.innerHTML = `<span class="muted">排序</span>`;
-  for (const [id, label] of [["vendor", "按厂家"], ["released", "按时间"]]) {
-    const on = id === "vendor" ? grouped : !col && state.fpSort.key === id;
-    sortBox.append(chip(label, on, () => { state.fpSort = { key: id, dir: -1 }; renderMatrix(filtered()); }));
+  for (const [id, label] of FP_SORTS) {
+    if (BENCH_KEYS.includes(id) && !BENCH[id]) continue;
+    const c = chip(label, state.fpSort.key === id, () => { state.fpSort = { key: id, dir: -1 }; renderMatrix(filtered()); });
+    if (BENCH[id]) c.title = benchSortTitle(id);
+    sortBox.append(c);
   }
-  if (col) sortBox.append(chip(`按「${col.label}」${state.fpSort.dir > 0 ? "↑" : "↓"}`, true, () => { state.fpSort.dir *= -1; renderMatrix(filtered()); }));
+  if (col) {
+    const c = chip(`按「${col.label}」${state.fpSort.dir > 0 ? "↑" : "↓"}`, true, () => { state.fpSort = { ...FP_SORT_DEFAULT }; renderMatrix(filtered()); });
+    c.classList.add("x");
+    c.title = "取消按这一列排序，回到按厂家";
+    c.insertAdjacentHTML("beforeend", `<span class="x-mark" aria-hidden="true">×</span>`);
+    sortBox.append(c);
+  }
 
   const cell = (c, m) => {
     const gs = c.gs ? " gs" : "";
+    if (c.bench) {
+      const b = binOf(c.key, m[c.key]), from = benchFrom(m, c.key);
+      return `<td class="bench ${b >= 0 ? `q${b + 1}` : "na"}${gs}" title="${esc(benchTip(m, c.key))}">${benchFmt(c.key, m[c.key])}${from ? `<small>${esc(from)}</small>` : ""}</td>`;
+    }
     if (c.num) {
       const b = c.key === "gqa" && m.mla ? -1 : binOf(c.key, m[c.key]);
       const text = c.fmt(m);
@@ -949,23 +1012,26 @@ function renderMatrix(rows) {
   $("#fp-table").innerHTML = `
     <thead>
       <tr class="gh"><th class="l corner" rowspan="2">型号<span class="muted"> · 点 + 加入对比</span></th>${heads.map((h) => `<th class="gs" colspan="${h.n}">${esc(h.label)}</th>`).join("")}</tr>
-      <tr class="ch">${cols.map((c) => `<th class="${c.gs ? "gs" : ""}" data-key="${c.key}" aria-sort="${sortAttr(c)}" title="${esc(c.title)}（点击排序）">${esc(c.label)}</th>`).join("")}</tr>
+      <tr class="ch">${cols.map((c) => `<th class="${c.gs ? "gs" : ""}" data-key="${c.key}" aria-sort="${sortAttr(c)}" title="${esc(c.title)}（点击排序：第一次降序，第二次升序，第三次取消）">${esc(c.label)}</th>`).join("")}</tr>
     </thead>
     <tbody>${sorted.map((m, i) => {
-      const first = grouped && i > 0 && sorted[i - 1].vendor !== m.vendor;
+      const first = i > 0 && (grouped ? sorted[i - 1].vendor !== m.vendor : bench ? m[bench] == null && sorted[i - 1][bench] != null : false);
       const on = state.compare.includes(m.name);
       return `<tr class="${first ? "grp" : ""}${on ? " picked" : ""}">
         <th class="l" scope="row"><div class="rh"><button type="button" class="pick" aria-pressed="${on}" data-name="${esc(m.name)}" title="${on ? "移出对比" : "加入下面的并排对比"}">${on ? "✓" : "+"}</button><span><span class="nm"><span class="tier-dot" style="background:${tierColor(m.tier)}"></span>${esc(m.name)}</span><small>${esc(m.vendor)} · ${m.released}</small></span></div></th>
         ${cols.map((c) => cell(c, m)).join("")}</tr>`;
     }).join("")}</tbody>`;
+  // descending → ascending → back to the default order
   $("#fp-table").querySelectorAll("th[data-key]").forEach((th) => th.onclick = () => {
-    const k = th.dataset.key;
-    state.fpSort = { key: k, dir: state.fpSort.key === k ? -state.fpSort.dir : -1 };
+    const k = th.dataset.key, cur = state.fpSort;
+    state.fpSort = cur.key !== k ? { key: k, dir: -1 } : cur.dir < 0 ? { key: k, dir: 1 } : { ...FP_SORT_DEFAULT };
     renderMatrix(filtered());
   });
   $("#fp-table").querySelectorAll("button.pick").forEach((b) => b.onclick = () => togglePick(b.dataset.name));
+  const colored = [bench ? "榜单分数" : "", shape.length ? "形状数值" : ""].filter(Boolean).join("和");
   $("#fp-legend").innerHTML = `<span><i class="sw on"></i>用了（格子里是取值）</span><span><i class="sw off"></i>没用</span><span><i class="sw na"></i>? 未知</span>` +
-    (shape.length ? `<span>形状数值按全部配置的五分位上色：小<span class="ramp">${[1, 2, 3, 4, 5].map((i) => `<i class="sw q${i}"></i>`).join("")}</span>大</span>` : "");
+    (colored ? `<span>${colored}按全部配置的五分位上色：小<span class="ramp">${[1, 2, 3, 4, 5].map((i) => `<i class="sw q${i}"></i>`).join("")}</span>大</span>` : "") +
+    (bench ? `<span>${esc(BENCH[bench].name)}：${BENCH[bench].n} 个配置有分数，同一配置的多个版本取最高分，小字是取分的版本；横线以下没有分数</span>` : "");
 }
 
 function renderHeatmap(rows) {
@@ -1064,12 +1130,21 @@ function defaultPicks() { // the newest large config of each of the four most re
 }
 
 const pct = (x) => (x == null ? "–" : `${num(x)}%`);
+// no bar: a leaderboard score has no zero to scale from
+function benchCmp(m, k) {
+  const from = benchFrom(m, k);
+  return m[k] == null ? "–" : `<span title="${esc(benchTip(m, k))}">${benchFmt(k, m[k])}</span>${from ? ` <span class="muted">（${esc(from)}）</span>` : ""}`;
+}
 const CMP_SECTIONS = [
   { label: "规模", rows: [
     { label: "厂家 · 首发", f: (m) => `${esc(m.vendor)} · ${m.released}` },
     { label: "总参数", f: (m) => fmtParams(m.total), v: (m) => m.total },
     { label: "激活参数", f: (m) => fmtParams(m.active), v: (m) => m.active },
     { label: "参数激活比", f: (m) => pct(m.param_activation), v: (m) => m.param_activation },
+  ] },
+  { label: "榜单", rows: [
+    { label: "ECI", title: "Epoch Capabilities Index，同一配置的多个版本取最高", f: (m) => benchCmp(m, "eci") },
+    { label: "Arena", title: "Arena 文本榜分数，同一配置的多个版本取最高", f: (m) => benchCmp(m, "arena") },
   ] },
   { label: "稀疏度", rows: [
     { label: "E/k+s", f: fmtConfig },
@@ -1582,6 +1657,13 @@ const COL_GROUPS = {
     { key: "rope_frac", label: "RoPE", title: "全局层每个头里加 RoPE 的维度占比", f: ropeLabel },
   ] },
 };
+COL_GROUPS.bench = { label: "榜单", cols: [
+  { key: "eci", label: "ECI", title: "Epoch Capabilities Index：几十项 benchmark 拟合出的综合能力分，同一配置的多个版本取最高", f: (m) => benchFmt("eci", m.eci) },
+  { key: "eci_as", label: "ECI 取自", l: true, f: (m) => esc(m.eci_as ?? "–") },
+  { key: "arena", label: "Arena", title: "Arena 文本榜分数（默认的 style control 榜），同一配置的多个版本取最高", f: (m) => benchFmt("arena", m.arena) },
+  { key: "arena_as", label: "Arena 取自", l: true, f: (m) => esc(m.arena_as ?? "–") },
+  { key: "arena_votes", label: "票数", title: "Arena 上取分那个版本的投票数", f: (m) => (m.arena_votes == null ? "–" : m.arena_votes.toLocaleString("en-US")) },
+] };
 const cols = () => BASE_COLS.concat(COL_GROUPS[state.group].cols);
 
 // Model name plus the newest same-config versions, so a fresh post-training
@@ -1678,6 +1760,79 @@ function update() {
   renderTable(rows);
 }
 
+/* ---------- folding: every titled block collapses from its heading; the choice is kept per browser ---------- */
+
+const FOLD_KEY = "folds";
+const folds = [];
+
+// A shut block keeps its width and only loses its height, so charts and hand-drawn views
+// laid out while it is shut come back at the right size without a re-render.
+function setFold(f, shut) {
+  f.shut = shut;
+  f.btn.setAttribute("aria-expanded", String(!shut));
+  f.body.classList.toggle("shut", shut);
+}
+function saveFolds() {
+  try { localStorage.setItem(FOLD_KEY, JSON.stringify(folds.filter((f) => f.shut).map((f) => f.key))); } catch (e) {}
+  const all = $("#fold-all");
+  if (all) all.textContent = folds.length && folds.every((f) => f.shut) ? "全部展开" : "全部折叠";
+}
+function initFolds() {
+  let shut = new Set();
+  try { shut = new Set(JSON.parse(localStorage.getItem(FOLD_KEY) || "[]")); } catch (e) {}
+  const make = (head, nodes, card) => {
+    const body = document.createElement("div");
+    body.className = "fold-body";
+    body.id = `fold-${folds.length}`;
+    head.after(body);
+    body.append(...nodes);
+    const key = head.textContent.trim();
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "fold";
+    btn.setAttribute("aria-controls", body.id);
+    btn.innerHTML = `<span>${head.innerHTML}</span><svg class="fold-ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5"/></svg>`;
+    head.replaceChildren(btn);
+    const f = { key, head, body, btn, card };
+    btn.onclick = () => { setFold(f, !f.shut); saveFolds(); };
+    folds.push(f);
+    setFold(f, shut.has(key));
+  };
+  for (const el of [...document.querySelectorAll("main > h2.sec, main > section.card")]) {
+    if (el.matches("section.card")) {
+      const h = el.querySelector(":scope > h2");
+      if (h) make(h, [...el.children].filter((n) => n !== h), el);
+      continue;
+    }
+    // a section heading folds what it titles: a grid of charts with its legend, or a card without a title of its own
+    const nodes = [];
+    for (let n = el.nextElementSibling; n && !n.matches("h2, section.card"); n = n.nextElementSibling) nodes.push(n);
+    const next = el.nextElementSibling;
+    if (!nodes.length && next && next.matches("section.card") && !next.querySelector(":scope > h2")) nodes.push(next);
+    if (nodes.length) make(el, nodes, null);
+  }
+  if ($("#fold-all")) $("#fold-all").onclick = () => {
+    const open = folds.every((f) => f.shut);
+    folds.forEach((f) => setFold(f, !open));
+    saveFolds();
+  };
+  // following a link into a shut block opens it first, so the browser scrolls to something visible
+  const reveal = (hash) => {
+    let id = hash;
+    try { id = decodeURIComponent(hash); } catch (e) {}
+    const t = id && document.getElementById(id);
+    if (!t) return;
+    for (const f of folds) if (f.shut && (f.head === t || f.body.contains(t) || (f.card && f.card === t))) { setFold(f, false); saveFolds(); }
+  };
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+    if (a) reveal(a.getAttribute("href").slice(1));
+  });
+  addEventListener("hashchange", () => reveal(location.hash.slice(1)));
+  if (location.hash && !location.hash.startsWith("#cmp=")) reveal(location.hash.slice(1));
+  saveFolds();
+}
+
 function initTheme() {
   $("#theme").onclick = () => {
     const dark = document.documentElement.dataset.theme
@@ -1695,6 +1850,7 @@ async function main() {
   const [res, tres, dres] = await Promise.all(["models.json", "techniques.json", "details.json"].map((f) => fetch(dataUrl(f))));
   const data = await res.json();
   DATA = data.models;
+  BENCH = data.bench || {};
   TECHS = tres.ok ? await tres.json() : [];
   DPOS = dres.ok ? await dres.json() : [];
   CMP_SECTIONS.push({ label: "设计细节", rows: DPOS.map((p) => ({ label: p.name, title: p.what, f: (m) => esc(detailText(p, m)) })) });
@@ -1723,4 +1879,5 @@ async function main() {
   });
 }
 
+initFolds(); // before the data arrives, so folded sections never flash open
 main().catch((e) => { $("#meta").textContent = `数据加载失败：${e.message}`; });

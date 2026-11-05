@@ -21,6 +21,7 @@
     <a href="data/models.csv" download>CSV</a>
     <a href="data/models.json" download>JSON</a>
     <a href="https://github.com/Skystellan/moe-config-atlas">GitHub</a>
+    <button id="fold-all" type="button">全部折叠</button>
     <button id="theme" type="button" aria-label="切换深浅色">◐</button>
   </nav>
 </header>
@@ -88,7 +89,7 @@
 
   <section class="card" id="layers">
     <h2>逐层结构</h2>
-    <p class="sub">每行一个配置，每格是一层 token mixer，从第一层排到最后一层。格子越高，这一层的 KV 缓存随上下文涨得越多：全局和稀疏注意力最高，滑窗和分块一半，线性注意力、Mamba 和短卷积的状态大小固定，最矮。悬停看每一层，点型号加入并排对比；随上面的筛选变化。<span class="take" id="lay-take"></span></p>
+    <p class="sub">每行一个配置，每格是一层 token mixer，从第一层排到最后一层。格子越高，这一层的 KV 缓存随上下文涨得越多：全局和稀疏注意力最高，滑窗和分块一半，线性注意力、Mamba 和短卷积的状态大小固定，最矮。悬停看每一层，点型号加入并排对比；按 ECI 或 Arena 排序可以看榜单上靠前的模型用的是什么层。随上面的筛选变化。<span class="take" id="lay-take"></span></p>
     <div class="fp-bar"><div class="chips" id="lay-sort" role="group" aria-label="排序"></div></div>
     <p class="legend-note" id="lay-legend"></p>
     <div class="lay-wrap" id="lay"></div>
@@ -98,7 +99,7 @@
   <h2 class="sec">结构特征</h2>
   <section class="card">
     <h2>结构指纹</h2>
-    <p class="sub">每行一个配置：左边是形状数值，右边是 <span id="fp-n">33</span> 项结构特征，格子里是具体取值（窗口大小、稀疏注意力种类、超连接路数等）。点列名排序；也可以切到按厂家或档位汇总的采用比例。随上面的筛选变化。</p>
+    <p class="sub">每行一个配置：左边是形状数值，右边是 <span id="fp-n">33</span> 项结构特征，格子里是具体取值（窗口大小、稀疏注意力种类、超连接路数等）。点列名排序（第一次降序，第二次升序，第三次取消）；按 ECI 或 Arena 排序时最左边多一列榜单分数，可以看表现好的模型都用了哪些结构。也可以切到按厂家或档位汇总的采用比例。随上面的筛选变化。</p>
     <div class="fp-bar">
       <div class="chips" id="fp-mode" role="group" aria-label="视图"></div>
       <div class="chips" id="fp-groups" role="group" aria-label="列分组"></div>
@@ -165,7 +166,7 @@
 
   <section class="card">
     <h2>全表</h2>
-    <p class="sub">默认按最近上传排序；型号下面的小字是同配置的后续版本（只换了后训练、注意力或量化）。点列名排序，点一行看全部版本和备注。</p>
+    <p class="sub">默认按最近上传排序；型号下面的小字是同配置的后续版本（只换了后训练、注意力或量化）。点列名排序，点一行看全部版本和备注；「榜单」分组里是 ECI、Arena 分数和取分的版本。</p>
     <div class="chips col-groups" id="col-groups" role="group" aria-label="列分组"></div>
     <div class="table-wrap">
       <table id="table">
@@ -213,6 +214,7 @@
       <dt>设计细节对照</dt><dd>每个位置（注意力输出门、路由权重、残差相加、norm 等）列出收录模型里出现过的写法，公式按建模代码写；config 和代码都看不出的记为“细节未公开”。“相关工作”是论文或训练配置里的写法，收录的模型还没用。名单和匹配规则在 <code>details.yaml</code>，构建时检查每个模型都归到了某种写法下。</dd>
       <dt>前沿技术追踪</dt><dd>名单在 <code>techniques.yaml</code>，每条有最早出处、独立实验的结果和链接。采用数由结构特征自动统计；config 看不出的技术（优化器、损失函数）只列技术报告里写明的，没有就留空，不靠猜。</dd>
       <dt>config 来源</dt><dd>仓库需申请访问时，config 取自 transformers 里对应的默认配置或公开副本，存档在本仓库的 <code>configs/</code> 下，并在表格详情里注明。</dd>
+      <dt>ECI / Arena</dt><dd>两个公开榜单的分数，用来给配置排序，每次构建时重新读取。ECI 是 Epoch AI 的能力指数（Epoch Capabilities Index），由 GPQA Diamond、SWE-bench Verified、HLE、FrontierMath 等几十项 benchmark 的成绩拟合成一个数，独立评测，开源和闭源模型在同一把尺子上；Arena 是 arena.ai（原 LMArena）文本榜的分数，来自用户对匿名回答的两两投票，用的是默认的 style control 榜，更接近聊天体验而不是 benchmark。榜单上的名字和每个配置的型号、仓库名和同配置的各个版本对上（规则在 <code>scripts/bench.py</code>，对不上的写在 <code>bench.yaml</code>），同一配置取最高分，并注明取自哪个版本：后续版本只换了后训练，架构还是这一个。两个榜都没收录的配置排在最后；分数只反映收录时的版本，小模型和地区性模型覆盖得少。数据按 CC BY 4.0 使用。</dd>
       <dt>档位</dt><dd>按总参数：小 ≤ 50B，中 50–500B，大 ≥ 500B。</dd>
       <dt>收录范围</dt><dd>2025 年及以后首次上传的开源 MoE；只改了后训练、注意力或量化而 MoE 配置不变的版本合并为一行。</dd>
     </dl>
@@ -220,7 +222,7 @@
 </main>
 
 <footer class="wrap foot">
-  数据来自各模型在 Hugging Face 上的 config.json 与模型卡。发现错误请到 <a href="https://github.com/Skystellan/moe-config-atlas/issues">GitHub issues</a> 反馈。
+  数据来自各模型在 Hugging Face 上的 config.json 与模型卡；榜单分数来自 <a href="https://epoch.ai/benchmarks">Epoch AI</a> 和 <a href="https://arena.ai/leaderboard/text">Arena</a>（CC BY 4.0）。发现错误请到 <a href="https://github.com/Skystellan/moe-config-atlas/issues">GitHub issues</a> 反馈。
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.6.0/echarts.min.js"></script>
