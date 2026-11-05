@@ -9,11 +9,12 @@
 - **稀疏度**：E/k、专家激活比、参数激活比、专家粒度。
 - **形状与注意力**：宽深比 d/L、注意力宽度比（query 头数 × 每头 QK 维度 / d_model）、Q/KV、RoPE 维度占比、全局注意力层占比、长上下文每 token 的 KV cache、最大上下文。
 - **结构特征**：33 项，分五组。注意力（线性 / 滑窗 / 稀疏注意力、MLA、输出门、sink、QK-norm、K=V、跨层 KV、索引复用、QKV 短卷积）、位置编码（部分 RoPE、NoPE、长度缩放 SSMax）、残差与归一化（超连接 HC / mHC / iHC、AttnRes、残差门、GatedNorm、后置 norm、并行块）、MoE 与 FFN（共享专家及其门、LatentMoE、零计算专家、路由打分函数、专家偏置、分组路由、哈希路由、FFN 激活、激活限幅）、输出与记忆（MTP、softcap、N-gram 记忆）。有三种看法：逐个模型的结构指纹矩阵（也可按厂家或档位汇总）、最多 4 个模型的并排对比（选择写进网址）、按季度的采用率。
+- **榜单排序**：结构指纹、逐层结构、全表和并排对比都可以按两个公开榜单的分数排：Epoch AI 的能力指数 ECI（几十项 benchmark 拟合出的一个数）和 Arena 文本榜（arena.ai，原 LMArena）。分数在构建时读取，同一配置的多个版本取最高分并注明版本；匹配规则在 `scripts/bench.py`，名字对不上的写进 `bench.yaml`。两个来源都是 CC BY 4.0。
 - **前沿技术追踪**：`techniques.yaml` 里的 2024 年以来的结构和训练改动，每条有最早出处、独立实验测到的效果（主要来自 Pavlichenko 2026 的 1,129 次消融和 Marin 的训练记录）和收录模型里的采用情况。
 
 ## 怎么更新
 
-- **数据刷新**：`pages.yml` 每周一和每次推送到 `main` 时重新拉取所有 `config.json`，有变化就提交 `site/data/` 并重新部署。
+- **数据刷新**：`pages.yml` 每周一和每次推送到 `main` 时重新拉取所有 `config.json` 和两个榜单，有变化就提交 `site/data/` 并重新部署。某个榜单那天读不到时沿用上一次的分数。
 - **发现新模型**：`discover.yml` 每周一扫描 `discover.yaml` 里列出的厂家组织。MoE 形状和已收录模型相同的仓库会加进对应条目的 `variants`，新形状会作为新条目加进 `models.yaml`，然后开一个 PR。合并即收录，不想要的条目在 PR 里删掉即可（`discover_state.json` 会记住，下次不再提）。
 
 ## 手动收录一个模型

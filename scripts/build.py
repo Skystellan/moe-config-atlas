@@ -19,6 +19,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
+import bench  # noqa: E402
 import hfconfig  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -300,15 +301,26 @@ def main():
     rows.sort(key=lambda x: (x["vendor"], x["released"], x["total"]))
 
     OUT.mkdir(parents=True, exist_ok=True)
-    now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     prev = OUT / "models.json"
-    if prev.exists():  # keep the old timestamp when nothing changed, so the data commit stays empty
-        old = json.loads(prev.read_text())
-        if old.get("models") == rows:
-            now = old.get("generated", now)
+    old = json.loads(prev.read_text()) if prev.exists() else {}
+
+    print("- leaderboards")
+    aliases = yaml.safe_load((ROOT / "bench.yaml").read_text()) or {}
+    unknown = set(aliases) - {x["name"] for x in rows}
+    if unknown:
+        sys.exit(f"bench.yaml names models that are not in models.yaml: {', '.join(sorted(unknown))}")
+    boards = bench.load(cached, args.refresh)
+    scores = bench.attach(rows, boards, aliases, {x["name"]: x for x in old.get("models", [])}, old.get("bench"))
+    for src, s in scores.items():
+        print(f"  {s['label']}: {s['n']} of {len(rows)} configurations scored (leaderboard of {s['date']})")
+
+    now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    if old.get("models") == rows:  # keep the old timestamp when nothing changed, so the data commit stays empty
+        now = old.get("generated", now)
     payload = {
         "generated": now,
         "count": len(rows),
+        "bench": scores,
         "models": rows,
     }
     (OUT / "models.json").write_text(json.dumps(payload, ensure_ascii=False, indent=1))
