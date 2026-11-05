@@ -12,6 +12,11 @@ const state = {
 };
 let DATA = [];
 const charts = [];
+// The deploy stamps index.html with app.js?v=<run id> (see .github/workflows/pages.yml) and the data files get the
+// same stamp, so a fresh page never runs a script or reads data that a browser cached from an earlier deploy
+// (GitHub Pages lets browsers reuse files for 10 minutes). Locally there is no stamp and nothing changes.
+const VERSION = document.currentScript ? new URL(document.currentScript.src).searchParams.get("v") : null;
+const dataUrl = (file) => `data/${file}${VERSION ? `?v=${encodeURIComponent(VERSION)}` : ""}`;
 
 const $ = (sel) => document.querySelector(sel);
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -1687,7 +1692,7 @@ function initTheme() {
 }
 
 async function main() {
-  const [res, tres, dres] = await Promise.all([fetch("data/models.json"), fetch("data/techniques.json"), fetch("data/details.json")]);
+  const [res, tres, dres] = await Promise.all(["models.json", "techniques.json", "details.json"].map((f) => fetch(dataUrl(f))));
   const data = await res.json();
   DATA = data.models;
   TECHS = tres.ok ? await tres.json() : [];
