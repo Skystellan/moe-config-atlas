@@ -1755,19 +1755,6 @@ function update() {
   renderTable(rows);
 }
 
-function initTheme() {
-  $("#theme").onclick = () => {
-    const dark = document.documentElement.dataset.theme
-      ? document.documentElement.dataset.theme === "dark"
-      : matchMedia("(prefers-color-scheme: dark)").matches;
-    const next = dark ? "light" : "dark";
-    document.documentElement.dataset.theme = next;
-    try { localStorage.setItem("theme", next); } catch (e) {}
-    update();
-  };
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
-}
-
 /* ---------- folding: every titled block collapses from its heading; the choice is kept per browser ---------- */
 
 const FOLD_KEY = "folds";
@@ -1782,7 +1769,8 @@ function setFold(f, shut) {
 }
 function saveFolds() {
   try { localStorage.setItem(FOLD_KEY, JSON.stringify(folds.filter((f) => f.shut).map((f) => f.key))); } catch (e) {}
-  $("#fold-all").textContent = folds.length && folds.every((f) => f.shut) ? "全部展开" : "全部折叠";
+  const all = $("#fold-all");
+  if (all) all.textContent = folds.length && folds.every((f) => f.shut) ? "全部展开" : "全部折叠";
 }
 function initFolds() {
   let shut = new Set();
@@ -1818,7 +1806,7 @@ function initFolds() {
     if (!nodes.length && next && next.matches("section.card") && !next.querySelector(":scope > h2")) nodes.push(next);
     if (nodes.length) make(el, nodes, null);
   }
-  $("#fold-all").onclick = () => {
+  if ($("#fold-all")) $("#fold-all").onclick = () => {
     const open = folds.every((f) => f.shut);
     folds.forEach((f) => setFold(f, !open));
     saveFolds();
@@ -1840,8 +1828,20 @@ function initFolds() {
   saveFolds();
 }
 
+function initTheme() {
+  $("#theme").onclick = () => {
+    const dark = document.documentElement.dataset.theme
+      ? document.documentElement.dataset.theme === "dark"
+      : matchMedia("(prefers-color-scheme: dark)").matches;
+    const next = dark ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("theme", next); } catch (e) {}
+    update();
+  };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
+}
+
 async function main() {
-  initFolds();
   const [res, tres, dres] = await Promise.all([fetch("data/models.json"), fetch("data/techniques.json"), fetch("data/details.json")]);
   const data = await res.json();
   DATA = data.models;
@@ -1874,4 +1874,5 @@ async function main() {
   });
 }
 
+initFolds(); // before the data arrives, so folded sections never flash open
 main().catch((e) => { $("#meta").textContent = `数据加载失败：${e.message}`; });
