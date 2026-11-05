@@ -6,6 +6,7 @@ text_config / llm_config, and sometimes give per-layer lists. This module
 hides all of that behind `parse(config) -> dict`.
 """
 from collections import Counter
+from fractions import Fraction
 from statistics import mean
 
 NESTED = ("text_config", "llm_config", "language_config", "thinker_config")
@@ -73,6 +74,17 @@ def _summary(counts):
 
 def _mixers(c, n_layers):
     """Count token-mixer layers by type, e.g. Counter(linear=36, full=12)."""
+    counts = _mixer_counts(c, n_layers)
+    # An indexer that picks which keys each query reads turns the global layers sparse:
+    # Step-5 (`sparse_config`, block-compressed CSA) and Qwen3.8 (`indexer_*`, QSA).
+    sc = c.get("sparse_config")
+    indexed = isinstance(sc, dict) and sc.get("enabled") and "full_attention" in (sc.get("apply_to_layer_types") or ["full_attention"])
+    if (indexed or c.get("indexer_budget")) and counts.get("full"):
+        counts["sparse"] += counts.pop("full")
+    return counts
+
+
+def _mixer_counts(c, n_layers):
     full = "MLA" if c.get("kv_lora_rank") else "full"
     types = c.get("layer_types") or c.get("layers_block_type")
     pattern = c.get("hybrid_override_pattern")
@@ -151,6 +163,59 @@ def _compressed_kv_bytes(c, n_layers):
     return sum(c["head_dim"] * 2 / r for r in ratios)
 
 
+def _attn_shape(c):
+    """Query heads and per-head query/key width of the global attention layers."""
+    heads = c.get("num_attention_heads") or c.get("n_heads")
+    d = c.get("hidden_size") or c.get("dim")
+    if c.get("global_head_dim"):  # Gemma 4 global layers are wider than its sliding ones
+        qk = c["global_head_dim"]
+    elif c.get("kv_lora_rank") and c.get("qk_nope_head_dim") is not None:  # MLA: no-RoPE part + RoPE part
+        # (Youtu's Megatron-style qk_head_dim leaves the RoPE part out, so don't read it)
+        qk = c["qk_nope_head_dim"] + (c.get("qk_rope_head_dim") or 0)
+    else:
+        qk = (c.get("head_dim_full_attention") or c.get("head_dim") or c.get("attention_head_dim")
+              or (d // heads if d and heads else None))
+    return heads, qk or None
+
+
+def _rope_fraction(c, layer_types=None):
+    """Share of each global-attention head's query/key dims that get RoPE (0 = NoPE)."""
+    if c.get("mla_use_nope"):
+        return 0.0
+    if isinstance(c.get("partial_rotary_factors"), list) and isinstance(layer_types, list):  # Step: per layer
+        vals = {f for f, t in zip(c["partial_rotary_factors"], layer_types) if t == "full_attention"}
+        if len(vals) == 1:
+            return float(vals.pop())
+    rp = c.get("rope_parameters") if isinstance(c.get("rope_parameters"), dict) else {}
+    if isinstance(rp.get("full_attention"), dict):  # Gemma 4: per layer type
+        return float(rp["full_attention"].get("partial_rotary_factor") or 1.0)
+    if c.get("kv_lora_rank") and c.get("qk_rope_head_dim") is not None:  # MLA's decoupled RoPE key
+        return c["qk_rope_head_dim"] / ((c.get("qk_nope_head_dim") or 0) + c["qk_rope_head_dim"])
+    if c.get("qk_rope_head_dim") is not None and c.get("head_dim"):  # DeepSeek V4: RoPE on 64 of 512 dims
+        return c["qk_rope_head_dim"] / c["head_dim"]
+    f = c.get("partial_rotary_factor") or rp.get("partial_rotary_factor") or c.get("rotary_percent")
+    if f:
+        return float(f)
+    if c.get("rotary_dim") and c.get("head_dim"):
+        return c["rotary_dim"] / c["head_dim"]
+    return 1.0
+
+
+def _frac(x):
+    f = Fraction(x).limit_denominator(16)
+    return f"{f.numerator}/{f.denominator}"
+
+
+def _limit(xs):
+    """SwiGLU clamp given per layer: '7' when every layer has it, '7（2 层）' when only some do."""
+    on = [x for x in xs if x]
+    if not on:
+        return False
+    vals = sorted({float(x) for x in on})
+    label = "/".join(f"{v:g}" for v in vals)
+    return label if len(on) == len(xs) else f"{label}（{len(on)} 层）"
+
+
 def _moe_layers(c, n_layers):
     if not n_layers:
         return None
@@ -185,25 +250,26 @@ def _moe_layers(c, n_layers):
 # overrides what the config flags say; None means "not public".
 ARCH = {
     "qwen3_moe": dict(qk_norm=True, router="softmax", expert_bias=False),
-    "qwen3_next": dict(qk_norm=True, attn_gate=True, router="softmax", expert_bias=False, linear="GDN"),
-    "qwen3_5_moe_text": dict(qk_norm=True, attn_gate=True, router="softmax", expert_bias=False, linear="GDN"),
-    "qwen4_exp_text": dict(qk_norm=True, attn_gate=True, router="softmax", expert_bias=False, linear="GDN"),
+    "qwen3_next": dict(qk_norm=True, attn_gate=True, router="softmax", expert_bias=False, shared_gate=True, linear="GDN"),
+    "qwen3_5_moe_text": dict(qk_norm=True, attn_gate=True, router="softmax", expert_bias=False, shared_gate=True, linear="GDN"),
+    "qwen4_exp_text": dict(qk_norm=True, attn_gate=True, router="softmax", expert_bias=False, shared_gate=True, linear="GDN"),
     "glm4_moe": dict(router="sigmoid", expert_bias=True),
     "glm4_moe_lite": dict(router="sigmoid", expert_bias=True),
     "glm_moe_dsa": dict(expert_bias=True),
     "glm5_next_text": dict(expert_bias=True, linear="KDA"),
-    "gemma4_text": dict(qk_norm=True, router="softmax", expert_bias=False),
-    "gpt_oss": dict(attn_sink=True, router="softmax", expert_bias=False),
-    "deepseek_v4": dict(qk_norm=True, attn_sink=True),
-    "deepseek_v41_text": dict(qk_norm=True, attn_sink=True),  # no public modeling code; attention assumed as in V4
+    "gemma4_text": dict(qk_norm=True, router="softmax", expert_bias=False, post_norm="三明治"),
+    "gpt_oss": dict(attn_sink=True, router="softmax", expert_bias=False, ffn_act="SwiGLU-OAI"),
+    "deepseek_v4": dict(qk_norm=True, attn_sink=True, k_eq_v=True),
+    "deepseek_v41_text": dict(qk_norm=True, attn_sink=True, k_eq_v=True),  # no public modeling code; attention assumed as in V4
     "kimi_linear": dict(expert_bias=True),
     "bailing_hybrid": dict(qk_norm=False),  # use_qk_norm is set but unused by the modeling code
     "longcat": dict(router="softmax", expert_bias=True),
     "minimax_text_01": dict(router="softmax", expert_bias=False, linear="Lightning"),
     "minimax_m3_vl": dict(qk_norm=True, expert_bias=True),
     "mistral4": dict(router="softmax", expert_bias=False),
-    "nemotron_h": dict(router="sigmoid", expert_bias=True),
-    "nemotron_h_puzzle": dict(router="sigmoid", expert_bias=True),
+    # Nemotron-H attention layers apply no rotary embedding; the Mamba-2 layers carry position.
+    "nemotron_h": dict(router="sigmoid", expert_bias=True, rope=0.0),
+    "nemotron_h_puzzle": dict(router="sigmoid", expert_bias=True, rope=0.0),
     "step3_text": dict(router="softmax", expert_bias=False),
     "step5": dict(qk_norm=None),  # no public modeling code and no qk-norm flag
     "ernie4_5_moe": dict(router="softmax", expert_bias=True),
@@ -212,11 +278,17 @@ ARCH = {
     "mimo_v2_flash": dict(expert_bias=True),
     "mimo_v2": dict(expert_bias=True),
     "youtu_vl_moe": dict(qk_norm=True),
+    # Muse Spark: scaleless QK-norm, elementwise output gate, NoPE on the full-attention layers,
+    # sandwich norms with a learned residual gate, sigmoid router with a correction bias.
+    "muse_spark_text": dict(qk_norm=True, attn_gate="逐元素", router="sigmoid", expert_bias=True,
+                            post_norm="三明治", res_gate=True, rope=0.0),
 }
 
 
-FEATURES = ("linear_attn", "sparse_attn", "attn_gate", "attn_sink", "qk_norm", "hyper_conn", "attn_res",
-            "ngram_mem", "router", "expert_bias", "group_routing")
+FEATURES = ("linear_attn", "sparse_attn", "attn_gate", "attn_sink", "qk_norm", "k_eq_v", "kv_share", "index_share",
+            "partial_rope", "nope", "hyper_conn", "attn_res", "res_gate", "post_norm", "softcap",
+            "ngram_mem", "router", "expert_bias", "group_routing", "hash_route", "zero_expert", "shared_gate",
+            "ffn_act", "act_clamp")
 
 
 def family(c):
@@ -237,26 +309,60 @@ def _flag(c, *keys):
 def features(c, mixers):
     """Structural features that don't reduce to a single number."""
     fam = family(c)
+    arch = ARCH.get(fam, {})
     f = {}
     kinds = {k for k, v in mixers.items() if v}
     linear = kinds & LINEAR
     f["linear_attn"] = ("Mamba-2" if "mamba" in linear else sorted(linear)[0]) if linear else False
+    sc = c.get("sparse_config") if isinstance(c.get("sparse_config"), dict) else {}
     if "DSA" in kinds:
         f["sparse_attn"] = "DSA"
     elif "compressed" in kinds:
         ratios = {r for r in c.get("compress_ratios") or [] if r}
         f["sparse_attn"] = "CSA+HCA" if ratios <= {4, 128} else "压缩"
     elif "sparse" in kinds:
-        f["sparse_attn"] = "块稀疏"
+        f["sparse_attn"] = ("QSA" if c.get("indexer_budget")
+                            else "CSA" if str(sc.get("compression_method", "")).startswith("csa") else "块稀疏")
     else:
         f["sparse_attn"] = False
-    f["attn_gate"] = _flag(c, "attn_output_gate", "use_head_wise_attn_gate", "mla_use_output_gate", "gated_mla",
-                           "attention_output_gate", "gated_attention_proj_granularity_type")
+    gate = _flag(c, "attn_output_gate", "use_head_wise_attn_gate", "mla_use_output_gate", "gated_mla",
+                 "attention_output_gate", "gated_attention_proj_granularity_type")
+    granularity = (c.get("gating_type") or c.get("mla_output_gate_type")
+                   or ("head_wise" if c.get("use_head_wise_attn_gate") else None))
+    f["attn_gate"] = {"head_wise": "逐头", "elementwise": "逐元素"}.get(granularity, True) if gate else False
     f["attn_sink"] = _flag(c, "learnable_sink", "add_swa_attention_sink_bias", "add_full_attention_sink_bias", "sink")
     f["qk_norm"] = _flag(c, "use_qk_norm", "qk_norm", "qk_layernorm", "qk_norm_type")
+    f["k_eq_v"] = "全局层" if c.get("attention_k_eq_v") else False
+    if c.get("kv_source_layer_ids"):  # DeepSeek V4.1: later layers read KV from the nearest source layer
+        f["kv_share"] = f"{len(c['kv_source_layer_ids'])} 个源层"
+    elif c.get("num_kv_shared_layers"):
+        f["kv_share"] = f"后 {c['num_kv_shared_layers']} 层"
+    elif c.get("use_cla"):
+        f["kv_share"] = f"CLA×{c.get('cla_share_factor') or 2}"
+    else:
+        f["kv_share"] = False
+    it = c.get("indexer_types")
+    if isinstance(it, list) and "shared" in it:  # IndexShare: reuse an earlier layer's top-k picks
+        f["index_share"] = f"{it.count('shared')}/{len(it)} 层"
+    elif c.get("index_source_layer_ids"):
+        f["index_share"] = f"{len(c['index_source_layer_ids'])} 个源层"
+    elif (c.get("cli_factor") or 1) > 1:  # LongCat-2.0 cross-layer indexing
+        f["index_share"] = f"每 {c['cli_factor']} 层"
+    else:
+        f["index_share"] = False
+
+    rope = arch.get("rope", _rope_fraction(c, c.get("layer_types")))
+    f["rope_frac"] = rope
+    f["partial_rope"] = _frac(rope) if 0 < rope < 1 else False
+    f["nope"] = rope == 0
+
     n_hc = c.get("hc_mult") or c.get("hc_count") or (4 if c.get("mhc") else None)
-    f["hyper_conn"] = f"{'mHC' if c.get('hc_sinkhorn_iters') else 'HC'}×{n_hc}" if n_hc else False
+    hc = "mHC" if c.get("hc_sinkhorn_iters") else "iHC" if c.get("enable_ihc") else "HC"
+    f["hyper_conn"] = f"{hc}×{n_hc}" if n_hc else False
     f["attn_res"] = c.get("attn_res_block_size") or False
+    f["res_gate"] = _flag(c, "residual_gate_temperature")
+    f["post_norm"] = "Post-LN" if c.get("postnorm") else False
+    f["softcap"] = c.get("final_logit_softcapping") or c.get("attn_logit_softcapping") or False
     if c.get("engram_layer_ids"):
         f["ngram_mem"] = "Engram"
     elif c.get("ngram_size"):
@@ -273,10 +379,29 @@ def features(c, mixers):
     f["expert_bias"] = c.get("topk_method") == "noaux_tc" or _flag(
         c, "moe_router_enable_expert_bias", "use_routing_bias", "use_moe_router_bias",
         "moe_router_modality_aware_expert_bias")
+    if f["expert_bias"] and c.get("moe_router_expert_bias_update_method") == "quantile":
+        f["expert_bias"] = "分位数"
     n_group = c.get("n_group") or c.get("num_expert_groups")
     f["group_routing"] = f"{n_group}/{c.get('topk_group') or c.get('num_expert_groups_per_tok')}" if (n_group or 0) > 1 else False
-    for k, v in ARCH.get(fam, {}).items():
-        if k != "linear":
+    f["hash_route"] = f"前 {c['num_hash_layers']} 层" if c.get("num_hash_layers") else False
+    f["zero_expert"] = c.get("zero_expert_num") or False
+    f["shared_gate"] = False  # only visible in modeling code, see ARCH
+
+    act = (c.get("mlp_hidden_act") or c.get("hidden_act") or c.get("hidden_activation") or "silu").lower()
+    f["ffn_act"] = ("SiTU" if act == "situ" else "ReLU²" if act == "relu2" else "GeGLU" if act.startswith("gelu")
+                    else "SwiGLU-OAI" if act == "swigluoai" else "SwiGLU" if act == "silu" else act)
+    if c.get("swiglu_limit"):
+        f["act_clamp"] = f"{c['swiglu_limit']:g}"
+    elif isinstance(c.get("swiglu_limits"), list):
+        f["act_clamp"] = _limit(c["swiglu_limits"])
+    elif isinstance(c.get("expert_swiglu_limit_list"), list):
+        f["act_clamp"] = _limit(c["expert_swiglu_limit_list"])
+    elif act == "situ" and c.get("activation_situ_beta"):  # beta·tanh(x/beta) bounds the gate softly
+        f["act_clamp"] = f"软 β={c['activation_situ_beta']:g}"
+    else:
+        f["act_clamp"] = False
+    for k, v in arch.items():
+        if k not in ("linear", "rope"):
             f[k] = v
     return f
 
@@ -299,6 +424,8 @@ def parse(raw):
 
     if c.get("d_expert_moe"):
         out["d_expert"] = c["d_expert_moe"]
+    if family(c) == "muse_spark_text" and c.get("moe_hidden_size", 0) < (out["d_model"] or 0):
+        out["latent"] = c["moe_hidden_size"]  # experts run at moe_hidden_size between two projections
     # Gemma 4 runs a dense MLP in parallel with the MoE block: count it as one shared expert.
     if c.get("enable_moe_block") and not out["s"]:
         out["s"] = 1
@@ -333,8 +460,16 @@ def parse(raw):
     has_window = local or c.get("compress_ratios")  # every DeepSeek V4 layer keeps a sliding window
     out["window"] = (c.get("sliding_window") or c.get("sliding_window_size")) if has_window else None
     out["mla"] = bool(c.get("kv_lora_rank"))
-    out["kv_heads"] = None if out["mla"] else (c.get("num_key_value_heads") or c.get("n_kv_heads"))
     out["head_dim"] = c.get("head_dim") or c.get("attention_head_dim")
+    # Attention width of the global layers: query heads x per-head query/key dims, against d_model.
+    heads, qk = _attn_shape(c)
+    out["heads"], out["qk_dim"] = heads, qk
+    out["attn_ratio"] = round(heads * qk / out["d_model"], 2) if heads and qk and out["d_model"] else None
+    # KV heads of the global layers (Gemma 4 and Step use fewer there than in their local layers)
+    kv = (c.get("num_global_key_value_heads") or c.get("num_attention_groups_full_attention")
+          or c.get("num_key_value_heads") or c.get("n_kv_heads") or c.get("num_attention_groups"))
+    out["kv_heads"] = None if out["mla"] else kv
+    out["gqa"] = round(heads / kv, 1) if heads and kv and not out["mla"] else None
     out["context"] = c.get("max_position_embeddings") or c.get("max_position_embedding")
     out["mtp"] = next((c[k] for k in ("num_nextn_predict_layers", "mtp_num_hidden_layers", "mtp_num_layers",
                                       "num_mtp_modules") if isinstance(c.get(k), int)), 0)

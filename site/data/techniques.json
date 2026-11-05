@@ -1,0 +1,821 @@
+[
+ {
+  "name": "输出门（Gated Attention）",
+  "cat": "attn",
+  "date": "2025-05",
+  "source": {
+   "title": "Gated Attention for Large Language Models",
+   "url": "https://arxiv.org/abs/2505.06708"
+  },
+  "feature": "attn_gate",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "−2.1% / −1.4% / −1.5%（d=512/768/1024）；和 QK-norm 一起 −3.6% / −2.6%，等服务成本预测 −2.0%",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   },
+   {
+    "by": "Marin",
+    "text": "535B 用每头一个标量的门 2·sigmoid(x·w)",
+    "url": "https://github.com/marin-community/marin/issues/8435"
+   }
+  ]
+ },
+ {
+  "name": "QK-norm",
+  "cat": "attn",
+  "date": "2023-02",
+  "source": {
+   "title": "Scaling Vision Transformers to 22 Billion Parameters",
+   "url": "https://arxiv.org/abs/2302.05442"
+  },
+  "feature": "qk_norm",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "各宽度约 −1%；去掉 RMSNorm 的可学习缩放后收益消失",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "MLA",
+  "cat": "attn",
+  "date": "2024-05",
+  "source": {
+   "title": "DeepSeek-V2",
+   "url": "https://arxiv.org/abs/2405.04434"
+  },
+  "feature": "mla",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "同参数下和 MHA 持平；KV 缩小后可服务更大的模型，等服务成本预测 −4.1%",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "K=V 共享",
+  "cat": "attn",
+  "date": "2026-03",
+  "source": {
+   "title": "Gemma 4 / DeepSeek-V4 的全局层",
+   "url": "https://huggingface.co/google/gemma-4-26B-A4B-it"
+  },
+  "feature": "k_eq_v",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "+1.2%（更差），而且 vLLM 仍分别缓存 K 和 V",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "可学习 attention sink",
+  "cat": "attn",
+  "date": "2025-08",
+  "source": {
+   "title": "gpt-oss-120b & gpt-oss-20b Model Card",
+   "url": "https://arxiv.org/abs/2508.10925"
+  },
+  "feature": "attn_sink",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "没有可测差异",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "XSA（Exclusive Self Attention）",
+  "cat": "attn",
+  "date": "2026-03",
+  "source": {
+   "title": "Exclusive Self Attention",
+   "url": "https://arxiv.org/abs/2603.09078"
+  },
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "可学习版本的收益到 d=768 消失",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   },
+   {
+    "by": "Marin",
+    "text": "已采用，称带来又一次加速；535B 的注意力输出减去自身 V 方向的分量",
+    "url": "https://openathena.ai/blog/pretraining-speedup/"
+   }
+  ]
+ },
+ {
+  "name": "差分注意力",
+  "cat": "attn",
+  "date": "2024-10",
+  "source": {
+   "title": "Differential Transformer",
+   "url": "https://arxiv.org/abs/2410.05258"
+  },
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "收益到 d=768 消失",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "KV 短卷积",
+  "cat": "attn",
+  "date": "2026-07",
+  "source": {
+   "title": "Thinking Machines Inkling",
+   "url": "https://huggingface.co/thinkingmachines/Inkling"
+  },
+  "note": "Inkling 系列还没收录",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "对 K、V 做 4 抽头因果卷积：−1.0% / −0.7% / −0.7%，最终架构保留在全局层",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   },
+   {
+    "by": "Marin",
+    "text": "535B 在 K、注意力输出、MoE 输出三处加 4 抽头短卷积",
+    "url": "https://github.com/marin-community/marin/issues/8435"
+   }
+  ]
+ },
+ {
+  "name": "Canon 层",
+  "cat": "attn",
+  "date": "2025-12",
+  "source": {
+   "title": "Physics of Language Models: Part 4.1",
+   "url": "https://arxiv.org/abs/2512.17351"
+  },
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "在已有卷积的候选模型上没有帮助（Canon-A +0.78%，Canon-C +0.07%）",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "Value residual",
+  "cat": "attn",
+  "date": "2024-10",
+  "source": {
+   "title": "Value Residual Learning",
+   "url": "https://arxiv.org/abs/2410.17897"
+  },
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "−2.1% / −0.8% / −1.0%；混合模型的全局层上 −0.4%，最终架构保留",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "全局层 NoPE",
+  "cat": "pos",
+  "date": "2025-01",
+  "source": {
+   "title": "Rope to Nope and Back Again",
+   "url": "https://arxiv.org/abs/2501.18795"
+  },
+  "feature": "nope",
+  "note": "全局层不加位置编码，位置信息交给滑窗层或线性层；Llama 4 的 iRoPE 是同一思路",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "混合模型的全局层去掉位置编码没问题，加回部分 RoPE 反而 +0.2%；所有层都去掉则训练崩坏",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "部分 RoPE",
+  "cat": "pos",
+  "date": "2021-06",
+  "source": {
+   "title": "GPT-J 的 rotary_dim",
+   "url": "https://github.com/kingoflolz/mesh-transformer-jax"
+  },
+  "feature": "partial_rope",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "和完整 RoPE 相差 1% 以内，BPB 分不出差别",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   },
+   {
+    "by": "Marin",
+    "text": "PKO 的 1.2× 加速里约一半来自部分 RoPE",
+    "url": "https://openathena.ai/blog/pretraining-speedup/"
+   }
+  ]
+ },
+ {
+  "name": "PKO（partial key offset）",
+  "cat": "pos",
+  "date": "2026-04",
+  "source": {
+   "title": "Marin issue 4976",
+   "url": "https://github.com/marin-community/marin/issues/4976"
+  },
+  "evidence": [
+   {
+    "by": "Marin",
+    "text": "理论加速 1.19–1.24×，实测 1.2×，已采用",
+    "url": "https://openathena.ai/blog/pretraining-speedup/"
+   }
+  ]
+ },
+ {
+  "name": "Lightning Attention",
+  "cat": "mixer",
+  "date": "2025-01",
+  "source": {
+   "title": "MiniMax-01",
+   "url": "https://arxiv.org/abs/2501.08313"
+  },
+  "feature": "linear_attn",
+  "match": [
+   "Lightning"
+  ]
+ },
+ {
+  "name": "Mamba-2",
+  "cat": "mixer",
+  "date": "2024-05",
+  "source": {
+   "title": "Transformers are SSMs",
+   "url": "https://arxiv.org/abs/2405.21060"
+  },
+  "feature": "linear_attn",
+  "match": [
+   "Mamba-2"
+  ],
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "3:1 混合，等服务成本预测 −3.6%",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "Gated DeltaNet",
+  "cat": "mixer",
+  "date": "2024-12",
+  "source": {
+   "title": "Gated Delta Networks",
+   "url": "https://arxiv.org/abs/2412.06464"
+  },
+  "feature": "linear_attn",
+  "match": [
+   "GDN"
+  ],
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "3:1 混合，等服务成本预测 −4.2%",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "KDA",
+  "cat": "mixer",
+  "date": "2025-10",
+  "source": {
+   "title": "Kimi Linear",
+   "url": "https://arxiv.org/abs/2510.26692"
+  },
+  "feature": "linear_attn",
+  "match": [
+   "KDA"
+  ],
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "3:1 混合 −3.7% / −3.4% / −3.4%，可服务 3.6 倍参数，等服务成本预测 −4.7%；加上 MoE、QK-norm、输出门之后领先只剩 0.3%",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "DSA",
+  "cat": "mixer",
+  "date": "2025-09",
+  "source": {
+   "title": "DeepSeek-V3.2-Exp",
+   "url": "https://github.com/deepseek-ai/DeepSeek-V3.2-Exp"
+  },
+  "feature": "sparse_attn",
+  "match": [
+   "DSA"
+  ],
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "质量无可测损失；16–24K 上下文时索引器比省下的注意力还贵，长上下文才划算",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "压缩稀疏注意力（CSA / HCA）",
+  "cat": "mixer",
+  "date": "2026-04",
+  "source": {
+   "title": "DeepSeek-V4",
+   "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro"
+  },
+  "feature": "sparse_attn",
+  "match": [
+   "CSA+HCA",
+   "CSA",
+   "压缩"
+  ],
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "CSA 在 2021 参考模型上 +8.3%",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "QSA",
+  "cat": "mixer",
+  "date": "2026-08",
+  "source": {
+   "title": "Qwen3.8-Flash-Next",
+   "url": "https://huggingface.co/Qwen/Qwen3.8-Flash-Next"
+  },
+  "feature": "sparse_attn",
+  "match": [
+   "QSA"
+  ],
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "质量无可测损失；256K 时可服务的模型大 1.05 倍",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "索引跨层复用（IndexShare / IndexCache）",
+  "cat": "mixer",
+  "date": "2026-03",
+  "source": {
+   "title": "IndexCache",
+   "url": "https://arxiv.org/abs/2603.12201"
+  },
+  "feature": "index_share",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "每 2–4 层跑一次索引器，128K 时服务量 1.33–1.37 倍；4 层共用时一个种子崩了，加 IndexCache 的跨层蒸馏损失后正常",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   },
+   {
+    "by": "SGLang 团队",
+    "text": "DeepSeek-V4.1 有 8 个索引源层，其余压缩层直接复用最近一次的 top-512 选择",
+    "url": "https://www.lmsys.org/blog/2026-09-10-deepseek-v41"
+   }
+  ]
+ },
+ {
+  "name": "跨层 KV 共享",
+  "cat": "mixer",
+  "date": "2024-05",
+  "source": {
+   "title": "You Only Cache Once (YOCO)",
+   "url": "https://arxiv.org/abs/2405.05254"
+  },
+  "feature": "kv_share",
+  "evidence": [
+   {
+    "by": "SGLang 团队",
+    "text": "DeepSeek-V4.1 只有 4 个源层生成压缩 KV 和索引键，其余层读最近的源层，滑窗 KV 仍是各层自己的",
+    "url": "https://www.lmsys.org/blog/2026-09-10-deepseek-v41"
+   }
+  ]
+ },
+ {
+  "name": "超连接（HC）",
+  "cat": "resid",
+  "date": "2024-09",
+  "source": {
+   "title": "Hyper-Connections",
+   "url": "https://arxiv.org/abs/2409.19606"
+  },
+  "feature": "hyper_conn",
+  "match": [
+   "HC×4",
+   "iHC×4"
+  ],
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "参考模型 −2.4% / −2.2% / −1.3% 但服务成本抵消收益；在 2026 混合模型上是第一轮最大的增益（−1.8%）",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "mHC",
+  "cat": "resid",
+  "date": "2025-12",
+  "source": {
+   "title": "mHC: Manifold-Constrained Hyper-Connections",
+   "url": "https://arxiv.org/abs/2512.24880"
+  },
+  "feature": "hyper_conn",
+  "match": [
+   "mHC×4"
+  ],
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "质量和 HC 相同、高学习率更稳，但可服务的激活参数从 9.1B 降到 7.4B",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "AttnRes",
+  "cat": "resid",
+  "date": "2026-03",
+  "source": {
+   "title": "Attention Residuals",
+   "url": "https://arxiv.org/abs/2603.15031"
+  },
+  "feature": "attn_res",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "−1.6% / −1.2% / −1.2%，等服务成本预测 −0.7%",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   },
+   {
+    "by": "Marin",
+    "text": "块 AttnRes（块大小 4）实测 1.06–1.12×，吞吐降 4–7%",
+    "url": "https://openathena.ai/blog/pretraining-speedup/"
+   }
+  ]
+ },
+ {
+  "name": "残差门",
+  "cat": "resid",
+  "date": "2026-09",
+  "source": {
+   "title": "Muse Spark 的 MuseSparkResidualGate（transformers）",
+   "url": "https://github.com/huggingface/transformers/blob/main/src/transformers/models/muse_spark/modeling_muse_spark.py"
+  },
+  "feature": "res_gate"
+ },
+ {
+  "name": "GatedNorm",
+  "cat": "resid",
+  "date": "2026-01",
+  "source": {
+   "title": "A Unified View of Attention and Residual Sinks",
+   "url": "https://arxiv.org/abs/2601.22966"
+  },
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "第二轮里唯一保住收益的改动（d=512 −0.71%，d=768 −0.49%），还消除了梯度尖峰",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   },
+   {
+    "by": "Marin",
+    "text": "535B 在每个 RMSNorm 后都加，秩 128",
+    "url": "https://github.com/marin-community/marin/issues/8435"
+   }
+  ]
+ },
+ {
+  "name": "三明治 / 后置归一化",
+  "cat": "resid",
+  "date": "2024-07",
+  "source": {
+   "title": "Gemma 2",
+   "url": "https://arxiv.org/abs/2408.00118"
+  },
+  "feature": "post_norm",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "没有质量收益，学习率 8e-3 时会炸",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "logit 软截断",
+  "cat": "io",
+  "date": "2024-07",
+  "source": {
+   "title": "Gemma 2",
+   "url": "https://arxiv.org/abs/2408.00118"
+  },
+  "feature": "softcap",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "没有质量收益，也替代不了 QK-norm 的可学习缩放",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "DyT",
+  "cat": "resid",
+  "date": "2025-03",
+  "source": {
+   "title": "Transformers without Normalization",
+   "url": "https://arxiv.org/abs/2503.10622"
+  },
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "常规初始化下 3 个种子 2 个发散；嵌入乘 √d 后仍 +3.1%",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "LatentMoE",
+  "cat": "moe",
+  "date": "2025-12",
+  "source": {
+   "title": "NVIDIA Nemotron 3",
+   "url": "https://arxiv.org/abs/2512.20856"
+  },
+  "feature": "latent",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "对 dense 参考模型是最好的单项（等服务成本 −5.7%），但加到已有细粒度 MoE 的模型上在噪声内",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   },
+   {
+    "by": "Marin",
+    "text": "535B 把 token 压到 3072 维再分发给 384 个专家",
+    "url": "https://github.com/marin-community/marin/issues/8435"
+   }
+  ]
+ },
+ {
+  "name": "无辅助损失的专家偏置",
+  "cat": "moe",
+  "date": "2024-08",
+  "source": {
+   "title": "Auxiliary-Loss-Free Load Balancing",
+   "url": "https://arxiv.org/abs/2408.15664"
+  },
+  "feature": "expert_bias",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "改用 softmax + 均衡损失、去掉共享专家、换 SMEBU 或 sqrt-softplus 都没有可测差异",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "分位数均衡",
+  "cat": "moe",
+  "date": "2026-04",
+  "source": {
+   "title": "Mixture of Experts Quantile Balancing",
+   "url": "https://openathena.ai/blog/quantile-balancing/"
+  },
+  "feature": "expert_bias",
+  "match": [
+   "分位数"
+  ],
+  "evidence": [
+   {
+    "by": "Marin",
+    "text": "在 32B-A5B（1e22 FLOPs）上验证，535B 采用",
+    "url": "https://openathena.ai/blog/quantile-balancing/"
+   }
+  ]
+ },
+ {
+  "name": "sqrt-softplus 路由",
+  "cat": "moe",
+  "date": "2026-04",
+  "source": {
+   "title": "DeepSeek-V4",
+   "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro"
+  },
+  "feature": "router",
+  "match": [
+   "sqrtsoftplus"
+  ]
+ },
+ {
+  "name": "零计算专家",
+  "cat": "moe",
+  "date": "2024-10",
+  "source": {
+   "title": "MoE++",
+   "url": "https://arxiv.org/abs/2410.07348"
+  },
+  "feature": "zero_expert",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "null experts +0.2%（更差）",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "哈希路由层",
+  "cat": "moe",
+  "date": "2021-06",
+  "source": {
+   "title": "Hash Layers For Large Sparse Models",
+   "url": "https://arxiv.org/abs/2106.04426"
+  },
+  "feature": "hash_route"
+ },
+ {
+  "name": "共享专家门",
+  "cat": "moe",
+  "date": "2024-07",
+  "source": {
+   "title": "Qwen2 Technical Report",
+   "url": "https://arxiv.org/abs/2407.10671"
+  },
+  "feature": "shared_gate"
+ },
+ {
+  "name": "SwiGLU 限幅",
+  "cat": "moe",
+  "date": "2025-08",
+  "source": {
+   "title": "gpt-oss-120b & gpt-oss-20b Model Card",
+   "url": "https://arxiv.org/abs/2508.10925"
+  },
+  "feature": "act_clamp"
+ },
+ {
+  "name": "ReLU² 专家",
+  "cat": "moe",
+  "date": "2021-09",
+  "source": {
+   "title": "Primer",
+   "url": "https://arxiv.org/abs/2109.08668"
+  },
+  "feature": "ffn_act",
+  "match": [
+   "ReLU²"
+  ],
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "dense MLP 里最好（等服务成本 −1.5%），放进 2026 混合模型的专家里 +0.7%",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "dense FFN 放到最后一层",
+  "cat": "moe",
+  "date": "2026-10",
+  "source": {
+   "title": "I Tried Every LLM Architecture Change since 2020",
+   "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+  },
+  "note": "收录的模型都把 dense 层放在最前面",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "−0.42% / −0.41% / −0.33%，8 个种子全部改善，并消除第一层 dense FFN 引起的梯度尖峰",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "MTP",
+  "cat": "io",
+  "date": "2024-04",
+  "source": {
+   "title": "Better & Faster LLMs via Multi-token Prediction",
+   "url": "https://arxiv.org/abs/2404.19737"
+  },
+  "feature": "mtp",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "BPB 没有可测改善，收益只在基准分数和投机解码上体现",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "Soft-MTP",
+  "cat": "io",
+  "date": "2026-10",
+  "source": {
+   "title": "Multi-Token Prediction Done Right",
+   "url": "https://arxiv.org/abs/2610.38331"
+  },
+  "note": "只改 MTP 的损失：去掉梯度里的噪声项，只留 KL 自蒸馏",
+  "evidence": [
+   {
+    "by": "作者",
+    "text": "167M–1.2B 上 NTP 困惑度、投机解码速度和零样本准确率都优于标准 MTP（未见独立复现）",
+    "url": "https://arxiv.org/abs/2610.38331"
+   }
+  ]
+ },
+ {
+  "name": "CPLM（copy pointer）",
+  "cat": "io",
+  "date": "2026-10",
+  "source": {
+   "title": "Copy-Paste Language Models",
+   "url": "https://arxiv.org/abs/2610.19247"
+  },
+  "note": "输出头旁加一个指向前文的复制头，代码见 modded-nanogpt PR 379",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "第三轮里小模型上最大的增益：−4.1% / −2.5% / −1.4%，宽度每升一档剩约 60%；可服务的模型小 14%",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "Engram / N-gram 记忆",
+  "cat": "io",
+  "date": "2026-01",
+  "source": {
+   "title": "Conditional Memory via Scalable Lookup",
+   "url": "https://arxiv.org/abs/2601.07372"
+  },
+  "feature": "ngram_mem",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "Engram 在这个规模上没有帮助",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   }
+  ]
+ },
+ {
+  "name": "Muon",
+  "cat": "optim",
+  "date": "2024-12",
+  "source": {
+   "title": "Muon: An optimizer for hidden layers in neural networks",
+   "url": "https://kellerjordan.github.io/posts/muon/"
+  },
+  "models": [
+   {
+    "name": "Moonlight-16B-A3B",
+    "cite": "https://arxiv.org/abs/2502.16982"
+   },
+   {
+    "name": "Kimi K2",
+    "cite": "https://arxiv.org/abs/2507.20534"
+   },
+   {
+    "name": "GLM-4.5",
+    "cite": "https://arxiv.org/abs/2508.06471"
+   },
+   {
+    "name": "GLM-4.5-Air",
+    "cite": "https://arxiv.org/abs/2508.06471"
+   }
+  ],
+  "note": "优化器只能从技术报告里看，这里只列核对过的",
+  "evidence": [
+   {
+    "by": "Pavlichenko 2026",
+    "text": "−2.2% → −1.8%，比大多数结构改动保得住",
+    "url": "https://x.com/nv_pavlichenko/status/2116154049217089946"
+   },
+   {
+    "by": "Marin",
+    "text": "AdamH 换 MuonH 理论 1.29–1.41×，实测 1.25×",
+    "url": "https://openathena.ai/blog/pretraining-speedup/"
+   }
+  ]
+ }
+]

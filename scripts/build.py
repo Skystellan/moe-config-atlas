@@ -23,6 +23,7 @@ import hfconfig  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / ".cache"
+LOCAL_CONFIGS = ROOT / "configs"  # configs of gated repos, with their source in "_source"
 OUT = ROOT / "site" / "data"
 HF = "https://huggingface.co"
 
@@ -55,11 +56,16 @@ def cached(name, fetch, refresh):
 
 
 def fetch_config(repo, refresh):
+    """Return (config, source): source is "hf" or the "_source" note of a local copy."""
     key = repo.replace("/", "__")
+    local = LOCAL_CONFIGS / f"{key}.json"
+    if local.exists():
+        cfg = json.loads(local.read_text())
+        return cfg, cfg.get("_source", "local")
     cfg = cached(f"{key}.config.json", lambda: http_json(f"{HF}/{repo}/resolve/main/config.json"), refresh)
     if cfg is None:  # Mistral ships params.json instead
         cfg = cached(f"{key}.params.json", lambda: http_json(f"{HF}/{repo}/resolve/main/params.json"), refresh)
-    return cfg
+    return cfg, "hf" if cfg is not None else None
 
 
 def fetch_info(repo, refresh):
@@ -94,7 +100,7 @@ def r(x, n=1):
 
 def build_entry(m, refresh):
     repo = m["repo"]
-    raw = fetch_config(repo, refresh)
+    raw, config_source = fetch_config(repo, refresh)
     parsed = hfconfig.parse(raw) if raw else {f: None for f in hfconfig.ALIASES}
     parsed.update(m.get("override") or {})
     info = fetch_info(repo, refresh)
@@ -144,6 +150,11 @@ def build_entry(m, refresh):
         "mla": parsed.get("mla", False),
         "kv_heads": parsed.get("kv_heads"),
         "head_dim": parsed.get("head_dim"),
+        "heads": parsed.get("heads"),
+        "qk_dim": parsed.get("qk_dim"),
+        "attn_ratio": parsed.get("attn_ratio"),
+        "gqa": parsed.get("gqa"),
+        "rope_frac": r(parsed.get("rope_frac"), 3),
         "vocab": parsed.get("vocab"),
         "context": parsed.get("context"),
         "mtp": (parsed.get("mtp") or fetch_index_mtp(repo, refresh)) if raw else None,
@@ -153,6 +164,7 @@ def build_entry(m, refresh):
         "model_type": parsed.get("model_type"),
         "per_layer": parsed.get("per_layer", False),
         "config_ok": raw is not None,
+        "config_source": None if config_source == "hf" else config_source,
         "hf_created": (info.get("createdAt") or "")[:10] or None,
         "latest": latest["created"],
         "latest_name": latest["name"],
@@ -162,6 +174,27 @@ def build_entry(m, refresh):
         "notes": m.get("notes"),
     }
     return entry
+
+
+TECH_CATS = {"attn", "pos", "mixer", "resid", "moe", "io", "optim"}
+TECH_FIELDS = set(hfconfig.FEATURES) | {"mla", "mtp", "latent", "window", "s"}
+
+
+def write_techniques(rows):
+    """Check techniques.yaml against the model data and copy it to the site."""
+    techs = yaml.safe_load((ROOT / "techniques.yaml").read_text())
+    names = {x["name"] for x in rows}
+    for t in techs:
+        where = f"techniques.yaml: {t.get('name')}"
+        assert t.get("cat") in TECH_CATS, f"{where}: unknown cat {t.get('cat')}"
+        assert re.fullmatch(r"\d{4}-\d{2}", str(t.get("date"))), f"{where}: date must be YYYY-MM"
+        assert len(t.get("source") or []) == 2, f"{where}: source is [title, url]"
+        assert not t.get("feature") or t["feature"] in TECH_FIELDS, f"{where}: unknown feature {t['feature']}"
+        for m in t.get("models") or []:
+            assert m["name"] in names and m.get("cite"), f"{where}: adopter {m['name']} needs a tracked model and a cite"
+        t["date"] = str(t["date"])
+        t["source"] = {"title": t["source"][0], "url": t["source"][1]}
+    (OUT / "techniques.json").write_text(json.dumps(techs, ensure_ascii=False, indent=1))
 
 
 def main():
@@ -198,6 +231,8 @@ def main():
         w.writeheader()
         for row in rows:
             w.writerow({**{c: row[c] for c in cols}, "variants": "; ".join(row["variants"])})
+
+    write_techniques(rows)
 
     missing = [x["name"] for x in rows if not x["config_ok"]]
     print(f"\n{len(rows)} models written to {OUT}")
