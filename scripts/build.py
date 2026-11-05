@@ -185,6 +185,8 @@ def build_entry(m, refresh):
         "mtp": (parsed.get("mtp") or fetch_index_mtp(raw.get("_mirror") or repo, refresh)) if raw else None,
         "moe_layers": parsed.get("moe_layers"),
         "attention": parsed.get("attention") if raw else None,
+        "layout": parsed.get("layout") if raw else None,
+        "dense_layers": parsed.get("dense_layers") if raw else None,
         **{f: parsed.get(f) if raw else None for f in hfconfig.FEATURES},
         **{f: parsed.get(f) if raw else None for f in hfconfig.DETAILS},
         **dict(zip(("precision", "quant"), precision(raw, info))),
@@ -315,7 +317,7 @@ def main():
         w = csv.DictWriter(f, fieldnames=cols + ["variants"])
         w.writeheader()
         for row in rows:
-            w.writerow({c: "; ".join(row[c]) if isinstance(row[c], list) else row[c] for c in cols + ["variants"]})
+            w.writerow({c: "; ".join(map(str, row[c])) if isinstance(row[c], list) else row[c] for c in cols + ["variants"]})
 
     write_techniques(rows)
     write_details(rows)

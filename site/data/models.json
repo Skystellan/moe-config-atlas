@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-05 14:42 UTC",
+ "generated": "2026-11-05 15:34 UTC",
  "count": 95,
  "models": [
   {
@@ -43,6 +43,10 @@
    "mtp": 0,
    "moe_layers": 26,
    "attention": "MLA",
+   "layout": "XXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -151,6 +155,8 @@
    "mtp": 0,
    "moe_layers": 50,
    "attention": "sliding×40 + full×10",
+   "layout": "WWWWAWWWWAWWWWAWWWWAWWWWAWWWWAWWWWAWWWWAWWWWAWWWWA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -259,6 +265,11 @@
    "mtp": 0,
    "moe_layers": 54,
    "attention": "sliding×42 + full×14",
+   "layout": "WWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWA",
+   "dense_layers": [
+    0,
+    1
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -367,6 +378,11 @@
    "mtp": 0,
    "moe_layers": 30,
    "attention": "sliding×24 + full×8",
+   "layout": "WWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWA",
+   "dense_layers": [
+    0,
+    1
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -477,6 +493,15 @@
    "mtp": 0,
    "moe_layers": 54,
    "attention": "sliding×45 + full×15",
+   "layout": "WWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWA",
+   "dense_layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -590,6 +615,8 @@
    "mtp": 0,
    "moe_layers": 32,
    "attention": "sliding×24 + full×8",
+   "layout": "WWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -698,6 +725,10 @@
    "mtp": 0,
    "moe_layers": 48,
    "attention": "sliding×36 + full×13",
+   "layout": "AWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWA",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -817,6 +848,12 @@
    "mtp": 1,
    "moe_layers": 58,
    "attention": "DSA",
+   "layout": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+   "dense_layers": [
+    0,
+    1,
+    2
+   ],
    "linear_attn": false,
    "sparse_attn": "DSA",
    "attn_gate": false,
@@ -979,6 +1016,8 @@
    "mtp": 1,
    "moe_layers": 43,
    "attention": "compressed×41 + sliding×2",
+   "layout": "WWCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHC",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": "CSA+HCA",
    "attn_gate": false,
@@ -1105,6 +1144,8 @@
    "mtp": 1,
    "moe_layers": 61,
    "attention": "compressed",
+   "layout": "HHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHCHC",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": "CSA+HCA",
    "attn_gate": false,
@@ -1225,6 +1266,8 @@
    "mtp": 3,
    "moe_layers": 40,
    "attention": "compressed×38 + sliding×2",
+   "layout": "WWCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": "压缩",
    "attn_gate": false,
@@ -1340,6 +1383,10 @@
    "mtp": 1,
    "moe_layers": 27,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -1453,6 +1500,12 @@
    "mtp": 1,
    "moe_layers": 51,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0,
+    1,
+    2
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -1563,6 +1616,10 @@
    "mtp": 1,
    "moe_layers": 42,
    "attention": "compressed×37 + DSA×6",
+   "layout": "HHHHHHHDHHHHHHDHHHHHHDHHHHHHDHHHHHHDHHHHHHD",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": "DSA+HCA",
    "attn_gate": true,
@@ -1676,6 +1733,10 @@
    "mtp": 1,
    "moe_layers": 47,
    "attention": "sliding×36 + full×12",
+   "layout": "WWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWA",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -1786,6 +1847,11 @@
    "mtp": 1,
    "moe_layers": 76,
    "attention": "sliding×58 + full×20",
+   "layout": "AWWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWA",
+   "dense_layers": [
+    0,
+    1
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -1902,6 +1968,10 @@
    "mtp": 1,
    "moe_layers": 45,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -2023,6 +2093,12 @@
    "mtp": 1,
    "moe_layers": 89,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0,
+    1,
+    2
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -2141,6 +2217,10 @@
    "mtp": 1,
    "moe_layers": 46,
    "attention": "MLA",
+   "layout": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -2254,6 +2334,12 @@
    "mtp": 1,
    "moe_layers": 75,
    "attention": "DSA",
+   "layout": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+   "dense_layers": [
+    0,
+    1,
+    2
+   ],
    "linear_attn": false,
    "sparse_attn": "DSA",
    "attn_gate": false,
@@ -2384,6 +2470,12 @@
    "mtp": 1,
    "moe_layers": 42,
    "attention": "KDA×34 + DSA×11",
+   "layout": "KKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDK",
+   "dense_layers": [
+    0,
+    1,
+    2
+   ],
    "linear_attn": "KDA",
    "sparse_attn": "DSA",
    "attn_gate": false,
@@ -2500,6 +2592,8 @@
    "mtp": 0,
    "moe_layers": 30,
    "attention": "sliding×25 + full×5",
+   "layout": "WWWWWAWWWWWAWWWWWAWWWWWAWWWWWA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -2618,6 +2712,8 @@
    "mtp": 0,
    "moe_layers": 32,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -2728,6 +2824,10 @@
    "mtp": 1,
    "moe_layers": 79,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -2843,6 +2943,10 @@
    "mtp": 0,
    "moe_layers": 47,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -2956,6 +3060,10 @@
    "mtp": 1,
    "moe_layers": 77,
    "attention": "DSA",
+   "layout": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": "DSA",
    "attn_gate": "逐元素",
@@ -3064,6 +3172,8 @@
    "mtp": 0,
    "moe_layers": 40,
    "attention": "mamba×36 + attention×4",
+   "layout": "BBBBBABBBBBBBBBABBBBBBBBBABBBBBBBBBABBBB",
+   "dense_layers": [],
    "linear_attn": "Mamba-2",
    "sparse_attn": false,
    "attn_gate": false,
@@ -3174,6 +3284,8 @@
    "mtp": 0,
    "moe_layers": 40,
    "attention": "mamba×36 + attention×4",
+   "layout": "BBBBBABBBBBBBBBABBBBBBBBBABBBBBBBBBABBBB",
+   "dense_layers": [],
    "linear_attn": "Mamba-2",
    "sparse_attn": false,
    "attn_gate": false,
@@ -3284,6 +3396,8 @@
    "mtp": 0,
    "moe_layers": 28,
    "attention": "sliding×20 + full×8",
+   "layout": "AWWAWWWAWWWAWWWAWWWAWWWAWWWA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -3398,6 +3512,8 @@
    "mtp": 0,
    "moe_layers": 28,
    "attention": "sliding×21 + full×7",
+   "layout": "WWWAWWWAWWWAWWWAWWWAWWWAWWWA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -3521,6 +3637,10 @@
    "mtp": 1,
    "moe_layers": 39,
    "attention": "MLA",
+   "layout": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -3634,6 +3754,10 @@
    "mtp": 0,
    "moe_layers": 26,
    "attention": "MLA",
+   "layout": "XXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -3768,6 +3892,10 @@
    "mtp": 0,
    "moe_layers": 60,
    "attention": "MLA",
+   "layout": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -3901,6 +4029,10 @@
    "mtp": 0,
    "moe_layers": 26,
    "attention": "KDA×20 + MLA×7",
+   "layout": "KKKXKKKXKKKXKKKXKKKXKKKXKKX",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": "KDA",
    "sparse_attn": false,
    "attn_gate": false,
@@ -4011,6 +4143,10 @@
    "mtp": 0,
    "moe_layers": 92,
    "attention": "KDA×69 + DSA×24",
+   "layout": "KKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDKKKDD",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": "KDA",
    "sparse_attn": "DSA",
    "attn_gate": "逐元素",
@@ -4138,6 +4274,8 @@
    "mtp": 0,
    "moe_layers": 28,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -4313,6 +4451,8 @@
    "mtp": 0,
    "moe_layers": 88,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -4430,6 +4570,10 @@
    "mtp": 0,
    "moe_layers": 19,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -4560,6 +4704,10 @@
    "mtp": 0,
    "moe_layers": 31,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -4704,6 +4852,13 @@
    "mtp": 0,
    "moe_layers": 76,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0,
+    1,
+    2,
+    3
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -4837,6 +4992,10 @@
    "mtp": 0,
    "moe_layers": 23,
    "attention": "KDA×18 + MLA×6",
+   "layout": "KKKXKKKXKKKXKKKXKKKXKKKX",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": "KDA",
    "sparse_attn": false,
    "attn_gate": "逐头",
@@ -4949,6 +5108,11 @@
    "mtp": 1,
    "moe_layers": 40,
    "attention": "KDA×35 + MLA×7",
+   "layout": "KKKKKXKKKKKXKKKKKXKKKKKXKKKKKXKKKKKXKKKKKX",
+   "dense_layers": [
+    0,
+    1
+   ],
    "linear_attn": "KDA",
    "sparse_attn": false,
    "attn_gate": "逐头",
@@ -5074,6 +5238,13 @@
    "mtp": 1,
    "moe_layers": 68,
    "attention": "KDA×63 + MLA×9",
+   "layout": "KKKKKKKXKKKKKKKXKKKKKKKXKKKKKKKXKKKKKKKXKKKKKKKXKKKKKKKXKKKKKKKXKKKKKKKX",
+   "dense_layers": [
+    0,
+    1,
+    2,
+    3
+   ],
    "linear_attn": "KDA",
    "sparse_attn": false,
    "attn_gate": "逐头",
@@ -5189,6 +5360,11 @@
    "mtp": 0,
    "moe_layers": 22,
    "attention": "conv×18 + full×6",
+   "layout": "VVAVVVAVVVAVVVAVVVAVVAVV",
+   "dense_layers": [
+    0,
+    1
+   ],
    "linear_attn": "门控卷积",
    "sparse_attn": false,
    "attn_gate": false,
@@ -5304,6 +5480,11 @@
    "mtp": 0,
    "moe_layers": 38,
    "attention": "conv×30 + full×10",
+   "layout": "VVAVVVAVVVAVVVAVVVAVVVAVVVAVVVAVVVAVVVAV",
+   "dense_layers": [
+    0,
+    1
+   ],
    "linear_attn": "门控卷积",
    "sparse_attn": false,
    "attn_gate": false,
@@ -5424,6 +5605,8 @@
    "mtp": 1,
    "moe_layers": 28,
    "attention": "MLA",
+   "layout": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "dense_layers": null,
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -5568,6 +5751,8 @@
    "mtp": 1,
    "moe_layers": 14,
    "attention": "MLA",
+   "layout": "XXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "dense_layers": null,
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -5693,6 +5878,8 @@
    "mtp": 3,
    "moe_layers": 38,
    "attention": "DSA",
+   "layout": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+   "dense_layers": null,
    "linear_attn": false,
    "sparse_attn": "LSA",
    "attn_gate": false,
@@ -5805,6 +5992,8 @@
    "mtp": 0,
    "moe_layers": 48,
    "attention": "chunked×36 + full×12",
+   "layout": "UUUAUUUAUUUAUUUAUUUAUUUAUUUAUUUAUUUAUUUAUUUAUUUA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -5920,6 +6109,33 @@
    "mtp": 0,
    "moe_layers": 24,
    "attention": "chunked×36 + full×12",
+   "layout": "UUUAUUUAUUUAUUUAUUUAUUUAUUUAUUUAUUUAUUUAUUUAUUUA",
+   "dense_layers": [
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30,
+    32,
+    34,
+    36,
+    38,
+    40,
+    42,
+    44,
+    46
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -6033,6 +6249,8 @@
    "mtp": null,
    "moe_layers": 62,
    "attention": "sliding×46 + full×16",
+   "layout": "WAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -6148,6 +6366,10 @@
    "mtp": 3,
    "moe_layers": 47,
    "attention": "sliding×39 + full×9",
+   "layout": "AWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWA",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -6282,6 +6504,10 @@
    "mtp": 3,
    "moe_layers": 69,
    "attention": "sliding×60 + full×10",
+   "layout": "AWWWWWWAWWWWWWWAWWWWWWWAWWWWWWWAWWWWWWWAWWWWWWWAWWWWWWWAWWWWWWAWWWWWWA",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -6414,6 +6640,8 @@
    "mtp": 0,
    "moe_layers": 80,
    "attention": "Lightning×70 + full×10",
+   "layout": "NNNNNNNANNNNNNNANNNNNNNANNNNNNNANNNNNNNANNNNNNNANNNNNNNANNNNNNNANNNNNNNANNNNNNNA",
+   "dense_layers": [],
    "linear_attn": "Lightning",
    "sparse_attn": false,
    "attn_gate": false,
@@ -6556,6 +6784,8 @@
    "mtp": 3,
    "moe_layers": 62,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -6681,6 +6911,12 @@
    "mtp": 1,
    "moe_layers": 57,
    "attention": "sparse×57 + full×3",
+   "layout": "AAASSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+   "dense_layers": [
+    0,
+    1,
+    2
+   ],
    "linear_attn": false,
    "sparse_attn": "块稀疏",
    "attn_gate": false,
@@ -6796,6 +7032,12 @@
    "mtp": 0,
    "moe_layers": 58,
    "attention": "MLA",
+   "layout": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "dense_layers": [
+    0,
+    1,
+    2
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -6912,6 +7154,8 @@
    "mtp": 0,
    "moe_layers": 36,
    "attention": "MLA",
+   "layout": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -7030,6 +7274,10 @@
    "mtp": 0,
    "moe_layers": 71,
    "attention": "DSA",
+   "layout": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": "DSA",
    "attn_gate": false,
@@ -7145,6 +7393,8 @@
    "mtp": 0,
    "moe_layers": 23,
    "attention": "mamba×23 + attention×6",
+   "layout": "BBBABBBABBBABBBABBBABBBBABBBB",
+   "dense_layers": null,
    "linear_attn": "Mamba-2",
    "sparse_attn": false,
    "attn_gate": false,
@@ -7286,6 +7536,8 @@
    "mtp": 1,
    "moe_layers": 40,
    "attention": "mamba×40 + attention×8",
+   "layout": "BBBBABBBBABBBBABBBBBABBBBBABBBBBABBBBBABBBBABBBB",
+   "dense_layers": null,
    "linear_attn": "Mamba-2",
    "sparse_attn": false,
    "attn_gate": false,
@@ -7412,6 +7664,8 @@
    "mtp": 1,
    "moe_layers": 48,
    "attention": "mamba×48 + attention×12",
+   "layout": "BBBBABBBABBBBABBBBABBBABBBBABBBBABBBABBBBABBBBABBBABBBBABBBB",
+   "dense_layers": null,
    "linear_attn": "Mamba-2",
    "sparse_attn": false,
    "attn_gate": false,
@@ -7557,6 +7811,8 @@
    "mtp": 0,
    "moe_layers": 40,
    "attention": "mamba×40 + attention×8",
+   "layout": "BBBBABBBBABBBBABBBBBABBBBBABBBBBABBBBBABBBBABBBB",
+   "dense_layers": null,
    "linear_attn": "Mamba-2",
    "sparse_attn": false,
    "attn_gate": false,
@@ -7670,6 +7926,8 @@
    "mtp": 0,
    "moe_layers": 24,
    "attention": "sliding×12 + full×12",
+   "layout": "WAWAWAWAWAWAWAWAWAWAWAWA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -7778,6 +8036,8 @@
    "mtp": 0,
    "moe_layers": 36,
    "attention": "sliding×18 + full×18",
+   "layout": "WAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -7888,6 +8148,10 @@
    "mtp": 0,
    "moe_layers": 39,
    "attention": "sliding×30 + full×10",
+   "layout": "AWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWW",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": "逐头",
@@ -8001,6 +8265,12 @@
    "mtp": 0,
    "moe_layers": 67,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0,
+    1,
+    2
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -8109,6 +8379,10 @@
    "mtp": 0,
    "moe_layers": 47,
    "attention": "sliding×36 + full×12",
+   "layout": "AWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWW",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": "逐头",
@@ -8223,6 +8497,8 @@
    "mtp": 0,
    "moe_layers": 48,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -8361,6 +8637,8 @@
    "mtp": 0,
    "moe_layers": 94,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -8489,6 +8767,8 @@
    "mtp": 0,
    "moe_layers": 62,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -8600,6 +8880,8 @@
    "mtp": 1,
    "moe_layers": 48,
    "attention": "GDN×36 + full×12",
+   "layout": "GGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGA",
+   "dense_layers": [],
    "linear_attn": "GDN",
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -8721,6 +9003,8 @@
    "mtp": 1,
    "moe_layers": 40,
    "attention": "GDN×30 + full×10",
+   "layout": "GGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGA",
+   "dense_layers": [],
    "linear_attn": "GDN",
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -8839,6 +9123,8 @@
    "mtp": 1,
    "moe_layers": 48,
    "attention": "GDN×36 + full×12",
+   "layout": "GGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGA",
+   "dense_layers": [],
    "linear_attn": "GDN",
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -8947,6 +9233,8 @@
    "mtp": 1,
    "moe_layers": 60,
    "attention": "GDN×45 + full×15",
+   "layout": "GGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGA",
+   "dense_layers": [],
    "linear_attn": "GDN",
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -9055,6 +9343,8 @@
    "mtp": 1,
    "moe_layers": 48,
    "attention": "GDN×36 + sparse×12",
+   "layout": "GGGSGGGSGGGSGGGSGGGSGGGSGGGSGGGSGGGSGGGSGGGSGGGS",
+   "dense_layers": [],
    "linear_attn": "GDN",
    "sparse_attn": "QSA",
    "attn_gate": "逐元素",
@@ -9163,6 +9453,8 @@
    "mtp": 1,
    "moe_layers": 92,
    "attention": "GDN×69 + full×23",
+   "layout": "GGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGAGGGA",
+   "dense_layers": [],
    "linear_attn": "GDN",
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -9271,6 +9563,11 @@
    "mtp": 0,
    "moe_layers": 47,
    "attention": "sliding×35 + full×14",
+   "layout": "AAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWA",
+   "dense_layers": [
+    0,
+    1
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -9379,6 +9676,12 @@
    "mtp": 0,
    "moe_layers": 49,
    "attention": "sliding×43 + full×9",
+   "layout": "WWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWA",
+   "dense_layers": [
+    0,
+    1,
+    2
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -9487,6 +9790,10 @@
    "mtp": 0,
    "moe_layers": 60,
    "attention": "MLA",
+   "layout": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -9595,6 +9902,10 @@
    "mtp": 0,
    "moe_layers": 60,
    "attention": "DSA",
+   "layout": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": "DSA",
    "attn_gate": "逐元素",
@@ -9703,6 +10014,10 @@
    "mtp": 0,
    "moe_layers": 18,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -9813,6 +10128,10 @@
    "mtp": 0,
    "moe_layers": 31,
    "attention": "MLA",
+   "layout": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -9926,6 +10245,14 @@
    "mtp": 0,
    "moe_layers": 56,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0,
+    1,
+    2,
+    3,
+    60
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -10036,6 +10363,12 @@
    "mtp": 3,
    "moe_layers": 42,
    "attention": "sliding×33 + full×12",
+   "layout": "AWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWAWWWA",
+   "dense_layers": [
+    0,
+    1,
+    2
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": "逐头",
@@ -10151,6 +10484,13 @@
    "mtp": 3,
    "moe_layers": 88,
    "attention": "sliding×69 + sparse×23",
+   "layout": "WWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWSWWWS",
+   "dense_layers": [
+    0,
+    1,
+    2,
+    91
+   ],
    "linear_attn": false,
    "sparse_attn": "CSA",
    "attn_gate": "逐头",
@@ -10264,6 +10604,11 @@
    "mtp": 8,
    "moe_layers": 40,
    "attention": "sliding×35 + full×7",
+   "layout": "WWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWA",
+   "dense_layers": [
+    0,
+    1
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -10372,6 +10717,11 @@
    "mtp": 8,
    "moe_layers": 64,
    "attention": "sliding×55 + full×11",
+   "layout": "WWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWAWWWWWA",
+   "dense_layers": [
+    0,
+    1
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -10480,6 +10830,8 @@
    "mtp": 0,
    "moe_layers": 48,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -10588,6 +10940,8 @@
    "mtp": 0,
    "moe_layers": 48,
    "attention": "KDA×36 + full×12",
+   "layout": "AKKKAKKKAKKKAKKKAKKKAKKKAKKKAKKKAKKKAKKKAKKKAKKK",
+   "dense_layers": [],
    "linear_attn": "KDA",
    "sparse_attn": false,
    "attn_gate": "逐元素",
@@ -10696,6 +11050,10 @@
    "mtp": 1,
    "moe_layers": 47,
    "attention": "KDA×36 + MLA×12",
+   "layout": "KKKXKKKXKKKXKKKXKKKXKKKXKKKXKKKXKKKXKKKXKKKXKKKX",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": "KDA",
    "sparse_attn": false,
    "attn_gate": "逐头",
@@ -10804,6 +11162,8 @@
    "mtp": 0,
    "moe_layers": 40,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -10912,6 +11272,8 @@
    "mtp": 0,
    "moe_layers": 60,
    "attention": "sliding×30 + full×30",
+   "layout": "WAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWAWA",
+   "dense_layers": [],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -11020,6 +11382,10 @@
    "mtp": 0,
    "moe_layers": 61,
    "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": false,
    "attn_gate": false,
@@ -11128,6 +11494,10 @@
    "mtp": 1,
    "moe_layers": 45,
    "attention": "sliding×33 + DSA×13",
+   "layout": "DDWWWDWWWDWWWDWWWDWWWDWWWDWWWDWWWDWWWDWWWDWWWD",
+   "dense_layers": [
+    0
+   ],
    "linear_attn": false,
    "sparse_attn": "DSA",
    "attn_gate": "逐头",
