@@ -1,0 +1,541 @@
+# MoE Config Atlas: design details compared side by side.
+# Each position is one place in the network (the attention output gate, the routing weights, the
+# norm before each sublayer, ...). Its variants are the different ways the tracked models fill it,
+# with the formula as written in the modeling code. The site lists each model under the variant it
+# uses, from the fields that scripts/hfconfig.py reads out of config.json and the modeling code.
+#
+#   id        position key
+#   sec       attn | linear | moe | resid | io (the tab it is listed under)
+#   gate      true puts it under the "门与 sigmoid" tab as well
+#   name      display name
+#   what      one sentence on what the position does
+#   formula   formula shared by every variant (optional)
+#   when      only models whose fields match this are counted (optional; default all models)
+#   multi     true lets one model sit under several variants (default: the first match wins)
+#   show      field(s) whose value is printed after each model name (variants can override)
+#   sort      numeric field to order the models by (default newest first)
+#   variants  list of:
+#     label     short name of the variant
+#     formula   (optional)
+#     match     {field: value}; every field has to match. A value can be a list (any of them),
+#               "*" (any non-empty value), false (explicitly none: false or an empty list),
+#               null (unknown), or a string with * wildcards. On list fields, one element matching
+#               is enough.
+#     default   true for the common choice: it is shown folded
+#     related   true for a variant from related work that no tracked model uses (no match)
+#     note, source [title, url] (optional)
+
+- id: attn_gate
+  sec: attn
+  gate: true
+  name: 注意力输出门
+  what: softmax 注意力层的输出在进 o_proj 之前，逐头或逐元素乘一个由输入算出的门。
+  when: {attn_gate: "*"}
+  variants:
+  - label: sigmoid，逐元素
+    formula: o ⊙ σ(x·W_g)
+    match: {attn_gate: 逐元素, gate_act: sigmoid, gate_src: x}
+    note: Qwen3-Next / 3.5 / 3.8 把 W_g 并进 q_proj（输出翻倍再拆开），其余用单独的 g_proj；Beam 每个头再加一个初值为 0 的偏置。
+    source: [Gated Attention for Large Language Models, https://arxiv.org/abs/2505.06708]
+  - label: sigmoid，逐头
+    formula: o_h · σ(x·w_h)
+    match: {attn_gate: 逐头, gate_act: sigmoid}
+    note: 每个头只有一个标量门，W_g 只有 d×H。dots3-note 的滑窗层也加了门。
+  - label: sigmoid，读 query 的低秩潜向量
+    formula: o ⊙ σ(c_q·W_g)
+    match: {gate_src: q 潜向量}
+    note: c_q 是 MLA 压缩后的 query 潜向量，维度比 x 小得多，ERNIE 5.5 的模型卡说门的参数因此少了 75%。A.X K2 读的是归一化前后两份 c_q 拼在一起；ERNIE 5.5 没写门的粒度。
+    source: [ERNIE-5.5-Flash-Base 模型卡, https://huggingface.co/baidu/ERNIE-5.5-Flash-Base]
+  - label: softplus
+    formula: o ⊙ softplus(x·W_g)
+    match: {gate_act: softplus}
+    note: softplus 没有上界，门可以大于 1，既能关掉也能放大。XS.2 和 S 2.1 逐头，M.1 逐元素。
+  - label: 2·sigmoid，逐头
+    formula: o_h · 2σ(x·w_h)
+    related: true
+    note: Marin 535B-A23B 的训练配置。初始化时 x·w≈0，门≈1，相当于从没有门的模型出发。
+    source: [Marin issue 8435, https://github.com/marin-community/marin/issues/8435]
+  - label: 细节未公开
+    match: {attn_gate: "*"}
+    note: Solar Open 2 没有建模代码，权重里有逐元素的 g_proj，看不出激活函数。
+
+- id: attn_sink
+  sec: attn
+  gate: true
+  name: 可学习 sink
+  what: 每个头多一个可学习的 logit s，参与 softmax 归一化但不对应任何 value，注意力可以把一部分权重交给它，少看一点。
+  formula: 等价于输出乘一个门 o · σ(lse − s)，lse 是这一行 logit 的 log-sum-exp
+  when: {attn_sink: "*"}
+  variants:
+  - label: 所有注意力层
+    match: {sink_layers: 所有注意力层}
+    note: gpt-oss 把 s 拼进 logit 再做 softmax；Granite-SWASH 直接把输出乘 σ(lse − s)，两种写法结果相同。
+    source: [gpt-oss-120b & gpt-oss-20b Model Card, https://arxiv.org/abs/2508.10925]
+  - label: 只在滑窗层
+    match: {sink_layers: 仅滑窗层}
+    note: MiMo-V2 的全局层不加。
+  - label: 全局层
+    match: {sink_layers: 全局层}
+    note: ERNIE 5.5 的 config 只给 MLA+DSA 层开了 sink，HCA 层没写。
+
+- id: qk_norm
+  sec: attn
+  name: QK-norm 的写法
+  what: 算注意力之前先把 Q、K 归一化，控制 logit 的大小。MLA 对低秩潜向量的 norm 不算在内。
+  when: {qk_norm_kind: "*"}
+  variants:
+  - label: 逐头 RMSNorm
+    formula: RMSNorm(q_h)，RMSNorm(k_h)，权重在各头之间共用
+    match: {qk_norm_kind: 逐头}
+    default: true
+  - label: 整层 RMSNorm
+    formula: RMSNorm(q)，在所有头拼起来的 H·d_h 维上一起算
+    match: {qk_norm_kind: 整层}
+    note: OLMo 2 的写法。MiniMax-M3 换回了逐头。
+  - label: 不带权重
+    formula: q / rms(q)，k / rms(k)
+    match: {qk_norm_kind: 无权重}
+    note: Llama 4 代码里叫 L2Norm，实际是不带权重的 RMSNorm，只用在加 RoPE 的分块层。
+  - label: 不带权重，k 乘每头温度
+    formula: q·√d_h / ‖q‖，k·√d_h / ‖k‖ · t_h
+    match: {qk_norm_kind: 无权重，k 乘每头温度}
+    note: ZAYA1：t_h 按 KV 头学习，注意力的温度交给模型自己定。
+  - label: 不带权重，q 乘常数
+    formula: c·q / rms(q)，k / rms(k)
+    match: {qk_norm_kind: "无权重，q 乘*"}
+    note: Muse Spark：c = 5.47（qk_scale_factor）。
+  - label: q 逐头不带权重，KV 带权重
+    formula: q_h / rms(q_h)，RMSNorm(kv)
+    match: {qk_norm_kind: q 逐头无权重，KV 带权重}
+    note: DeepSeek V4 的 K 和 V 是同一个单头向量，只有一个带权重的 norm。
+
+- id: attn_scale
+  sec: attn
+  name: 注意力打分的缩放
+  what: 标准做法是 logit 乘 1/√d（d 是每个头的维度）；有的模型另加或换成别的系数。
+  multi: true
+  variants:
+  - label: 只有标准的 1/√d
+    match: {attn_scale: false, len_scale: false}
+    default: true
+  - label: SSMax：按位置放大 query
+    formula: q · (1 + β·log(n / n₀))，n 是 token 的位置
+    match: {len_scale: "*"}
+    show: len_scale
+    note: Llama 4、Beam、Inkling 只用在不加 RoPE 的全局层；Mistral Large 4 每层都用，系数按头学习。
+    source: [Scalable-Softmax Is Superior for Attention, https://arxiv.org/abs/2501.19399]
+  - label: μP：1/d 代替 1/√d
+    formula: logit = q·k · m
+    match: {attn_scale: "μP*"}
+    show: attn_scale
+    note: Granite 的 attention_multiplier，和嵌入、残差、输出层的乘子一起按 μP 设定。
+  - label: query 乘常数
+    formula: c · q / rms(q)
+    match: {attn_scale: "q×*"}
+    note: Muse Spark 的 QK-norm 不带权重，logit 的范围由 c = 5.47 决定。
+  - label: value 乘常数
+    formula: softmax(…) · (c·V)
+    match: {attn_scale: "V×*"}
+    show: attn_scale
+    note: MiMo-V2。
+  - label: MLA 潜向量乘 √(d/r)
+    formula: q × √(d / r_q)，k × √(d / r_kv)
+    match: {attn_scale: "MLA*"}
+    note: d 是隐藏维度，r 是 q、kv 的 LoRA 秩。dots3-note 乘在归一化后的潜向量上，LongCat 乘在投影后的 q、k 上，两者等价。
+
+- id: rope
+  sec: attn
+  name: RoPE 基频与外推
+  what: 全局层 RoPE 的基频 θ，以及发布的 config 里写的长上下文外推方法。θ 越大，低频维度转得越慢。
+  show: rope_theta
+  sort: rope_theta
+  variants:
+  - label: 全局层不加 RoPE
+    match: {rope_frac: 0}
+    show: []
+    note: 位置信息交给滑窗层、线性层或 Mamba 层，全局层不用外推。
+  - label: YaRN
+    formula: 按频率分段插值，并把 logit 乘 0.1·ln(s) + 1
+    match: {rope_ext: "YaRN*"}
+    show: [rope_theta, rope_ext]
+    note: DeepSeek、Kimi K2、gpt-oss、Mistral 用小 θ（1 万到 15 万）加大倍数；Mistral Large 4 从 512 个 token 外推 2048 倍到 1M。
+    source: [YaRN, https://arxiv.org/abs/2309.00071]
+  - label: Llama 3 式分频段
+    formula: 高频不动，低频按倍数缩，中间平滑过渡
+    match: {rope_ext: "Llama 3*"}
+    show: [rope_theta, rope_ext]
+    note: Step-3.5 只在全局层用 θ = 500 万，滑窗层是 1 万。
+  - label: 动态 NTK
+    formula: θ' = θ · α^(d/(d−2))
+    match: {rope_ext: "NTK*"}
+    show: [rope_theta, rope_ext]
+    note: Hunyuan-A13B，α = 1000。
+  - label: config 里不写外推
+    match: {rope_ext: false}
+    note: 多数直接用大基频训到目标长度，Qwen 系是 1e6–1e7，dots3-note 到 8e7；有的模型卡建议推理时自己再加 YaRN。
+
+- id: lin_decay
+  sec: linear
+  gate: true
+  name: 线性注意力的衰减门
+  what: 线性注意力和 SSM 的状态每一步先乘一个衰减 α_t ∈ (0, 1) 再写入新内容，α 决定遗忘多快。
+  when: {lin_decay: "*"}
+  variants:
+  - label: 每个头一个标量
+    formula: α_t = exp(−e^A · softplus(x·w + b))
+    match: {lin_decay: 逐头标量}
+    note: GDN 和 Mamba-2 是同一个式子（A、b 每头一个）；GDN 另有一个 sigmoid 的写入强度 β_t。
+    source: [Gated Delta Networks, https://arxiv.org/abs/2412.06464]
+  - label: 每个通道，低秩，下界 −5
+    formula: log α_t = −5 · σ(e^A ⊙ (x·W_a·W_b + b))
+    match: {lin_decay: 逐通道，低秩，下界 −5}
+    note: KDA 的“安全门”：log α 落在 (−5, 0)，单步最多衰减到 e⁻⁵ ≈ 0.007，不会一步清空状态。W_a·W_b 的秩等于 head_dim。
+  - label: 每个通道，满秩，下界 −5
+    formula: log α_t = −5 · σ(e^A ⊙ (x·W_f + b))
+    match: {lin_decay: 逐通道，满秩，下界 −5}
+    note: Ling 3 去掉了门的低秩分解（no_kda_lora）。
+  - label: 每个通道，低秩，无下界
+    formula: log α_t = −e^A ⊙ softplus(x·W_a·W_b + b)
+    match: {lin_decay: 逐通道，低秩}
+    note: Kimi Linear 的原版 KDA。
+    source: [Kimi Linear, https://arxiv.org/abs/2510.26692]
+  - label: 每个通道，细节未公开
+    match: {lin_decay: 逐通道（细节未公开）}
+    note: Solar Open 2 没有建模代码。
+  - label: 固定，不看输入
+    formula: α = exp(−s_h · (1 − l/(L−1)))
+    match: {lin_decay: 固定（每头一个常数）}
+    note: MiniMax-Text-01 的 Lightning Attention：s_h 是 ALiBi 式的每头斜率，越深的层衰减越小，最后一层几乎不衰减。
+  - label: 没有递归状态
+    match: {lin_decay: 无}
+    note: LFM2 的门控短卷积只看最近几个 token，不需要衰减。
+
+- id: lin_out
+  sec: linear
+  gate: true
+  name: 线性注意力的输出门
+  what: 线性注意力层的输出进 o_proj 之前也乘一个由 x 算出的门，并配一个 norm；门的激活、秩以及门和 norm 的先后各家不同。
+  when: {lin_out: "*"}
+  variants:
+  - label: SiLU 门，先 norm
+    formula: RMSNorm(o) ⊙ SiLU(x·W_z)
+    match: {lin_out: SiLU，先 norm}
+    note: GDN 原版。Qwen3.8-2.4T 的 config 写的是 swish，就是 SiLU。
+  - label: sigmoid 门，先 norm
+    formula: RMSNorm(o) ⊙ σ(x·W_g)
+    match: {lin_out: sigmoid，先 norm}
+    note: KDA（Kimi K3.1 Pro、Ling 3、Youtu）、Lightning，以及 Qwen3.8-Flash-Next 的 GDN（output_gate_type = sigmoid）。
+  - label: sigmoid 门，低秩
+    formula: RMSNorm(o) ⊙ σ(x·W_a·W_b)
+    match: {lin_out: sigmoid 低秩，先 norm}
+    note: Kimi Linear 原版，GLM-5.3-Flash 沿用；Kimi K3 起换成了满秩（use_full_rank_gate）。
+  - label: SiLU 门，先乘门再 norm
+    formula: GroupRMSNorm(y ⊙ SiLU(z))
+    match: {lin_out: SiLU，先门后 norm}
+    note: Mamba-2 的写法，norm 分组算。
+  - label: 输入侧的线性门
+    formula: y = C ⊙ conv(B ⊙ x)
+    match: {lin_out: 线性门 B、C}
+    note: LFM2：B、C 是 x 的线性投影，没有激活函数，输出侧不再加门。
+
+- id: router
+  sec: moe
+  gate: true
+  name: 路由打分与归一化
+  what: 路由器给每个专家打分、选出 top-k，再算专家输出的权重 g。打分函数和要不要把 top-k 的权重重新归一化，各家组合不同。
+  formula: y = λ · Σ_{i∈top-k} g_i · E_i(x) + 共享专家
+  when: {router: "*"}
+  variants:
+  - label: sigmoid，top-k 后归一化
+    formula: g = topk(σ(z)) / Σ
+    match: {router: sigmoid, router_norm: true}
+    default: true
+    note: DeepSeek-V3 的写法，用的最多；多数配合无辅助损失的偏置 b，用 σ(z) + b 选专家、用 σ(z) 算权重。Inkling 把共享专家也放进同一次归一化，ERNIE 5.5 用几个独立初始化的 sigmoid 路由器（Multi-Router），Muse Spark 的 logit 先乘 0.177。
+  - label: softmax，top-k 后再归一化
+    formula: g = topk(softmax(z)) / Σ
+    match: {router: softmax, router_norm: true}
+    note: gpt-oss、Granite 先取 top-k 的 logit 再做 softmax，结果相同。Gemma 4 的路由输入先过不带权重的 RMSNorm，再乘可学习的缩放和 d^−½。
+  - label: softmax，不再归一化
+    formula: g = topk(softmax(z))，Σg < 1
+    match: {router: softmax, router_norm: false}
+    note: LongCat 的零计算专家也参与 softmax，权重再乘 6 或 9；ZAYA1 的路由器是一个跨层传递状态的小 MLP，每个 token 只选 1 个专家。
+  - label: sigmoid，不归一化
+    formula: g_i = σ(z_i)
+    match: {router: sigmoid, router_norm: false}
+    note: Llama 4 是 top-1，σ(z) 乘在专家的输入上而不是输出上；Kolibri 先在 z + b 上选 top-k 再取 σ。
+  - label: √softplus，归一化
+    formula: g = topk(√softplus(z)) / Σ
+    match: {router: sqrtsoftplus}
+    note: DeepSeek V4。
+    source: [DeepSeek-V4, https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro]
+
+- id: router_scale
+  sec: moe
+  name: 路由权重的缩放 λ
+  what: 路由专家的加权和再乘一个常数 λ（routed_scaling_factor）。归一化后 Σg = 1，λ 决定路由专家相对残差流和共享专家的分量。
+  formula: y = λ · Σ g_i · E_i(x) + S(x)
+  when: {router_scale: "*"}
+  show: router_scale
+  variants:
+  - label: 不缩放，λ = 1
+    match: {router_scale: 1}
+    show: []
+    default: true
+  - label: λ = 1.5–2
+    match: {router_scale: [1.5, 1.8, 2]}
+  - label: λ ≈ √6
+    match: {router_scale: [2.446, 2.448]}
+    note: Moonlight（k = 6）用 2.446，Kimi Linear（k = 8）也用 2.446；Trinity-Large（k = 4）用 2.448。
+  - label: λ = 2.5
+    match: {router_scale: 2.5}
+    show: []
+    note: DeepSeek-V3 的取值，跟着用的最多。
+  - label: λ ≈ 2√2
+    match: {router_scale: [2.826, 2.827, 2.83]}
+    note: 这几个模型都是 k = 8，λ 数值上接近 √k ≈ 2.828。
+  - label: λ = 3
+    match: {router_scale: 3}
+    show: []
+  - label: λ = 5
+    match: {router_scale: 5}
+    show: []
+    note: Nemotron 3 Nano 是 2.5，更大的三个是 5。
+  - label: λ = 6–9，权重不归一化
+    match: {router_scale: [6, 9]}
+    note: LongCat 的 softmax 权重不再归一化（Σg < 1），λ 比别家都大。
+  - label: 可学习
+    match: {router_scale: "*可学习*"}
+    note: Inkling 在 λ = 8 上再乘一个可学习标量；Gemma 4 每个专家一个可学习的缩放（初值 1）；ERNIE 5.5 的 config 写 λ = 3 且可学习，模型卡说每个路由专家各有一个可学习的标量。
+
+- id: shared
+  sec: moe
+  gate: true
+  name: 共享专家怎么并入
+  what: 有共享专家时，它的输出和路由专家的加权和怎么合起来。
+  when: {s: "*"}
+  variants:
+  - label: 直接相加
+    formula: y = λ · Σ g_i · E_i(x) + S(x)
+    match: {shared_gate: false}
+    default: true
+  - label: sigmoid 标量门
+    formula: y = Σ g_i · E_i(x) + σ(x·w) · S(x)
+    match: {shared_gate: true}
+    note: Qwen 系，每个 token 一个标量。
+    source: [Qwen2 Technical Report, https://arxiv.org/abs/2407.10671]
+  - label: 和路由专家一起打分
+    formula: g = σ(z) / Σσ(z)，分母里也有共享专家
+    match: {shared_gate: 路由加权}
+    note: Inkling：共享专家也有路由 logit，权重和选中的路由专家一起归一化。
+  - label: 取平均
+    formula: y = (Σ g_i · E_i(x) + S(x)) / 2
+    match: {shared_gate: 取平均}
+    note: Command A+（shared_expert_combination_strategy = average）。
+
+- id: ffn_act
+  sec: moe
+  gate: true
+  name: 专家 FFN 的门控激活
+  what: 专家里 gate 支路用什么非线性，以及要不要截掉过大的值。
+  variants:
+  - label: SwiGLU
+    formula: SiLU(g) ⊙ u，SiLU(g) = g·σ(g)
+    match: {ffn_act: SwiGLU, act_clamp: false}
+    default: true
+  - label: SwiGLU 加硬截断
+    formula: SiLU(min(g, c)) ⊙ clip(u, −c, c)
+    match: {ffn_act: SwiGLU, act_clamp: "*"}
+    show: act_clamp
+    note: 式子取自 DeepSeek V4，其余按各自 config 的上限 c；括号里是只在部分层截。
+  - label: SwiGLU-OAI
+    formula: (clip(u, ±7) + 1) ⊙ g·σ(1.702·g)，g ≤ 7
+    match: {ffn_act: SwiGLU-OAI}
+    note: gpt-oss 的写法，MiniMax-M3 也用。σ 里乘 1.702 让 g·σ(1.702g) 接近 GELU，u 再加 1。
+  - label: SiTU
+    formula: β·tanh(g/β)·σ(g) ⊙ β_u·tanh(u/β_u)，β = 4，β_u = 25
+    match: {ffn_act: SiTU}
+    note: 把 SiLU 里线性增长的 g 换成 tanh 软截断，两条支路都有上限。Kimi K3 首先用，ERNIE 5.5 的模型卡说它让专家输出的尺度更稳。
+  - label: GeGLU
+    formula: GELU_tanh(g) ⊙ u
+    match: {ffn_act: GeGLU}
+  - label: ReLU²，没有门
+    formula: ReLU(x·W_u)²
+    match: {ffn_act: ReLU²}
+    note: Nemotron 3 的专家只有两个矩阵。
+
+- id: res_add
+  sec: resid
+  gate: true
+  name: 残差相加
+  what: 子层输出 f(h) 怎么加回残差流。
+  variants:
+  - label: 直接相加
+    formula: h + f(h)
+    match: {hyper_conn: false, res_gate: false, res_scale: false}
+    default: true
+  - label: mHC，4 路残差
+    formula: 读入 σ(·) + ε，写回 2σ(·)，4 路之间用双随机矩阵混合
+    match: {hyper_conn: "mHC*"}
+    note: 式子取自 DeepSeek V4 的代码，混合矩阵用 Sinkhorn 迭代归一化。
+    source: ["mHC: Manifold-Constrained Hyper-Connections", https://arxiv.org/abs/2512.24880]
+  - label: iHC
+    formula: 写回权重 = 幅度 × σ(·)
+    match: {hyper_conn: "iHC*"}
+  - label: HC 门控残差
+    formula: 读入用 σ 混合，写回 2σ / n
+    match: {hyper_conn: "HC*"}
+    source: [Hyper-Connections, https://arxiv.org/abs/2409.19606]
+  - label: 保方差门，可学习
+    formula: α·h + β·f(h)，β = σ(w/τ)，α = √(1 − β²)
+    match: {res_gate: true}
+    note: Muse Spark：逐通道，α² + β² = 1，τ = 0.3。
+  - label: 保方差，按深度固定
+    formula: √((i−1)/i) · h + (1/√i) · f(h)
+    match: {res_scale: 按深度保方差}
+    note: Beam：i 是第几次残差相加，系数平方和也是 1，残差流始终等于前 i 个输出之和除以 √i。
+  - label: 逐通道缩放
+    formula: a ⊙ h + b ⊙ f(h)
+    match: {res_gate: 逐通道缩放}
+    note: ZAYA1：两边各一组可学习的逐通道系数。
+  - label: DeepNorm
+    formula: LN(α·h + f(h))，α = (2N)^¼
+    match: {res_scale: "DeepNorm*"}
+    note: MiniMax-Text-01 用 Post-LN，N = 80 层，α = 3.56。
+  - label: μP 残差乘子
+    formula: h + m · f(h)
+    match: {res_scale: "*μP*"}
+    show: res_scale
+    note: Granite。
+
+- id: norm_form
+  sec: resid
+  name: norm 的写法
+  what: 每个子层前的归一化。
+  variants:
+  - label: GatedNorm：RMSNorm 后乘低秩 sigmoid 门
+    formula: y ⊙ σ(W₂·SiLU(W₁·y))，y = RMSNorm(x)
+    match: {gated_norm: "*"}
+    note: A.X K2，秩 16。
+    source: [A Unified View of Attention and Residual Sinks, https://arxiv.org/abs/2601.22966]
+  - label: RMSNorm，乘 w
+    formula: x / rms(x) ⊙ w，w 初值 1
+    match: {norm_form: RMSNorm}
+    default: true
+  - label: RMSNorm，乘 (1 + w)
+    formula: x / rms(x) ⊙ (1 + w)，w 初值 0
+    match: {norm_form: RMSNorm(1+w)}
+    note: 初始化时和乘 w 一样，但对 w 做权重衰减时拉向的是“不缩放”。Gemma 1–3 也这样写，Gemma 4 改回了乘 w。Muse Spark 子层之后的 norm 不带权重，或先乘 (1 + w) 再归一化。
+  - label: LayerNorm，不带偏置
+    formula: (x − μ) / σ_x ⊙ w
+    match: {norm_form: LayerNorm}
+    note: Command A+ 沿用 Cohere 的 LayerNorm（减均值）；同家的 North Mini Code 用 RMSNorm。
+
+- id: emb
+  sec: resid
+  name: 嵌入层
+  what: token 嵌入进第一层之前有没有额外处理。
+  variants:
+  - label: 直接进第一层
+    match: {emb_proc: false}
+    default: true
+  - label: 加一个 RMSNorm
+    formula: h₀ = RMSNorm(E[x])
+    match: {emb_proc: RMSNorm}
+    note: Muse Spark 的不带权重。
+  - label: 乘 √d
+    formula: h₀ = √d · E[x]
+    match: {emb_proc: ×√d}
+  - label: μP 嵌入乘子
+    formula: h₀ = m · E[x]
+    match: {emb_proc: "*μP*"}
+    show: emb_proc
+    note: Granite。
+
+- id: out_head
+  sec: io
+  name: 输出层
+  what: 最后一层的隐状态怎么变成词表上的分布。
+  multi: true
+  variants:
+  - label: 线性层加 softmax
+    match: {logit_scale: false, softcap: false, out_softmax: false}
+    default: true
+  - label: logit 软截断
+    formula: c · tanh(z / c)
+    match: {softcap: "*"}
+    show: softcap
+  - label: μP：除以宽度倍数
+    formula: z = W·h / m
+    match: {logit_scale: "÷*"}
+    show: logit_scale
+    note: Granite 和 Inkling。
+  - label: 乘常数再软截断
+    formula: c · tanh(m·z / c)，m ≈ 0.177
+    match: {logit_scale: "×*"}
+    note: Muse Spark：同一个 m 也乘在路由器的 logit 上。
+  - label: MultiMax
+    formula: 分段的可学习温度代替 softmax
+    match: {out_softmax: MultiMax}
+    note: ERNIE 5.5，模型卡说它让词表分布更尖，训练开销可以忽略。
+    source: ["MultiMax: Sparse and Multi-Modal Attention Learning", https://arxiv.org/abs/2406.01189]
+
+- id: tied_emb
+  sec: io
+  name: 嵌入和输出层绑定
+  what: 输出层是否直接用嵌入矩阵的转置。绑定省下一份 V×d 的参数，在小模型里占比更大。
+  variants:
+  - label: 不绑定
+    match: {tied_emb: false}
+    default: true
+  - label: 共用一个矩阵
+    match: {tied_emb: true}
+
+- id: bias
+  sec: io
+  name: 偏置项
+  what: 线性层带不带偏置。
+  variants:
+  - label: 都不带
+    match: {bias_terms: false}
+    default: true
+  - label: 只有 QKV 带
+    match: {bias_terms: QKV}
+    note: GLM-4.5 / 4.5-Air；之后的 GLM-4.7、GLM-5 去掉了。
+  - label: 全部线性层都带
+    match: {bias_terms: 全部线性层}
+    note: gpt-oss：QKV、o_proj、路由器和专家都带偏置。
+
+- id: precision
+  sec: io
+  name: 权重格式
+  what: 主仓库发布的权重格式，不少家另外发 BF16 或 FP8 版本。
+  show: quant
+  variants:
+  - label: BF16
+    match: {precision: BF16}
+    default: true
+  - label: FP8
+    match: {precision: FP8}
+    note: 多数是 128×128 的块，每块一个缩放；DeepSeek 和 ERNIE 5.5 的缩放是 2 的幂（ue8m0）；Mistral Small 4 每个张量一个缩放。
+  - label: FP4 专家，其余 FP8
+    match: {precision: FP4 专家 + FP8}
+    note: DeepSeek V4：路由专家 FP4，其余 FP8；V4.1 的块缩到 32×32。
+  - label: MXFP4 专家
+    match: {precision: MXFP4 专家}
+    note: 只有路由专家是 4 位（每 32 个数一个缩放），注意力、共享专家和路由器保持高精度。Kimi K3.1 Pro 的模型卡写明是量化感知训练（权重 MXFP4、激活 MXFP8）。
+  - label: FP32
+    match: {precision: FP32}
+    note: Sarvam 的 safetensors 是 FP32，体积是 BF16 的两倍。
+
+- id: modality
+  sec: io
+  name: 模态
+  what: 这个 MoE 配置所在的检查点能处理哪些输入（语言模型部分是同一个 MoE）。
+  variants:
+  - label: 纯文本
+    match: {modality: 文本}
+    default: true
+  - label: 图文
+    match: {modality: 图文}
+  - label: 图文音
+    match: {modality: 图文音}
