@@ -416,8 +416,6 @@
   released: 2026-09
   total: 816
   active: 42
-  override: {E: 256, k: 8, s: 0}
-  notes: 仓库需申请访问，配置取自模型卡。
 
 - vendor: ERNIE
   name: ERNIE-4.5-21B-A3B
