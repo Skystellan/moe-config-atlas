@@ -290,9 +290,9 @@ def _moe_layers(c, n_layers):
 # overrides what the config flags say; None means "not public".
 ARCH = {
     "qwen3_moe": dict(qk_norm=True, router="softmax", expert_bias=False),
-    "qwen3_next": dict(qk_norm=True, attn_gate=True, router="softmax", expert_bias=False, shared_gate=True, linear="GDN"),
-    "qwen3_5_moe_text": dict(qk_norm=True, attn_gate=True, router="softmax", expert_bias=False, shared_gate=True, linear="GDN"),
-    "qwen4_exp_text": dict(qk_norm=True, attn_gate=True, router="softmax", expert_bias=False, shared_gate=True, linear="GDN"),
+    "qwen3_next": dict(qk_norm=True, attn_gate="逐元素", router="softmax", expert_bias=False, shared_gate=True, linear="GDN"),
+    "qwen3_5_moe_text": dict(qk_norm=True, attn_gate="逐元素", router="softmax", expert_bias=False, shared_gate=True, linear="GDN"),
+    "qwen4_exp_text": dict(qk_norm=True, attn_gate="逐元素", router="softmax", expert_bias=False, shared_gate=True, linear="GDN"),
     "glm4_moe": dict(router="sigmoid", expert_bias=True),
     "glm4_moe_lite": dict(router="sigmoid", expert_bias=True),
     "glm_moe_dsa": dict(expert_bias=True),
@@ -415,7 +415,10 @@ def features(c, mixers):
                  "gated_attention", "attention_gate_type", "use_gated_attn")
     granularity = (c.get("gating_type") or c.get("mla_output_gate_type")
                    or {"headwise": "head_wise"}.get(c.get("attention_gate_type"), c.get("attention_gate_type"))
-                   or ("head_wise" if c.get("use_head_wise_attn_gate") else None))
+                   or {"element_wise": "elementwise"}.get(c.get("gated_attention_proj_granularity_type"),
+                                                         c.get("gated_attention_proj_granularity_type"))
+                   or ("head_wise" if c.get("use_head_wise_attn_gate") else None)
+                   or ("elementwise" if c.get("mla_use_output_gate") else None))  # Kimi K3: heads x v_head_dim
     if _flag(c, "gating"):  # Laguna: True / "per-head" / "per-element" (a softplus gate)
         granularity = "elementwise" if c["gating"] == "per-element" else "head_wise"
     f["attn_gate"] = {"head_wise": "逐头", "elementwise": "逐元素"}.get(granularity, True) if gate else False
@@ -469,8 +472,11 @@ def features(c, mixers):
     if isinstance(nr, list) and not c.get("attention_chunk_size") and 0 in nr and rope:
         # Mistral Large 4: every 4th global layer skips RoPE
         f["nope"] = f"{nr.count(0)}/{len(nr)} 层"
-    # Query scaled up with log(position) on the global layers (Scalable-Softmax): Llama 4, Inkling
-    f["len_scale"] = _flag(c, "attn_temperature_tuning", "log_scaling_n_floor")
+    # Query scaled up with log(position) on the global layers (Scalable-Softmax): Llama 4, Inkling, and
+    # Mistral Large 3 / Small 4, which reuse Llama 4's scaling (llama_4_scaling_beta)
+    rp = c.get("rope_parameters") if isinstance(c.get("rope_parameters"), dict) else {}
+    f["len_scale"] = _flag(c, "attn_temperature_tuning", "log_scaling_n_floor", "llama_4_scaling") or _flag(
+        rp, "llama_4_scaling_beta")
 
     n_hc = c.get("hc_mult") or c.get("hc_count") or (4 if c.get("mhc") else None)
     hc = "mHC" if c.get("hc_sinkhorn_iters") else "iHC" if c.get("enable_ihc") else "HC"
@@ -506,7 +512,9 @@ def features(c, mixers):
     f["group_routing"] = f"{n_group}/{c.get('topk_group') or c.get('num_expert_groups_per_tok')}" if (n_group or 0) > 1 else False
     f["hash_route"] = f"前 {c['num_hash_layers']} 层" if c.get("num_hash_layers") else False
     f["zero_expert"] = c.get("zero_expert_num") or False
-    f["shared_gate"] = False  # only visible in modeling code, see ARCH
+    # Usually only visible in modeling code, see ARCH. Command A+ averages the routed and shared outputs.
+    f["shared_gate"] = ("取平均" if c.get("shared_expert_combination_strategy") == "average"
+                        and c.get("num_shared_experts") else False)
 
     act = (c.get("mlp_hidden_act") or c.get("hidden_act") or c.get("hidden_activation") or "silu").lower()
     f["ffn_act"] = ("SiTU" if act == "situ" else "ReLU²" if act == "relu2" else "GeGLU" if act.startswith("gelu")
@@ -525,6 +533,188 @@ def features(c, mixers):
         if k not in ("linear", "rope"):
             f[k] = v
     return f
+
+
+# Smaller design choices compared side by side on the site: the exact form of each gate, how routing
+# weights are normalized and scaled, norm and scaling conventions, RoPE base and extension, biases and the
+# release format. None means not public or not determinable.
+DETAILS = ("gate_act", "gate_src", "sink_layers", "lin_decay", "lin_out", "router_norm", "router_scale",
+           "norm_form", "qk_norm_kind", "emb_proc", "attn_scale", "res_scale", "logit_scale", "out_softmax",
+           "rope_theta", "rope_ext", "bias_terms", "tied_emb", "modality")
+
+# Details that live in modeling code, checked against the same sources as ARCH.
+DETAIL_ARCH = {
+    # RMSNorm that scales by (1 + w) with w starting at 0
+    "qwen3_next": dict(norm_form="RMSNorm(1+w)"),
+    "qwen3_5_moe_text": dict(norm_form="RMSNorm(1+w)", router_norm=True),
+    "qwen4_exp_text": dict(norm_form="RMSNorm(1+w)", router_norm=True),
+    "minimax_m3_vl": dict(norm_form="RMSNorm(1+w)", router_norm=True),
+    # Muse Spark: (1 + w) pre-norms, a weightless norm on the embeddings and on Q/K, router and output logits
+    # times output_multiplier
+    "muse_spark_text": dict(norm_form="RMSNorm(1+w)", emb_proc="RMSNorm", router_norm=True),
+    "inkling_mm_model": dict(emb_proc="RMSNorm", router_norm=True, tied_emb=False),
+    "minimax_m2": dict(qk_norm_kind="整层", router_norm=True),  # one RMSNorm over all heads, OLMo style
+    # Llama 4's "L2Norm" is a weightless RMSNorm; sigmoid of the top-1 logit scales the expert input
+    "llama4_text": dict(qk_norm_kind="无权重", router_norm=False),
+    "zaya": dict(qk_norm_kind="无权重，k 乘每头温度", router_norm=False),  # q, k scaled to norm sqrt(d)
+    "deepseek_v4": dict(qk_norm_kind="q 逐头无权重，KV 带权重"),
+    "deepseek_v41_text": dict(qk_norm_kind="q 逐头无权重，KV 带权重"),
+    "gpt_oss": dict(router_norm=True),  # softmax over the top-k logits
+    "granitemoehybrid": dict(router_norm=True),
+    "granitemoe_swa": dict(router_norm=True),
+    # Gemma 4: router input is a weightless RMSNorm times a learned scale and d^-1/2; per-expert output scale
+    "gemma4_text": dict(router_norm=True, router_scale="1，逐专家可学习", emb_proc="×√d"),
+    "ernie4_5_moe": dict(router_norm=True),
+    # ERNIE 5.5 model card: each routed expert's weight is multiplied by a learnable scalar of its own
+    "ernie5_5_moe": dict(router_scale="3，逐专家可学习"),
+    "minimax_text_01": dict(router_norm=True),
+    "mistral4": dict(router_norm=True),  # Mistral Large 3's params.json has no flag; it shares Small 4's MoE block
+    "mistral_large4_text": dict(router_norm=True),
+    "laguna": dict(router_norm=True),
+    "sarvam_mla": dict(router_norm=True),
+    "longcat": dict(router_norm=False, tied_emb=False),  # softmax weights times 6-9, not renormalized
+    "step3_text": dict(router_norm=False, tied_emb=False),
+    "step5": dict(tied_emb=False),
+    "lfm2_moe": dict(tied_emb=True),
+    "cohere2_moe": dict(tied_emb=True),
+    "beam": dict(res_scale="按深度保方差"),  # sublayer output times 1/sqrt(i), residual times sqrt((i-1)/i)
+    # Solar Open 2 ships no modeling code: the weights show an elementwise g_proj, nothing about its activation
+    "solar_open2": dict(gate_act=None, gate_src=None),
+}
+
+_SCALE_KEYS = ("routed_scaling_factor", "moe_routed_scaling_factor", "router_scaling_factor",
+               "moe_router_scaling_factor", "route_scale", "routed_scale")
+_NORM_KEYS = ("norm_topk_prob", "moe_renormalize", "route_norm", "norm_expert_weight")
+
+
+def _rope(c):
+    """(theta, extension) of the global attention layers' RoPE as shipped in the config."""
+    rp = c.get("rope_parameters") if isinstance(c.get("rope_parameters"), dict) else {}
+    if isinstance(rp.get("full_attention"), dict):  # per-layer-type RoPE (Gemma 4, Laguna, Mellum)
+        rp = rp["full_attention"]
+    elif isinstance(rp.get("hybrid"), dict):  # ZAYA1
+        rp = rp["hybrid"]
+    rs = next((x for x in (c.get("rope_scaling"), c.get("yarn"), rp) if isinstance(x, dict) and x), {})
+    theta = rp.get("rope_theta") or c.get("rope_theta")
+    if isinstance(theta, list):  # Step: one base per layer, the large one on the full-attention layers
+        theta = max(theta)
+    kind = str(rs.get("rope_type") or rs.get("type") or ("yarn" if c.get("yarn") else ""))
+    factor = rs.get("factor") or 1
+    if "yarn" in kind and factor > 1:
+        ext = f"YaRN ×{factor:g}"
+    elif kind == "llama3" and factor > 1:
+        ext = f"Llama 3 式 ×{factor:g}"
+    elif kind == "dynamic" and rs.get("alpha"):
+        ext = f"NTK α={rs['alpha']:g}"  # Hunyuan: dynamic NTK with a fixed alpha
+    else:
+        ext = False
+    return theta, ext
+
+
+def details(c, raw, fam, f):
+    arch = DETAIL_ARCH.get(fam, {})
+    d = {k: None for k in DETAILS}
+    pick = lambda key, default: arch[key] if key in arch else default
+
+    # Attention output gate: activation and what it reads (the layer input x, or MLA's query latent)
+    if f.get("attn_gate"):
+        d["gate_act"] = pick("gate_act", c.get("gated_attn_act") or ("softplus" if _flag(c, "gating") else "sigmoid"))
+        d["gate_src"] = pick("gate_src", "q 潜向量" if _flag(c, "gated_attn_use_q_lora", "attn_gate_fused") else "x")
+    # Learnable sink: one extra logit per head in the softmax, which scales the output by sigmoid(lse - s)
+    if f.get("attn_sink"):
+        swa, full = c.get("add_swa_attention_sink_bias"), c.get("add_full_attention_sink_bias")
+        d["sink_layers"] = ("仅滑窗层" if swa and full is False else
+                            "全局层" if full and not swa else "所有注意力层")  # ERNIE 5.5 only flags its MLA layers
+
+    # Linear-attention gates: the decay (forget) gate and the output gate
+    lac = c.get("linear_attn_config") if isinstance(c.get("linear_attn_config"), dict) else {}
+    kind = f.get("linear_attn")
+    if kind == "GDN" or kind == "Mamba-2":
+        d["lin_decay"] = "逐头标量"
+        d["lin_out"] = ("SiLU，先门后 norm" if kind == "Mamba-2"
+                        else "sigmoid，先 norm" if c.get("output_gate_type") == "sigmoid" else "SiLU，先 norm")
+    elif kind == "KDA" and fam == "solar_open2":
+        d["lin_decay"] = "逐通道（细节未公开）"
+    elif kind == "KDA":
+        bound = next((x for x in (lac.get("gate_lower_bound"), c.get("kda_lower_bound"),
+                                  c.get("kda_gate_lower_bound")) if x is not None), None)
+        full_decay = bool(c.get("no_kda_lora"))
+        full_out = full_decay or _flag(lac, "use_full_rank_gate") or _flag(c, "use_full_rank_gate")
+        d["lin_decay"] = "逐通道，" + ("满秩" if full_decay else "低秩") + (f"，下界 {bound:g}".replace("-", "−") if bound else "")
+        d["lin_out"] = "sigmoid，先 norm" if full_out else "sigmoid 低秩，先 norm"
+    elif kind == "Lightning":
+        d["lin_decay"], d["lin_out"] = "固定（每头一个常数）", "sigmoid，先 norm"
+    elif kind == "门控卷积":
+        d["lin_decay"], d["lin_out"] = "无", "线性门 B、C"
+
+    # Routing: are the top-k weights renormalized, and by what are they scaled
+    if f.get("router"):
+        norm = next((c[k] for k in _NORM_KEYS if c.get(k) is not None), arch.get("router_norm"))
+        d["router_norm"] = bool(norm) if norm is not None else None
+        scale = arch.get("router_scale") or next((c[k] for k in _SCALE_KEYS if c.get(k) is not None), 1)
+        if _flag(c, "use_global_scale"):  # Inkling: route_scale times one learned scalar
+            scale = f"{scale:g}，可学习"
+        d["router_scale"] = scale
+
+    # Norms
+    ln = c.get("layer_norm_eps") and not c.get("rms_norm_eps") and fam == "cohere2_moe"
+    d["norm_form"] = "LayerNorm" if ln else arch.get("norm_form", "RMSNorm")
+    if f.get("qk_norm"):
+        d["qk_norm_kind"] = arch.get("qk_norm_kind", "逐头")
+        if c.get("qk_scale_factor"):  # Muse Spark: weightless QK-norm, then the query times a constant
+            d["qk_norm_kind"] = f"无权重，q 乘 {c['qk_scale_factor']:.3g}"
+    if c.get("embedding_multiplier"):
+        d["emb_proc"] = f"×{c['embedding_multiplier']:g}（μP）"  # Granite
+    else:
+        d["emb_proc"] = arch.get("emb_proc", False)
+
+    # Scales on the attention logits and values besides 1/sqrt(d); SSMax-style length scaling is a feature
+    scales = []
+    if c.get("attention_multiplier"):
+        scales.append(f"μP 1/{round(1 / c['attention_multiplier'])}")  # Granite: 1/d_head instead of 1/sqrt(d_head)
+    if c.get("qk_scale_factor"):
+        scales.append(f"q×{c['qk_scale_factor']:.3g}")
+    if c.get("attention_value_scale"):
+        scales.append(f"V×{c['attention_value_scale']:g}")  # MiMo
+    if _flag(c, "mla_scale_q_lora", "apply_mla_qkv_lora_rescale"):
+        scales.append("MLA ×√(d/r)")  # LongCat, dots3-note: q and k times sqrt(d_model / lora rank)
+    d["attn_scale"] = scales
+
+    # Residual adds that are not h + f(h) (hyper-connections and residual gates are features)
+    alpha = c.get("layernorm_mlp_alpha") or 1
+    if alpha != 1:
+        d["res_scale"] = f"DeepNorm α={alpha:.3g}"  # MiniMax-Text-01: Post-LN with the residual times (2N)^(1/4)
+    elif c.get("residual_multiplier"):
+        d["res_scale"] = f"×{c['residual_multiplier']:g}（μP）"  # Granite: h + m * f(h)
+    else:
+        d["res_scale"] = arch.get("res_scale", False)
+
+    # Output logits: a fixed divisor or multiplier, and a softmax replacement (softcap is a feature)
+    if c.get("logits_scaling"):
+        d["logit_scale"] = f"÷{c['logits_scaling']:g}（μP）"  # Granite
+    elif c.get("logits_mup_width_multiplier"):
+        d["logit_scale"] = f"÷{c['logits_mup_width_multiplier']:g}（μP）"  # Inkling
+    elif c.get("output_multiplier"):
+        d["logit_scale"] = f"×{c['output_multiplier']:.3g}"  # Muse Spark, before the softcap
+    else:
+        d["logit_scale"] = False
+    d["out_softmax"] = "MultiMax" if c.get("multimax") == "lm_head" else False  # ERNIE 5.5
+
+    d["rope_theta"], d["rope_ext"] = _rope(c)
+    if f.get("rope_frac") == 0:  # the global layers carry no RoPE, so their base and extension don't apply
+        d["rope_theta"], d["rope_ext"] = None, None
+
+    if c.get("attention_bias"):
+        d["bias_terms"] = "全部线性层" if fam == "gpt_oss" else "QKV"
+    else:
+        d["bias_terms"] = False
+    tie = next((x for x in (c.get("tie_word_embeddings"), raw.get("tie_word_embeddings"),
+                            raw.get("tied_embeddings")) if x is not None), None)  # Mistral params.json
+    d["tied_emb"] = arch.get("tied_emb") if tie is None else bool(tie)
+    has = lambda *keys: any(isinstance(raw.get(k), dict) for k in keys)
+    d["modality"] = ("图文音" if has("audio_config") else
+                     "图文" if has("vision_config") or raw.get("vision_encoder") else "文本")
+    return d
 
 
 def parse(raw):
@@ -600,6 +790,7 @@ def parse(raw):
                        if isinstance(src.get(k), int)), 0)
     out["model_type"] = c.get("model_type") or raw.get("model_type")
     out.update(features(c, mixers))
+    out.update(details(c, raw, family(c), out))
     out["per_layer"] = per_layer
     return out
 

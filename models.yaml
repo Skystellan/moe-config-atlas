@@ -439,7 +439,8 @@
   active: 47
 - vendor: ERNIE
   name: ERNIE-5.5-Flash
-  repo: baidu/ERNIE-5.5-Flash-Base-BF16
+  repo: baidu/ERNIE-5.5-Flash-Base
+  variants: [baidu/ERNIE-5.5-Flash-Base-BF16]
   released: 2026-10
   total: 280
   active: 14

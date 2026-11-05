@@ -27,6 +27,14 @@
   - {by: Pavlichenko 2026, text: "−2.1% / −1.4% / −1.5%（d=512/768/1024）；和 QK-norm 一起 −3.6% / −2.6%，等服务成本预测 −2.0%", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
   - {by: Marin, text: "535B 用每头一个标量的门 2·sigmoid(x·w)", url: "https://github.com/marin-community/marin/issues/8435"}
 
+- name: 低秩门控注意力
+  cat: attn
+  date: 2026-07
+  source: [A.X K2, https://huggingface.co/skt/A.X-K2]
+  feature: gate_src
+  match: [q 潜向量]
+  note: 输出门从 MLA 的 query 潜向量算，不读隐状态；ERNIE 5.5 的模型卡称门的参数少 75%，效果还更好
+
 - name: QK-norm
   cat: attn
   date: 2023-02
@@ -72,7 +80,7 @@
   date: 2026-10
   source: ["Virtual Head Attention", https://arxiv.org/abs/2610.17959]
   models:
-  - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base-BF16"}
+  - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base"}
   note: 先把少量物理 query 头线性混成更多"虚拟头"，输出再做一次低秩的跨头混合；两步都是线性的，推理时并进 Q 和输出投影，跑起来仍是普通 GQA
 
 - name: 差分注意力
@@ -304,6 +312,14 @@
   evidence:
   - {by: Pavlichenko 2026, text: "没有质量收益，也替代不了 QK-norm 的可学习缩放", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
 
+- name: MultiMax 输出层
+  cat: io
+  date: 2024-06
+  source: ["MultiMax: Sparse and Multi-Modal Attention Learning", https://arxiv.org/abs/2406.01189]
+  feature: out_softmax
+  match: [MultiMax]
+  note: 分段的可学习温度代替 softmax
+
 - name: DyT
   cat: resid
   date: 2025-03
@@ -357,7 +373,7 @@
   date: 2026-10
   source: ["Multi-View Latent MoE: Letting Every Router Shape Expert Computation", https://arxiv.org/abs/2610.40577]
   models:
-  - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base-BF16"}
+  - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base"}
   note: 几个独立初始化的 sigmoid 路由器一起打分选专家，再按各路由器给这个专家的相对分数，混合出它的潜空间输入
 
 - name: 哈希路由层
@@ -377,6 +393,14 @@
   date: 2025-08
   source: [gpt-oss-120b & gpt-oss-20b Model Card, https://arxiv.org/abs/2508.10925]
   feature: act_clamp
+
+- name: SiTU 激活
+  cat: moe
+  date: 2026-06
+  source: [Kimi K3, https://huggingface.co/moonshotai/Kimi-K3]
+  feature: ffn_act
+  match: [SiTU]
+  note: β·tanh(g/β)·σ(g) 代替 SiLU，gate 和 up 两路都用 tanh 软截断
 
 - name: ReLU² 专家
   cat: moe
@@ -408,7 +432,7 @@
   date: 2026-10
   source: ["ECHO: Efficient Causal Self-Recursion Beyond Auxiliary Multi-Token Prediction", https://arxiv.org/abs/2610.24766]
   models:
-  - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base-BF16"}
+  - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base"}
   note: 不另加 MTP 模块，让主干自己的最后一层预测后面几个 token，多步损失直接作用在生成下一个 token 的参数上；推理时模型自己当草稿模型
 
 - name: Soft-MTP
@@ -435,6 +459,18 @@
   evidence:
   - {by: Pavlichenko 2026, text: "Engram 在这个规模上没有帮助", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
 
+- name: μP 乘子
+  cat: optim
+  date: 2022-03
+  source: ["Tensor Programs V: Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer", https://arxiv.org/abs/2203.03466]
+  models:
+  - {name: Granite 4.0-H-Small, cite: "https://huggingface.co/ibm-granite/granite-4.0-h-small/blob/main/config.json"}
+  - {name: Granite 4.0-H-Tiny, cite: "https://huggingface.co/ibm-granite/granite-4.0-h-tiny/blob/main/config.json"}
+  - {name: Granite-SWASH-3B-A600M, cite: "https://huggingface.co/ibm-granite/granite-swash-3b-a600m/blob/main/config.json"}
+  - {name: Inkling, cite: "https://huggingface.co/thinkingmachines/Inkling/blob/main/config.json"}
+  - {name: Inkling-Small, cite: "https://huggingface.co/thinkingmachines/Inkling-Small/blob/main/config.json"}
+  note: 嵌入、注意力、残差和输出 logit 按宽度乘固定系数，小模型上调好的超参数可以直接用到大模型；config 里只看得到这些乘子
+
 - name: Muon
   cat: optim
   date: 2024-12
@@ -445,7 +481,7 @@
   - {name: GLM-4.5, cite: "https://arxiv.org/abs/2508.06471"}
   - {name: GLM-4.5-Air, cite: "https://arxiv.org/abs/2508.06471"}
   - {name: JoyAI-LLM Flash, cite: "https://huggingface.co/jdopensource/JoyAI-LLM-Flash"}
-  - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base-BF16"}
+  - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base"}
   note: 优化器只能从技术报告里看，这里只列核对过的
   evidence:
   - {by: Pavlichenko 2026, text: "−2.2% → −1.8%，比大多数结构改动保得住", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}

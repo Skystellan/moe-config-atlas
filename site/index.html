@@ -122,6 +122,14 @@
     <div class="multiples" id="adoption"></div>
   </section>
 
+  <h2 class="sec" id="details">设计细节对照</h2>
+  <section class="card">
+    <p class="sub">同一个位置上各家怎么写：每种写法的公式、来源，和用它的配置。门、sigmoid、归一化和缩放的细节多数在建模代码里，这里逐个对照 config 和代码核对，规则在 <code>details.yaml</code>。点型号可以加入上面的并排对比；随上面的筛选变化。</p>
+    <div class="chips col-groups" id="det-secs" role="group" aria-label="位置分组"></div>
+    <p class="pick-note" id="det-picked"></p>
+    <div id="det"></div>
+  </section>
+
   <h2 class="sec">前沿技术追踪</h2>
   <section class="card">
     <p class="sub">2024 年以来的结构和训练改动（加上几项还在扩散的老方法）：最早的出处、独立实验测到的效果、收录的模型里谁在用。采用数从 config 自动统计，随上面的筛选变化；config 看不出的（比如优化器）只列技术报告里写明的。</p>
@@ -189,6 +197,7 @@
       <dt>MTP</dt><dd>多 token 预测模块的层数；config 没写的从权重索引里数 mtp 层（需申请访问的仓库读公开副本的索引），读不到的记"?"。</dd>
       <dt>softcap</dt><dd>输出 logit 过 c·tanh(x/c) 的软截断，格子里是 c。</dd>
       <dt>N-gram 记忆</dt><dd>用哈希过的 n-gram 查一张大嵌入表：Engram 和 Qwen3.8-Flash-Next 在中间层注入，LongCat 加在输入嵌入上。</dd>
+      <dt>设计细节对照</dt><dd>每个位置（注意力输出门、路由权重、残差相加、norm 等）列出收录模型里出现过的写法，公式按建模代码写；config 和代码都看不出的记为“细节未公开”。“相关工作”是论文或训练配置里的写法，收录的模型还没用。名单和匹配规则在 <code>details.yaml</code>，构建时检查每个模型都归到了某种写法下。</dd>
       <dt>前沿技术追踪</dt><dd>名单在 <code>techniques.yaml</code>，每条有最早出处、独立实验的结果和链接。采用数由结构特征自动统计；config 看不出的技术（优化器、损失函数）只列技术报告里写明的，没有就留空，不靠猜。</dd>
       <dt>config 来源</dt><dd>仓库需申请访问时，config 取自 transformers 里对应的默认配置或公开副本，存档在本仓库的 <code>configs/</code> 下，并在表格详情里注明。</dd>
       <dt>档位</dt><dd>按总参数：小 ≤ 50B，中 50–500B，大 ≥ 500B。</dd>

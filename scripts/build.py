@@ -90,6 +90,30 @@ def fetch_index_mtp(repo, refresh):
     return (cached(f"{key}.mtp.json", count, refresh) or {}).get("mtp")
 
 
+def precision(raw, info):
+    """Weight format of the main repo as (format, detail): FP8 with its block size and scale format, FP4 or
+    MXFP4 experts, else the stored dtype."""
+    if not raw:
+        return None, None
+    c = hfconfig.text_config(raw)
+    q = raw.get("quantization_config") or c.get("quantization_config") or {}
+    groups = [g.get("weights") or {} for g in (q.get("config_groups") or {}).values()]
+    block = q.get("weight_block_size") or next((g.get("block_structure") for g in groups if g.get("block_structure")), None)
+    fp8 = ("块 " + "×".join(map(str, block)) if block else "逐张量") + ("，ue8m0 缩放" if q.get("scale_fmt") == "ue8m0" else "")
+    if "fp4" in (q.get("expert_dtype"), c.get("expert_dtype")):  # DeepSeek V4: FP4 experts, FP8 elsewhere
+        return "FP4 专家 + FP8", fp8
+    fmt = str(q.get("format") or "")
+    if q.get("quant_method") == "mxfp4" or "mxfp4" in fmt:  # only the routed experts are quantized
+        return "MXFP4 专家", None
+    if q.get("quant_method") == "fp8" or (fmt == "float-quantized" and any(g.get("num_bits") == 8 for g in groups)):
+        return "FP8", fp8
+    params = (info.get("safetensors") or {}).get("parameters") or {}
+    if params:
+        top = max(params, key=params.get)
+        return {"BF16": "BF16", "F32": "FP32", "F16": "FP16"}.get(top, top), None
+    return None, None
+
+
 def tier(total):
     return "S" if total <= 50 else ("M" if total < 500 else "L")
 
@@ -162,6 +186,8 @@ def build_entry(m, refresh):
         "moe_layers": parsed.get("moe_layers"),
         "attention": parsed.get("attention") if raw else None,
         **{f: parsed.get(f) if raw else None for f in hfconfig.FEATURES},
+        **{f: parsed.get(f) if raw else None for f in hfconfig.DETAILS},
+        **dict(zip(("precision", "quant"), precision(raw, info))),
         "model_type": parsed.get("model_type"),
         "per_layer": parsed.get("per_layer", False),
         "config_ok": raw is not None,
@@ -178,7 +204,7 @@ def build_entry(m, refresh):
 
 
 TECH_CATS = {"attn", "pos", "mixer", "resid", "moe", "io", "optim"}
-TECH_FIELDS = set(hfconfig.FEATURES) | {"mla", "mtp", "latent", "window", "s"}
+TECH_FIELDS = set(hfconfig.FEATURES) | set(hfconfig.DETAILS) | {"mla", "mtp", "latent", "window", "s"}
 
 
 def write_techniques(rows):
@@ -196,6 +222,64 @@ def write_techniques(rows):
         t["date"] = str(t["date"])
         t["source"] = {"title": t["source"][0], "url": t["source"][1]}
     (OUT / "techniques.json").write_text(json.dumps(techs, ensure_ascii=False, indent=1))
+
+
+DETAIL_SECS = {"attn", "linear", "moe", "resid", "io"}
+
+
+def _truthy(v):
+    return v not in (None, False, "", 0, [])
+
+
+def _wild(want, v):
+    return re.fullmatch(".*".join(map(re.escape, want.split("*"))), str(v)) is not None
+
+
+def detail_ok(v, want):
+    """One field of a details.yaml match; site/app.js detailOk mirrors this."""
+    if isinstance(want, list):
+        return any(detail_ok(v, w) for w in want)
+    if want is None:
+        return v is None
+    if isinstance(v, list):
+        return not v if want is False else any(detail_ok(x, want) for x in v)
+    if want == "*":
+        return _truthy(v)
+    if want is False or want is True:
+        return v is want
+    if isinstance(want, str) and "*" in want:
+        return _truthy(v) and _wild(want, v)
+    return v == want if isinstance(want, (int, float)) else str(v) == str(want)
+
+
+def write_details(rows):
+    """Check that every model sits under a variant of each details.yaml position, then copy it to the site."""
+    positions = yaml.safe_load((ROOT / "details.yaml").read_text())
+    match = lambda m, cond: all(detail_ok(m.get(k), w) for k, w in (cond or {}).items())
+    ids = set()
+    for p in positions:
+        where = f"details.yaml: {p.get('id')}"
+        assert p.get("id") and p["id"] not in ids, f"{where}: missing or repeated id"
+        ids.add(p["id"])
+        assert p.get("sec") in DETAIL_SECS and p.get("name") and p.get("variants"), f"{where}: sec, name and variants"
+        for v in p["variants"]:
+            assert v.get("label") and (v.get("related") or v.get("match")), f"{where}: {v.get('label')} needs a match"
+            for k in list((v.get("match") or {})) + list(p.get("when") or {}):
+                assert k in rows[0], f"{where}: unknown field {k}"
+            if v.get("source"):
+                assert len(v["source"]) == 2, f"{where}: source is [title, url]"
+                v["source"] = {"title": v["source"][0], "url": v["source"][1]}
+        used = {i: [] for i in range(len(p["variants"]))}
+        for m in rows:
+            if not match(m, p.get("when")):
+                continue
+            hits = [i for i, v in enumerate(p["variants"]) if not v.get("related") and match(m, v["match"])]
+            assert hits, f"{where}: {m['name']} fits no variant"
+            for i in hits if p.get("multi") else hits[:1]:
+                used[i].append(m["name"])
+        for i, v in enumerate(p["variants"]):
+            assert v.get("related") or used[i], f"{where}: no model uses {v['label']}"
+    (OUT / "details.json").write_text(json.dumps(positions, ensure_ascii=False, indent=1))
 
 
 def main():
@@ -231,9 +315,10 @@ def main():
         w = csv.DictWriter(f, fieldnames=cols + ["variants"])
         w.writeheader()
         for row in rows:
-            w.writerow({**{c: row[c] for c in cols}, "variants": "; ".join(row["variants"])})
+            w.writerow({c: "; ".join(row[c]) if isinstance(row[c], list) else row[c] for c in cols + ["variants"]})
 
     write_techniques(rows)
+    write_details(rows)
 
     missing = [x["name"] for x in rows if not x["config_ok"]]
     print(f"\n{len(rows)} models written to {OUT}")

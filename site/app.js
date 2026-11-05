@@ -7,7 +7,7 @@ const TIERS = [
 ];
 const state = {
   q: "", tiers: new Set(), years: new Set(), vendor: "", group: "sparsity", sort: { key: "latest", dir: -1 },
-  fpMode: "model", fpGroup: "all", fpSort: { key: "vendor", dir: -1 }, compare: [], adoptGroup: "all", techCat: "all",
+  fpMode: "model", fpGroup: "all", fpSort: { key: "vendor", dir: -1 }, compare: [], adoptGroup: "all", techCat: "all", detSec: "gate",
 };
 let DATA = [];
 const charts = [];
@@ -624,6 +624,7 @@ function togglePick(name) {
   saveHash();
   if (state.fpMode === "model") renderMatrix(filtered());
   renderCompare();
+  syncDetailPicks();
 }
 function saveHash() {
   const url = location.pathname + location.search + (state.compare.length ? `#cmp=${state.compare.map(encodeURIComponent).join(",")}` : "");
@@ -696,6 +697,8 @@ function renderCompare() {
   }
   $("#fp-picked").innerHTML = ms.length
     ? `已选 ${ms.length}/${MAX_PICK} 个对比：${names(ms)} · <a href="#compare">看并排对比 ↓</a>` : "";
+  $("#det-picked").innerHTML = ms.length
+    ? `已选 ${ms.length}/${MAX_PICK} 个对比：${names(ms)} · <a href="#compare">看并排对比 ↑</a>` : "";
   const table = $("#cmp");
   if (!ms.length) {
     table.innerHTML = `<tbody><tr><td class="l muted">还没选型号。在上面的结构指纹里点 +，或在输入框里输入型号。</td></tr></tbody>`;
@@ -779,6 +782,112 @@ function renderTechniques(rows) {
       <td class="l ev">${ev}</td>
       <td class="l use">${use}</td></tr>`;
   }).join("");
+}
+
+/* ---------- design details: one position, the variants each model uses ---------- */
+
+const DSECS = [["gate", "门与 sigmoid"], ["attn", "注意力与位置"], ["linear", "线性注意力"], ["moe", "MoE 与 FFN"],
+  ["resid", "残差与归一化"], ["io", "输出与发布"], ["all", "全部"]];
+let DPOS = [];
+
+// Same rules as detail_ok in scripts/build.py, which checks every model fits a variant.
+const truthy = (v) => !(v == null || v === false || v === "" || v === 0 || (Array.isArray(v) && !v.length));
+const wild = (w) => new RegExp(`^${w.split("*").map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*")}$`);
+function detailOk(v, want) {
+  if (Array.isArray(want)) return want.some((w) => detailOk(v, w));
+  if (want === null) return v == null;
+  if (Array.isArray(v)) return want === false ? !v.length : v.some((x) => detailOk(x, want));
+  if (want === "*") return truthy(v);
+  if (want === false || want === true) return v === want;
+  if (typeof want === "string" && want.includes("*")) return truthy(v) && wild(want).test(String(v));
+  return typeof want === "number" ? v === want : String(v) === String(want);
+}
+const matchAll = (m, cond) => Object.entries(cond || {}).every(([k, w]) => detailOk(m[k], w));
+const applies = (p, m) => matchAll(m, p.when);
+function detailHits(p, m) {
+  if (!applies(p, m)) return [];
+  const hits = p.variants.filter((v) => !v.related && matchAll(m, v.match));
+  return p.multi ? hits : hits.slice(0, 1);
+}
+
+const sci = (x) => { const e = Math.floor(Math.log10(x)); return `${+(x / 10 ** e).toFixed(1)}e${e}`; };
+const DFMT = {
+  rope_theta: (v) => (v ? `θ=${sci(v)}` : ""),
+  rope_ext: (v) => (v ? String(v).replace(/^(YaRN|Llama 3 式|NTK) ?/, "") : ""),
+  router_scale: (v) => (typeof v === "number" ? `λ=${v}` : v),
+  act_clamp: (v) => `c=${v}`.replace(/（(.+)）$/, "，$1"),
+  softcap: (v) => `c=${v}`,
+  len_scale: (v) => (v === true ? "" : v),
+};
+function detailSuffix(p, v, m) {
+  const show = [].concat(v.show ?? p.show ?? []);
+  return show.map((k) => {
+    const x = m[k];
+    if (!truthy(x)) return "";
+    return Array.isArray(x) ? x.join("、") : String(DFMT[k] ? DFMT[k](x) : x);
+  }).filter(Boolean).join(" · ");
+}
+// What the compare table shows for one model at one position.
+function detailText(p, m) {
+  const hits = detailHits(p, m);
+  if (!hits.length) return applies(p, m) ? "?" : "–";
+  return hits.map((v) => { const sfx = detailSuffix(p, v, m); return sfx ? `${v.label}（${sfx}）` : v.label; }).join("；");
+}
+
+// Formulas are plain text with _x / _{..} subscripts and ^x / ^(..) superscripts.
+const fmla = (s) => esc(s)
+  .replace(/\^\(((?:[^()]|\([^()]*\))*)\)/g, "<sup>$1</sup>")
+  .replace(/\^([A-Za-z0-9¼]+)/g, "<sup>$1</sup>")
+  .replace(/_\{([^}]*)\}/g, "<sub>$1</sub>")
+  .replace(/_([A-Za-z0-9]+)/g, "<sub>$1</sub>");
+
+function modelChip(m, sfx) {
+  const on = state.compare.includes(m.name);
+  return `<button type="button" class="mchip" data-name="${esc(m.name)}" aria-pressed="${on}" title="${esc(m.vendor)} · ${m.released} · 点击${on ? "移出" : "加入"}并排对比">` +
+    `<span class="tier-dot" style="background:${tierColor(m.tier)}"></span>${esc(m.name)}${sfx ? `<span class="sfx">${esc(sfx)}</span>` : ""}</button>`;
+}
+function syncDetailPicks() {
+  document.querySelectorAll("#det .mchip").forEach((b) => {
+    const on = state.compare.includes(b.dataset.name);
+    b.setAttribute("aria-pressed", on);
+    b.title = b.title.replace(/点击.*并排对比/, `点击${on ? "移出" : "加入"}并排对比`);
+  });
+}
+
+function renderDetails(rows) {
+  const inTab = (p, id) => id === "all" || (id === "gate" ? p.gate : p.sec === id);
+  groupChips($("#det-secs"), state.detSec,
+    DSECS.map(([id, label]) => ({ id, label: `${label} ${DPOS.filter((p) => inTab(p, id)).length}` })),
+    (id) => { state.detSec = id; renderDetails(filtered()); });
+  const link = (src) => (src ? ` <a href="${esc(src.url)}" target="_blank" rel="noopener" title="${esc(src.title)}">出处 ↗</a>` : "");
+  let hidden = 0;
+  const cards = DPOS.filter((p) => inTab(p, state.detSec)).map((p) => {
+    const app = rows.filter((m) => applies(p, m));
+    if (!app.length) { hidden++; return ""; }
+    const by = new Map(p.variants.map((v) => [v, []]));
+    for (const m of app) for (const v of detailHits(p, m)) by.get(v).push(m);
+    const order = p.sort ? (a, b) => (a[p.sort] ?? 0) - (b[p.sort] ?? 0) || a.name.localeCompare(b.name)
+      : (a, b) => b.released.localeCompare(a.released) || a.name.localeCompare(b.name);
+    const vars = p.variants.map((v) => {
+      const ms = by.get(v).slice().sort(order);
+      if (!v.related && !ms.length) return "";
+      const head = `<div class="dl"><b>${esc(v.label)}</b>${v.formula ? `<span class="f">${fmla(v.formula)}</span>` : ""}` +
+        (v.note || v.source ? `<p class="note">${esc(v.note ?? "")}${link(v.source)}</p>` : "") + `</div>`;
+      let who;
+      if (v.related) who = `<span class="muted">相关工作，收录的模型里还没有</span>`;
+      else {
+        const chips = ms.map((m) => modelChip(m, detailSuffix(p, v, m))).join("");
+        who = v.default
+          ? `<details><summary><b>${ms.length}</b> 个配置（多数做法，展开看）</summary><div class="dw">${chips}</div></details>`
+          : `<span class="n">${ms.length}</span>${chips}`;
+      }
+      return `<div class="dv${v.related ? " rel" : ""}">${head}<div class="dw">${who}</div></div>`;
+    }).join("");
+    return `<article class="dpos"><h3>${esc(p.name)}<span class="muted">${app.length} 个配置适用</span></h3>` +
+      `<p class="what">${esc(p.what ?? "")}${p.formula ? `<span class="f pf">${fmla(p.formula)}</span>` : ""}</p>${vars}</article>`;
+  });
+  $("#det").innerHTML = cards.join("") + (hidden ? `<p class="muted det-hidden">当前筛选下有 ${hidden} 个位置没有适用的配置，已隐藏。</p>` : "");
+  $("#det").querySelectorAll(".mchip").forEach((b) => b.onclick = () => togglePick(b.dataset.name));
 }
 
 /* ---------- table ---------- */
@@ -912,6 +1021,7 @@ function update() {
   renderFingerprint(rows);
   renderCompare();
   renderAdoption(rows);
+  renderDetails(rows);
   renderTechniques(rows);
   renderMultiples(rows);
   renderColGroups();
@@ -932,10 +1042,12 @@ function initTheme() {
 }
 
 async function main() {
-  const [res, tres] = await Promise.all([fetch("data/models.json"), fetch("data/techniques.json")]);
+  const [res, tres, dres] = await Promise.all([fetch("data/models.json"), fetch("data/techniques.json"), fetch("data/details.json")]);
   const data = await res.json();
   DATA = data.models;
   TECHS = tres.ok ? await tres.json() : [];
+  DPOS = dres.ok ? await dres.json() : [];
+  CMP_SECTIONS.push({ label: "设计细节", rows: DPOS.map((p) => ({ label: p.name, title: p.what, f: (m) => esc(detailText(p, m)) })) });
   computeBins();
   initCompare();
   $("#meta").textContent = `${data.count} 种 MoE 配置 · ${new Set(DATA.map((m) => m.vendor)).size} 家厂家 · 数据更新于 ${data.generated}`;
