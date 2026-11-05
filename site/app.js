@@ -182,7 +182,10 @@ const halo = () => ({ textBorderColor: css("--surface"), textBorderWidth: 3 }); 
 function scatterSeries(rows, xf, yf, c) {
   const ok = rows.filter((m) => xf(m) != null && yf(m) != null);
   const byY = ok.slice().sort((a, b) => yf(a) - yf(b));
-  const ends = new Set(ok.length > 2 ? [byY[0].name, byY[byY.length - 1].name] : []);
+  const n = byY.length;
+  const ends = new Set(); // only an end no other config ties with, else the name would be an arbitrary pick
+  if (n > 2 && yf(byY[0]) < yf(byY[1])) ends.add(byY[0].name);
+  if (n > 2 && yf(byY[n - 1]) > yf(byY[n - 2])) ends.add(byY[n - 1].name);
   const W = c.getWidth();
   // names go right of the point, or left of it where they would run off the plot
   const labelLayout = (p) => (p.labelRect.x + p.labelRect.width > W - 4 ? { hideOverlap: true, x: p.rect.x - 3, align: "right" } : { hideOverlap: true });
