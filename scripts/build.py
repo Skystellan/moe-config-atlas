@@ -23,7 +23,7 @@ import hfconfig  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / ".cache"
-LOCAL_CONFIGS = ROOT / "configs"  # configs of gated repos, with their source in "_source"
+LOCAL_CONFIGS = ROOT / "configs"  # configs of gated repos, with their source in "_source" (and "_mirror")
 OUT = ROOT / "site" / "data"
 HF = "https://huggingface.co"
 
@@ -157,7 +157,8 @@ def build_entry(m, refresh):
         "rope_frac": r(parsed.get("rope_frac"), 3),
         "vocab": parsed.get("vocab"),
         "context": parsed.get("context"),
-        "mtp": (parsed.get("mtp") or fetch_index_mtp(repo, refresh)) if raw else None,
+        # a gated repo's weight index can be read from the public copy its local config names in "_mirror"
+        "mtp": (parsed.get("mtp") or fetch_index_mtp(raw.get("_mirror") or repo, refresh)) if raw else None,
         "moe_layers": parsed.get("moe_layers"),
         "attention": parsed.get("attention") if raw else None,
         **{f: parsed.get(f) if raw else None for f in hfconfig.FEATURES},

@@ -17,6 +17,25 @@ orgs:
   google: Google
   meta-models: Meta
   baidu: ERNIE
+  meta-llama: Meta
+  thinkingmachines: Thinking Machines
+  arcee-ai: Arcee
+  reflection: Reflection
+  CohereLabs: Cohere
+  LGAI-EXAONE: EXAONE
+  skt: SKT
+  poolside: Poolside
+  LiquidAI: Liquid AI
+  ibm-granite: IBM
+  Zyphra: Zyphra
+  upstage: Upstage
+  JetBrains: JetBrains
+  Aleph-Alpha: Aleph Alpha
+  RecursiveSI: Recursive
+  dots-studio: dots
+  sarvamai: Sarvam
+  amd: AMD
+  jdopensource: JoyAI
 
 # Only repos created on/after this date are considered.
 since: "2025-01-01"
@@ -36,4 +55,4 @@ non_llm_patterns:
 # Same-shape repos matching these are not worth listing as variants
 # (pre-training checkpoints, framework-specific copies).
 variant_skip_patterns:
-  - "-base(-|$)|pretrain|midtrain|paddle|-pt$"
+  - "[-.]base([-.]|$)|pretrain|midtrain|paddle|-pt$|-sft$|-dpo$"

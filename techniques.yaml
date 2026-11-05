@@ -67,6 +67,14 @@
   - {by: Pavlichenko 2026, text: "可学习版本的收益到 d=768 消失", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
   - {by: Marin, text: "已采用，称带来又一次加速；535B 的注意力输出减去自身 V 方向的分量", url: "https://openathena.ai/blog/pretraining-speedup/"}
 
+- name: VHA（Virtual Head Attention）
+  cat: attn
+  date: 2026-10
+  source: ["Virtual Head Attention", https://arxiv.org/abs/2610.17959]
+  models:
+  - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base-BF16"}
+  note: 先把少量物理 query 头线性混成更多"虚拟头"，输出再做一次低秩的跨头混合；两步都是线性的，推理时并进 Q 和输出投影，跑起来仍是普通 GQA
+
 - name: 差分注意力
   cat: attn
   date: 2024-10
@@ -74,14 +82,23 @@
   evidence:
   - {by: Pavlichenko 2026, text: "收益到 d=768 消失", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
 
-- name: KV 短卷积
+- name: QKV 短卷积
   cat: attn
-  date: 2026-07
-  source: [Thinking Machines Inkling, https://huggingface.co/thinkingmachines/Inkling]
-  note: Inkling 系列还没收录
+  date: 2021-09
+  source: [Primer, https://arxiv.org/abs/2109.08668]
+  feature: attn_conv
+  note: softmax 注意力的 Q/K/V 先过因果深度卷积（线性注意力层里自带的不算）；Inkling 还在两个子层的输出上各加一个
   evidence:
   - {by: Pavlichenko 2026, text: "对 K、V 做 4 抽头因果卷积：−1.0% / −0.7% / −0.7%，最终架构保留在全局层", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
   - {by: Marin, text: "535B 在 K、注意力输出、MoE 输出三处加 4 抽头短卷积", url: "https://github.com/marin-community/marin/issues/8435"}
+
+- name: CCA（压缩卷积注意力）
+  cat: attn
+  date: 2025-10
+  source: ["Compressed Convolutional Attention", https://arxiv.org/abs/2510.04476]
+  feature: attn_conv
+  match: [Q、K（CCA）]
+  note: 在压缩的潜空间里算注意力，并对 Q、K 做卷积混合；ZAYA1 用的是分组版 CCGQA
 
 - name: Canon 层
   cat: attn
@@ -102,9 +119,16 @@
   date: 2025-01
   source: [Rope to Nope and Back Again, https://arxiv.org/abs/2501.18795]
   feature: nope
-  note: 全局层不加位置编码，位置信息交给滑窗层或线性层；Llama 4 的 iRoPE 是同一思路
+  note: 全局层不加位置编码，位置信息交给滑窗、分块或线性层（Llama 4 叫 iRoPE）
   evidence:
   - {by: Pavlichenko 2026, text: "混合模型的全局层去掉位置编码没问题，加回部分 RoPE 反而 +0.2%；所有层都去掉则训练崩坏", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
+
+- name: SSMax（按长度放大 query）
+  cat: pos
+  date: 2025-01
+  source: [Scalable-Softmax Is Superior for Attention, https://arxiv.org/abs/2501.19399]
+  feature: len_scale
+  note: 按位置的 log 放大 query，长上下文里注意力不被摊平。Llama 4、Beam、Inkling 只用在不加 RoPE 的全局层，Mistral Large 4 每层都用、系数按头学习；Step-5 把它用在稀疏索引器的打分上
 
 - name: 部分 RoPE
   cat: pos
@@ -170,7 +194,7 @@
   date: 2026-04
   source: [DeepSeek-V4, https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro]
   feature: sparse_attn
-  match: [CSA+HCA, CSA, 压缩]
+  match: [CSA+HCA, CSA, HCA, DSA+HCA, 压缩]
   evidence:
   - {by: Pavlichenko 2026, text: "CSA 在 2021 参考模型上 +8.3%", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
 
@@ -182,6 +206,20 @@
   match: [QSA]
   evidence:
   - {by: Pavlichenko 2026, text: "质量无可测损失；256K 时可服务的模型大 1.05 倍", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
+
+- name: LSA（LongCat Sparse Attention）
+  cat: mixer
+  date: 2026-08
+  source: ["LongCat Sparse Attention: Taming the Lightning via Streaming-aware Hierarchical Cross-Layer Indexing", https://arxiv.org/abs/2608.01662]
+  feature: sparse_attn
+  match: [LSA]
+  note: DSA 的三处改动：top-k 预算里固定留开头 16 个和最近 1024 个 token，读 KV 时更连续；相邻层复用一次索引；推理时先按块粗选再逐 token 细选。LongCat-Flash-Lite-Sparse 也用它，归在 LongCat-Flash-Lite 一行
+
+- name: LSA（Latent Sparse Attention）
+  cat: mixer
+  date: 2026-10
+  source: ["Latent Sparse Attention: Towards Subquadratic Ultra-Long Context Attention", https://arxiv.org/abs/2610.42147]
+  note: key 在学到的潜空间里分层聚类，query 每一层只给少数几个簇打分，参与注意力的 key 数和上下文长度无关。D-LSA 冻结原模型、只蒸馏新加的索引器（作者在 GLM-5.3-Flash 和 Qwen-3.8-27B 上做了，权重没有放出），N-LSA 从头训练；代码和 SGLang 实现已开源
 
 - name: 索引跨层复用（IndexShare / IndexCache）
   cat: mixer
@@ -233,10 +271,19 @@
   source: [Muse Spark 的 MuseSparkResidualGate（transformers）, https://github.com/huggingface/transformers/blob/main/src/transformers/models/muse_spark/modeling_muse_spark.py]
   feature: res_gate
 
+- name: FarSkip-Collective
+  cat: resid
+  date: 2025-11
+  source: ["FarSkip-Collective: Unhobbling Blocking Communication in Mixture of Experts Models", https://arxiv.org/abs/2511.11505]
+  models:
+  - {name: Instella-MoE-16B-A3B, cite: "https://arxiv.org/abs/2609.00791"}
+  note: 下一层注意力读的是还没加路由专家输出的残差，MoE 的 all-to-all 合并可以和它同时跑；已有模型可以靠自蒸馏改成这种连接
+
 - name: GatedNorm
   cat: resid
   date: 2026-01
   source: [A Unified View of Attention and Residual Sinks, https://arxiv.org/abs/2601.22966]
+  feature: gated_norm
   evidence:
   - {by: Pavlichenko 2026, text: "第二轮里唯一保住收益的改动（d=512 −0.71%，d=768 −0.49%），还消除了梯度尖峰", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
   - {by: Marin, text: "535B 在每个 RMSNorm 后都加，秩 128", url: "https://github.com/marin-community/marin/issues/8435"}
@@ -305,6 +352,14 @@
   evidence:
   - {by: Pavlichenko 2026, text: "null experts +0.2%（更差）", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
 
+- name: Multi-Router（多视角 Latent MoE）
+  cat: moe
+  date: 2026-10
+  source: ["Multi-View Latent MoE: Letting Every Router Shape Expert Computation", https://arxiv.org/abs/2610.40577]
+  models:
+  - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base-BF16"}
+  note: 几个独立初始化的 sigmoid 路由器一起打分选专家，再按各路由器给这个专家的相对分数，混合出它的潜空间输入
+
 - name: 哈希路由层
   cat: moe
   date: 2021-06
@@ -348,6 +403,14 @@
   evidence:
   - {by: Pavlichenko 2026, text: "BPB 没有可测改善，收益只在基准分数和投机解码上体现", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
 
+- name: ECHO（主干自递归多 token 预测）
+  cat: io
+  date: 2026-10
+  source: ["ECHO: Efficient Causal Self-Recursion Beyond Auxiliary Multi-Token Prediction", https://arxiv.org/abs/2610.24766]
+  models:
+  - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base-BF16"}
+  note: 不另加 MTP 模块，让主干自己的最后一层预测后面几个 token，多步损失直接作用在生成下一个 token 的参数上；推理时模型自己当草稿模型
+
 - name: Soft-MTP
   cat: io
   date: 2026-10
@@ -381,6 +444,8 @@
   - {name: Kimi K2, cite: "https://arxiv.org/abs/2507.20534"}
   - {name: GLM-4.5, cite: "https://arxiv.org/abs/2508.06471"}
   - {name: GLM-4.5-Air, cite: "https://arxiv.org/abs/2508.06471"}
+  - {name: JoyAI-LLM Flash, cite: "https://huggingface.co/jdopensource/JoyAI-LLM-Flash"}
+  - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base-BF16"}
   note: 优化器只能从技术报告里看，这里只列核对过的
   evidence:
   - {by: Pavlichenko 2026, text: "−2.2% → −1.8%，比大多数结构改动保得住", url: "https://x.com/nv_pavlichenko/status/2116154049217089946"}
