@@ -166,6 +166,10 @@ def _mixer_types(c, n_layers):
         return [full if (i + 1) % g == 0 or i >= n_layers // g * g else "linear" for i in range(n_layers)]
     if isinstance(c.get("moba_layer_freq"), list) and n_layers:  # Ring-mini-sparse: 1 = MoBA block-sparse attention
         return ["sparse" if x else full for x in c["moba_layer_freq"][:n_layers]]
+    if c.get("model_type") == "phimoe" and n_layers and 0 < (c.get("sliding_window") or 0) < (c.get("max_position_embeddings") or 0):
+        # Phi-mini/tiny-MoE: the FlashAttention path (the default, per the model card) and the eager path both apply
+        # sliding_window in every layer; Phi-3.5-MoE sets it to the full context
+        return ["sliding"] * n_layers
     kind = full
     if any(a.lower().startswith("longcat") for a in c.get("architectures") or []) and n_layers:
         kind = kind if not c.get("index_topk") else "DSA"
@@ -483,6 +487,16 @@ ARCH = {
     "longcat_next": dict(router="softmax", expert_bias=True),  # LongCat-Flash-Lite's backbone
     "minimax": dict(router="softmax", expert_bias=False, linear="Lightning"),  # MiniMax-Text-01 / M1 in HF format
     "step3p5": dict(qk_norm=True),  # Step 3.7 Flash drops use_qk_norm from its config; the q/k norm weights remain
+    # OLMoE: one RMSNorm over all heads' q and one over k, without a config flag; softmax top-8, not renormalized
+    "olmoe": dict(qk_norm=True, router="softmax", expert_bias=False),
+    # EMO (modeling_emo.py): OLMoE's network without the q/k norms; the shared expert is the router's last expert
+    "emo": dict(qk_norm=False, router="softmax", expert_bias=False),
+    # Grok 2 (sglang grok.py): GeGLU experts next to a dense GeGLU FFN, their sum divided by √2; norms before and
+    # after each sublayer; softmax over router logits capped at 30 by tanh, top-2 not renormalized
+    "grok": dict(qk_norm=False, router="softmax", expert_bias=False, post_norm="三明治", ffn_act="GeGLU",
+                 shared_gate="相加 ÷√2"),
+    # Phi-mini/tiny-MoE (SlimMoE, Phi-3.5-MoE's block): SparseMixer-v2 picks the top-2 one at a time
+    "phimoe": dict(qk_norm=False, router="SparseMixer", expert_bias=False),
 }
 
 # These put RoPE only on the sliding-window layers whenever a model has both kinds (global NoPE).
@@ -499,6 +513,8 @@ def family(c):
     arch = ((c.get("architectures") or [""])[0]).lower()
     if arch.startswith("instellamoe"):  # model_type says deepseek_v3, but the attention and residuals differ
         return "instella_moe"
+    if arch.startswith("grok"):  # Grok 2's config says model_type "git"
+        return "grok"
     if c.get("model_type"):
         return c["model_type"]
     if arch.startswith("smallthinker"):  # the 21B config has no model_type
@@ -607,6 +623,8 @@ def features(c, mixers):
     rp = c.get("rope_parameters") if isinstance(c.get("rope_parameters"), dict) else {}
     f["len_scale"] = _flag(c, "attn_temperature_tuning", "log_scaling_n_floor", "llama_4_scaling") or _flag(
         rp, "llama_4_scaling_beta")
+    if (c.get("attn_temperature_len") or 0) > 0:  # Grok 2: past position n0 the logits are multiplied by log(n)/log(n0)
+        f["len_scale"] = True
 
     n_hc = c.get("hc_mult") or c.get("hc_count") or (4 if c.get("mhc") else None)
     hc = "mHC" if c.get("hc_sinkhorn_iters") else "iHC" if c.get("enable_ihc") else "HC"
@@ -729,6 +747,10 @@ DETAIL_ARCH = {
     "mixtral": dict(router_norm=True),  # softmax over all experts, then the top-k weights are renormalized
     "param1MoE": dict(router_norm=True),
     "Klear": dict(router_scale=1),  # config.json sets routed_scaling_factor, but the modeling code never reads it
+    "olmoe": dict(qk_norm_kind="整层"),
+    # Grok 2: the embeddings are multiplied by embedding_multiplier_scale = √d; the output head has its own matrix
+    "grok": dict(emb_proc="×√d", router_norm=False, tied_emb=False),
+    "phimoe": dict(norm_form="LayerNorm，带偏置"),  # nn.LayerNorm before each sublayer and at the end
 }
 
 _SCALE_KEYS = ("routed_scaling_factor", "moe_routed_scaling_factor", "router_scaling_factor",
@@ -832,6 +854,8 @@ def details(c, raw, fam, f):
         scales.append(f"V×{c['attention_value_scale']:g}")  # MiMo
     if _flag(c, "mla_scale_q_lora", "apply_mla_qkv_lora_rescale", "use_mla_scaling_factor"):
         scales.append("MLA ×√(d/r)")  # LongCat, dots3-note, GigaChat 3.5: q and k times sqrt(d_model / lora rank)
+    if c.get("attn_logit_softcapping"):
+        scales.append(f"软截断 {c['attn_logit_softcapping']:g}")  # Grok 2: c·tanh(z/c) on the attention logits
     d["attn_scale"] = scales
 
     # Residual adds that are not h + f(h) (hyper-connections and residual gates are features)
@@ -848,8 +872,8 @@ def details(c, raw, fam, f):
         d["logit_scale"] = f"÷{c['logits_scaling']:g}（μP）"  # Granite
     elif c.get("logits_mup_width_multiplier"):
         d["logit_scale"] = f"÷{c['logits_mup_width_multiplier']:g}（μP）"  # Inkling
-    elif c.get("output_multiplier"):
-        d["logit_scale"] = f"×{c['output_multiplier']:.3g}"  # Muse Spark, before the softcap
+    elif c.get("output_multiplier") or c.get("output_multiplier_scale"):  # Muse Spark, Grok 2: before the softcap
+        d["logit_scale"] = f"×{c.get('output_multiplier') or c['output_multiplier_scale']:.3g}"
     else:
         d["logit_scale"] = False
     d["out_softmax"] = "MultiMax" if c.get("multimax") == "lm_head" else False  # ERNIE 5.5
@@ -859,7 +883,9 @@ def details(c, raw, fam, f):
         d["rope_theta"], d["rope_ext"] = None, None
 
     if c.get("attention_bias"):
-        d["bias_terms"] = "全部线性层" if fam == "gpt_oss" else "QKV"
+        # Phi-mini/tiny-MoE: q, k, v and o carry a bias, and so does the output head (lm_head_bias)
+        d["bias_terms"] = ("全部线性层" if fam == "gpt_oss" else "QKV、O、输出层" if fam == "phimoe" and c.get("lm_head_bias")
+                           else "QKV、O" if fam == "phimoe" else "QKV")
     else:
         d["bias_terms"] = False
     tie = next((x for x in (c.get("tie_word_embeddings"), raw.get("tie_word_embeddings"),
@@ -897,10 +923,15 @@ def parse(raw):
         out["d_expert"] = c["d_expert_moe"]
     if family(c) == "muse_spark_text" and c.get("moe_hidden_size", 0) < (out["d_model"] or 0):
         out["latent"] = c["moe_hidden_size"]  # experts run at moe_hidden_size between two projections
-    # Gemma 4 runs a dense MLP in parallel with the MoE block: count it as one shared expert.
-    if c.get("enable_moe_block") and not out["s"]:
+    # Gemma 4 runs a dense MLP in parallel with the MoE block, and so does Grok 2 (residual_moe): count it as one
+    # shared expert.
+    if (c.get("enable_moe_block") or c.get("residual_moe")) and not out["s"]:
         out["s"] = 1
         out["d_shared"] = c.get("intermediate_size")
+    # EMO counts its always-on shared expert among num_experts and num_experts_per_tok (127 routed, top-7, + 1)
+    if family(c) == "emo" and out["s"] and out["E"] and out["k"]:
+        out["E"] -= out["s"]
+        out["k"] -= out["s"]
     # Shared expert given only as a width (Qwen3-Next style): one shared expert.
     if not out["s"] and out["d_shared"]:
         out["s"] = 1

@@ -1,20 +1,20 @@
 {
- "generated": "2026-11-06 10:38 UTC",
- "count": 146,
+ "generated": "2026-11-06 12:15 UTC",
+ "count": 151,
  "bench": {
   "eci": {
    "label": "ECI",
    "name": "Epoch Capabilities Index",
    "url": "https://epoch.ai/benchmarks",
    "date": "2026-11-06",
-   "n": 28
+   "n": 29
   },
   "arena": {
    "label": "Arena",
    "name": "Arena 文本榜",
    "url": "https://arena.ai/leaderboard/text",
    "date": "2026-10-28",
-   "n": 52
+   "n": 53
   },
   "avg": {
    "label": "均分",
@@ -23,8 +23,8 @@
     "eci",
     "arena"
    ],
-   "common": 27,
-   "n": 53
+   "common": 28,
+   "n": 54
   }
  },
  "models": [
@@ -142,6 +142,265 @@
    "hf_params": 15.9,
    "license": "other",
    "notes": "层间用 FarSkip-Collective 连接：下一层注意力读的是不含路由专家输出的残差，专家的 all-to-all 通信可以和它重叠。",
+   "eci": null,
+   "eci_ci": null,
+   "eci_as": null,
+   "arena": null,
+   "arena_ci": null,
+   "arena_as": null,
+   "arena_votes": null,
+   "avg_n": null,
+   "avg": null
+  },
+  {
+   "vendor": "Ai2",
+   "name": "OLMoE-1B-7B-0125",
+   "repo": "allenai/OLMoE-1B-7B-0125-Instruct",
+   "variants": [
+    "allenai/OLMoE-1B-7B-0125"
+   ],
+   "derived": [],
+   "released": "2025-01",
+   "year": 2025,
+   "total": 6.9,
+   "active": 1.3,
+   "tier": "S",
+   "E": 64,
+   "k": 8,
+   "s": 0,
+   "E_over_k": 8.0,
+   "expert_activation": 12.5,
+   "param_activation": 18.8,
+   "granularity": 4.0,
+   "d_model": 2048,
+   "d_expert": 1024,
+   "d_shared": null,
+   "latent": null,
+   "zero_experts": null,
+   "layers": 16,
+   "mixer_layers": 16,
+   "aspect": 128.0,
+   "global_attn_frac": 100.0,
+   "kv_kib_per_token": 128.0,
+   "window": null,
+   "window_sink": null,
+   "mla": false,
+   "kv_heads": 16,
+   "head_dim": null,
+   "heads": 16,
+   "qk_dim": 128,
+   "attn_ratio": 1.0,
+   "gqa": 1.0,
+   "rope_frac": 1.0,
+   "vocab": 50304,
+   "context": 4096,
+   "mtp": 0,
+   "moe_layers": 16,
+   "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAA",
+   "dense_layers": [],
+   "linear_attn": false,
+   "sparse_attn": false,
+   "attn_gate": false,
+   "attn_sink": false,
+   "qk_norm": true,
+   "k_eq_v": false,
+   "kv_share": false,
+   "index_share": false,
+   "attn_conv": false,
+   "partial_rope": false,
+   "nope": false,
+   "len_scale": false,
+   "hyper_conn": false,
+   "attn_res": false,
+   "res_gate": false,
+   "gated_norm": false,
+   "post_norm": false,
+   "parallel": false,
+   "softcap": false,
+   "ngram_mem": false,
+   "router": "softmax",
+   "expert_bias": false,
+   "group_routing": false,
+   "hash_route": false,
+   "zero_expert": false,
+   "shared_gate": false,
+   "ffn_act": "SwiGLU",
+   "act_clamp": false,
+   "gate_act": null,
+   "gate_src": null,
+   "sink_layers": null,
+   "lin_decay": null,
+   "lin_out": null,
+   "router_norm": false,
+   "router_scale": 1,
+   "norm_form": "RMSNorm",
+   "qk_norm_kind": "整层",
+   "emb_proc": false,
+   "attn_scale": [],
+   "res_scale": false,
+   "logit_scale": false,
+   "out_softmax": false,
+   "rope_theta": 10000.0,
+   "rope_ext": false,
+   "bias_terms": false,
+   "tied_emb": false,
+   "modality": "文本",
+   "precision": "BF16",
+   "quant": null,
+   "model_type": "olmoe",
+   "per_layer": false,
+   "config_ok": true,
+   "config_source": null,
+   "hf_created": "2025-01-27",
+   "latest": "2025-01-27",
+   "latest_name": "OLMoE-1B-7B-0125-Instruct",
+   "first_name": "OLMoE-1B-7B-0125",
+   "versions": [
+    {
+     "name": "OLMoE-1B-7B-0125-Instruct",
+     "repo": "allenai/OLMoE-1B-7B-0125-Instruct",
+     "created": "2025-01-27"
+    },
+    {
+     "name": "OLMoE-1B-7B-0125",
+     "repo": "allenai/OLMoE-1B-7B-0125",
+     "created": "2025-01-21"
+    }
+   ],
+   "hf_params": 6.9,
+   "license": "apache-2.0",
+   "notes": "架构就是 2024 年 9 月的 OLMoE-1B-7B-0924，这里从 2025 年 1 月的 0125 版算起。训练数据、代码和中间检查点全部公开。",
+   "eci": null,
+   "eci_ci": null,
+   "eci_as": null,
+   "arena": null,
+   "arena_ci": null,
+   "arena_as": null,
+   "arena_votes": null,
+   "avg_n": null,
+   "avg": null
+  },
+  {
+   "vendor": "Ai2",
+   "name": "EMO 14B-A1B",
+   "repo": "allenai/Emo_1b14b_1T",
+   "variants": [],
+   "derived": [
+    "allenai/EMO"
+   ],
+   "released": "2026-04",
+   "year": 2026,
+   "total": 13.6,
+   "active": 1.1,
+   "tier": "S",
+   "E": 127,
+   "k": 7,
+   "s": 1,
+   "E_over_k": 18.1,
+   "expert_activation": 6.2,
+   "param_activation": 8.1,
+   "granularity": 4.0,
+   "d_model": 2048,
+   "d_expert": 1024,
+   "d_shared": null,
+   "latent": null,
+   "zero_experts": null,
+   "layers": 16,
+   "mixer_layers": 16,
+   "aspect": 128.0,
+   "global_attn_frac": 100.0,
+   "kv_kib_per_token": 128.0,
+   "window": null,
+   "window_sink": null,
+   "mla": false,
+   "kv_heads": 16,
+   "head_dim": null,
+   "heads": 16,
+   "qk_dim": 128,
+   "attn_ratio": 1.0,
+   "gqa": 1.0,
+   "rope_frac": 1.0,
+   "vocab": 100352,
+   "context": 4096,
+   "mtp": 0,
+   "moe_layers": 16,
+   "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAA",
+   "dense_layers": [],
+   "linear_attn": false,
+   "sparse_attn": false,
+   "attn_gate": false,
+   "attn_sink": false,
+   "qk_norm": false,
+   "k_eq_v": false,
+   "kv_share": false,
+   "index_share": false,
+   "attn_conv": false,
+   "partial_rope": false,
+   "nope": false,
+   "len_scale": false,
+   "hyper_conn": false,
+   "attn_res": false,
+   "res_gate": false,
+   "gated_norm": false,
+   "post_norm": false,
+   "parallel": false,
+   "softcap": false,
+   "ngram_mem": false,
+   "router": "softmax",
+   "expert_bias": false,
+   "group_routing": false,
+   "hash_route": false,
+   "zero_expert": false,
+   "shared_gate": false,
+   "ffn_act": "SwiGLU",
+   "act_clamp": false,
+   "gate_act": null,
+   "gate_src": null,
+   "sink_layers": null,
+   "lin_decay": null,
+   "lin_out": null,
+   "router_norm": false,
+   "router_scale": 1,
+   "norm_form": "RMSNorm",
+   "qk_norm_kind": null,
+   "emb_proc": false,
+   "attn_scale": [],
+   "res_scale": false,
+   "logit_scale": false,
+   "out_softmax": false,
+   "rope_theta": 500000,
+   "rope_ext": false,
+   "bias_terms": false,
+   "tied_emb": false,
+   "modality": "文本",
+   "precision": "FP32",
+   "quant": null,
+   "model_type": "emo",
+   "per_layer": false,
+   "config_ok": true,
+   "config_source": null,
+   "hf_created": "2026-04-29",
+   "latest": "2026-05-08",
+   "latest_name": "EMO",
+   "first_name": "Emo_1b14b_1T",
+   "versions": [
+    {
+     "name": "EMO",
+     "repo": "allenai/EMO",
+     "created": "2026-05-08",
+     "derived": true
+    },
+    {
+     "name": "Emo_1b14b_1T",
+     "repo": "allenai/Emo_1b14b_1T",
+     "created": "2026-04-29"
+    }
+   ],
+   "hf_params": 13.6,
+   "license": "apache-2.0",
+   "notes": "128 个专家里最后一个是共享专家，每个 token 用它加 7 个路由专家（论文写作 1B 激活、14B 总参数）。训练时同一篇文档的 token 只能从一个共用的专家池里选，单独留下 1/4 的专家，性能只降约 1 个点。",
    "eci": null,
    "eci_ci": null,
    "eci_as": null,
@@ -661,7 +920,7 @@
    "arena_as": "Trinity Large Preview",
    "arena_votes": 31233,
    "avg_n": 1,
-   "avg": 45.2
+   "avg": 45.3
   },
   {
    "vendor": "BharatGen",
@@ -1324,7 +1583,7 @@
    "arena_as": "DeepSeek-R1 (0528)",
    "arena_votes": 18165,
    "avg_n": 2,
-   "avg": 57.5
+   "avg": 57.9
   },
   {
    "vendor": "DeepSeek",
@@ -1477,7 +1736,7 @@
    "arena_as": "DeepSeek-V3.2-Exp (Thinking)",
    "arena_votes": 8991,
    "avg_n": 2,
-   "avg": 66.4
+   "avg": 66.7
   },
   {
    "vendor": "DeepSeek",
@@ -1620,7 +1879,7 @@
    "arena_as": "DeepSeek-V4-Flash",
    "arena_votes": 51944,
    "avg_n": 2,
-   "avg": 81.0
+   "avg": 81.1
   },
   {
    "vendor": "DeepSeek",
@@ -1763,7 +2022,7 @@
    "arena_as": "DeepSeek-V4-Pro (High, 20260813)",
    "arena_votes": 9787,
    "avg_n": 2,
-   "avg": 90.5
+   "avg": 90.6
   },
   {
    "vendor": "DeepSeek",
@@ -2793,7 +3052,7 @@
    "arena_as": "GLM-4.5-Air",
    "arena_votes": 30652,
    "avg_n": 1,
-   "avg": 42.3
+   "avg": 42.4
   },
   {
    "vendor": "GLM",
@@ -2938,7 +3197,7 @@
    "arena_as": "GLM-4.7",
    "arena_votes": 12239,
    "avg_n": 2,
-   "avg": 65.9
+   "avg": 66.3
   },
   {
    "vendor": "GLM",
@@ -3072,7 +3331,7 @@
    "arena_as": "GLM-4.6V",
    "arena_votes": 2833,
    "avg_n": 1,
-   "avg": 44.7
+   "avg": 44.8
   },
   {
    "vendor": "GLM",
@@ -3199,7 +3458,7 @@
    "arena_as": "GLM-4.7-Flash",
    "arena_votes": 12008,
    "avg_n": 1,
-   "avg": 38.3
+   "avg": 38.4
   },
   {
    "vendor": "GLM",
@@ -3338,7 +3597,7 @@
    "arena_as": "GLM-5.1",
    "arena_votes": 66771,
    "avg_n": 2,
-   "avg": 82.9
+   "avg": 83.1
   },
   {
    "vendor": "GLM",
@@ -3485,7 +3744,7 @@
    "arena_as": "GLM-5.3 (Max)",
    "arena_votes": 26606,
    "avg_n": 2,
-   "avg": 95.9
+   "avg": 96.0
   },
   {
    "vendor": "GLM",
@@ -3625,7 +3884,7 @@
    "arena_as": "GLM-5.3-Flash",
    "arena_votes": 41642,
    "avg_n": 2,
-   "avg": 90.1
+   "avg": 90.2
   },
   {
    "vendor": "GigaChat",
@@ -4168,7 +4427,7 @@
    "arena_as": "Gemma 4 26B A4B",
    "arena_votes": 6090,
    "avg_n": 2,
-   "avg": 63.0
+   "avg": 63.4
   },
   {
    "vendor": "Hunyuan",
@@ -4424,7 +4683,7 @@
    "arena_as": "Hy3",
    "arena_votes": 13840,
    "avg_n": 1,
-   "avg": 82.1
+   "avg": 82.3
   },
   {
    "vendor": "Hunyuan",
@@ -6250,7 +6509,7 @@
    "arena_as": "Kimi K2 Preview (0905)",
    "arena_votes": 11592,
    "avg_n": 2,
-   "avg": 63.7
+   "avg": 64.0
   },
   {
    "vendor": "Kimi",
@@ -6519,7 +6778,7 @@
    "arena_as": "Kimi K2.6",
    "arena_votes": 39978,
    "avg_n": 2,
-   "avg": 83.2
+   "avg": 83.4
   },
   {
    "vendor": "Kimi",
@@ -8366,7 +8625,7 @@
    "arena_as": "Ling-flash-2.0",
    "arena_votes": 6952,
    "avg_n": 1,
-   "avg": 27.5
+   "avg": 27.6
   },
   {
    "vendor": "Ling",
@@ -10334,7 +10593,7 @@
    "arena_as": "LongCat-Flash-Chat",
    "arena_votes": 11167,
    "avg_n": 1,
-   "avg": 56.0
+   "avg": 56.2
   },
   {
    "vendor": "LongCat",
@@ -11457,7 +11716,7 @@
    "arena_as": "Llama 4 Scout 17B 16E Instruct",
    "arena_votes": 29823,
    "avg_n": 2,
-   "avg": 13.8
+   "avg": 14.5
   },
   {
    "vendor": "Meta",
@@ -11617,7 +11876,7 @@
    "arena_as": "Llama 4 Maverick 17B 128E Instruct",
    "arena_votes": 39439,
    "avg_n": 2,
-   "avg": 21.6
+   "avg": 22.2
   },
   {
    "vendor": "Meta",
@@ -11744,7 +12003,7 @@
    "arena_as": null,
    "arena_votes": null,
    "avg_n": 1,
-   "avg": 92.1
+   "avg": 92.0
   },
   {
    "vendor": "MiMo",
@@ -11873,7 +12132,7 @@
    "arena_as": "MiMo-V2-Flash (Non-Thinking)",
    "arena_votes": 48060,
    "avg_n": 1,
-   "avg": 51.6
+   "avg": 51.7
   },
   {
    "vendor": "MiMo",
@@ -12015,7 +12274,7 @@
    "arena_as": "MiMo-V2.6-Flash",
    "arena_votes": 15312,
    "avg_n": 1,
-   "avg": 79.2
+   "avg": 79.3
   },
   {
    "vendor": "MiMo",
@@ -12144,7 +12403,7 @@
    "arena_as": "MiMo-V2.5-Pro",
    "arena_votes": 77728,
    "avg_n": 1,
-   "avg": 88.5
+   "avg": 88.7
   },
   {
    "vendor": "MiMo",
@@ -12280,7 +12539,251 @@
    "arena_as": "MiMo-V2.6-Pro",
    "arena_votes": 4037,
    "avg_n": 1,
-   "avg": 94.9
+   "avg": 95.1
+  },
+  {
+   "vendor": "Microsoft",
+   "name": "Phi-tiny-MoE",
+   "repo": "microsoft/Phi-tiny-MoE-instruct",
+   "variants": [],
+   "derived": [],
+   "released": "2025-06",
+   "year": 2025,
+   "total": 3.8,
+   "active": 1.1,
+   "tier": "S",
+   "E": 16,
+   "k": 2,
+   "s": 0,
+   "E_over_k": 8.0,
+   "expert_activation": 12.5,
+   "param_activation": 28.9,
+   "granularity": 18.3,
+   "d_model": 4096,
+   "d_expert": 448,
+   "d_shared": null,
+   "latent": null,
+   "zero_experts": null,
+   "layers": 32,
+   "mixer_layers": 32,
+   "aspect": 128.0,
+   "global_attn_frac": 0.0,
+   "kv_kib_per_token": null,
+   "window": 2047,
+   "window_sink": null,
+   "mla": false,
+   "kv_heads": 4,
+   "head_dim": 128,
+   "heads": 16,
+   "qk_dim": 128,
+   "attn_ratio": 0.5,
+   "gqa": 4.0,
+   "rope_frac": 1.0,
+   "vocab": 32064,
+   "context": 4096,
+   "mtp": 0,
+   "moe_layers": 32,
+   "attention": "sliding",
+   "layout": "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+   "dense_layers": [],
+   "linear_attn": false,
+   "sparse_attn": false,
+   "attn_gate": false,
+   "attn_sink": false,
+   "qk_norm": false,
+   "k_eq_v": false,
+   "kv_share": false,
+   "index_share": false,
+   "attn_conv": false,
+   "partial_rope": false,
+   "nope": false,
+   "len_scale": false,
+   "hyper_conn": false,
+   "attn_res": false,
+   "res_gate": false,
+   "gated_norm": false,
+   "post_norm": false,
+   "parallel": false,
+   "softcap": false,
+   "ngram_mem": false,
+   "router": "SparseMixer",
+   "expert_bias": false,
+   "group_routing": false,
+   "hash_route": false,
+   "zero_expert": false,
+   "shared_gate": false,
+   "ffn_act": "SwiGLU",
+   "act_clamp": false,
+   "gate_act": null,
+   "gate_src": null,
+   "sink_layers": null,
+   "lin_decay": null,
+   "lin_out": null,
+   "router_norm": null,
+   "router_scale": 1,
+   "norm_form": "LayerNorm，带偏置",
+   "qk_norm_kind": null,
+   "emb_proc": false,
+   "attn_scale": [],
+   "res_scale": false,
+   "logit_scale": false,
+   "out_softmax": false,
+   "rope_theta": 10000.0,
+   "rope_ext": false,
+   "bias_terms": "QKV、O、输出层",
+   "tied_emb": false,
+   "modality": "文本",
+   "precision": "BF16",
+   "quant": null,
+   "model_type": "phimoe",
+   "per_layer": false,
+   "config_ok": true,
+   "config_source": null,
+   "hf_created": "2025-06-23",
+   "latest": "2025-06-23",
+   "latest_name": "Phi-tiny-MoE-instruct",
+   "first_name": "Phi-tiny-MoE-instruct",
+   "versions": [
+    {
+     "name": "Phi-tiny-MoE-instruct",
+     "repo": "microsoft/Phi-tiny-MoE-instruct",
+     "created": "2025-06-23"
+    }
+   ],
+   "hf_params": 3.8,
+   "license": "mit",
+   "notes": "用 SlimMoE 从 Phi-3.5-MoE 剪枝蒸馏而来，专家裁到 448 宽，query 和 KV 头数也减半。config 写 sliding_window = 2047，模型卡说默认走 FlashAttention，这条路径每层都按 2047 的窗口算。",
+   "eci": null,
+   "eci_ci": null,
+   "eci_as": null,
+   "arena": null,
+   "arena_ci": null,
+   "arena_as": null,
+   "arena_votes": null,
+   "avg_n": null,
+   "avg": null
+  },
+  {
+   "vendor": "Microsoft",
+   "name": "Phi-mini-MoE",
+   "repo": "microsoft/Phi-mini-MoE-instruct",
+   "variants": [],
+   "derived": [],
+   "released": "2025-06",
+   "year": 2025,
+   "total": 7.6,
+   "active": 2.4,
+   "tier": "S",
+   "E": 16,
+   "k": 2,
+   "s": 0,
+   "E_over_k": 8.0,
+   "expert_activation": 12.5,
+   "param_activation": 31.6,
+   "granularity": 8.5,
+   "d_model": 4096,
+   "d_expert": 960,
+   "d_shared": null,
+   "latent": null,
+   "zero_experts": null,
+   "layers": 32,
+   "mixer_layers": 32,
+   "aspect": 128.0,
+   "global_attn_frac": 0.0,
+   "kv_kib_per_token": null,
+   "window": 2047,
+   "window_sink": null,
+   "mla": false,
+   "kv_heads": 8,
+   "head_dim": 128,
+   "heads": 32,
+   "qk_dim": 128,
+   "attn_ratio": 1.0,
+   "gqa": 4.0,
+   "rope_frac": 1.0,
+   "vocab": 32064,
+   "context": 4096,
+   "mtp": 0,
+   "moe_layers": 32,
+   "attention": "sliding",
+   "layout": "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+   "dense_layers": [],
+   "linear_attn": false,
+   "sparse_attn": false,
+   "attn_gate": false,
+   "attn_sink": false,
+   "qk_norm": false,
+   "k_eq_v": false,
+   "kv_share": false,
+   "index_share": false,
+   "attn_conv": false,
+   "partial_rope": false,
+   "nope": false,
+   "len_scale": false,
+   "hyper_conn": false,
+   "attn_res": false,
+   "res_gate": false,
+   "gated_norm": false,
+   "post_norm": false,
+   "parallel": false,
+   "softcap": false,
+   "ngram_mem": false,
+   "router": "SparseMixer",
+   "expert_bias": false,
+   "group_routing": false,
+   "hash_route": false,
+   "zero_expert": false,
+   "shared_gate": false,
+   "ffn_act": "SwiGLU",
+   "act_clamp": false,
+   "gate_act": null,
+   "gate_src": null,
+   "sink_layers": null,
+   "lin_decay": null,
+   "lin_out": null,
+   "router_norm": null,
+   "router_scale": 1,
+   "norm_form": "LayerNorm，带偏置",
+   "qk_norm_kind": null,
+   "emb_proc": false,
+   "attn_scale": [],
+   "res_scale": false,
+   "logit_scale": false,
+   "out_softmax": false,
+   "rope_theta": 10000.0,
+   "rope_ext": false,
+   "bias_terms": "QKV、O、输出层",
+   "tied_emb": false,
+   "modality": "文本",
+   "precision": "BF16",
+   "quant": null,
+   "model_type": "phimoe",
+   "per_layer": false,
+   "config_ok": true,
+   "config_source": null,
+   "hf_created": "2025-06-23",
+   "latest": "2025-06-23",
+   "latest_name": "Phi-mini-MoE-instruct",
+   "first_name": "Phi-mini-MoE-instruct",
+   "versions": [
+    {
+     "name": "Phi-mini-MoE-instruct",
+     "repo": "microsoft/Phi-mini-MoE-instruct",
+     "created": "2025-06-23"
+    }
+   ],
+   "hf_params": 7.6,
+   "license": "mit",
+   "notes": "用 SlimMoE 从 Phi-3.5-MoE（41.9B / 6.6B）多阶段剪枝蒸馏而来，注意力不变，专家从 6400 宽裁到 960。config 写 sliding_window = 2047，模型卡说默认走 FlashAttention，这条路径每层都按 2047 的窗口算。",
+   "eci": null,
+   "eci_ci": null,
+   "eci_as": null,
+   "arena": null,
+   "arena_ci": null,
+   "arena_as": null,
+   "arena_votes": null,
+   "avg_n": null,
+   "avg": null
   },
   {
    "vendor": "MiniMax",
@@ -12706,7 +13209,7 @@
    "arena_as": "MiniMax-M2.7",
    "arena_votes": 89197,
    "avg_n": 1,
-   "avg": 62.9
+   "avg": 63.1
   },
   {
    "vendor": "MiniMax",
@@ -12838,7 +13341,7 @@
    "arena_as": "MiniMax-M3",
    "arena_votes": 68611,
    "avg_n": 2,
-   "avg": 71.9
+   "avg": 72.2
   },
   {
    "vendor": "MiniMax",
@@ -13101,7 +13604,7 @@
    "arena_as": "Mistral Large 3",
    "arena_votes": 88325,
    "avg_n": 1,
-   "avg": 62.4
+   "avg": 62.6
   },
   {
    "vendor": "Mistral",
@@ -13368,7 +13871,7 @@
    "arena_as": "Mistral Large 4",
    "arena_votes": 12066,
    "avg_n": 2,
-   "avg": 80.6
+   "avg": 80.7
   },
   {
    "vendor": "NVIDIA",
@@ -13515,7 +14018,7 @@
    "arena_as": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B (NVFP4)",
    "arena_votes": 24230,
    "avg_n": 1,
-   "avg": 32.4
+   "avg": 32.5
   },
   {
    "vendor": "NVIDIA",
@@ -13648,7 +14151,7 @@
    "arena_as": "NVIDIA-Nemotron-3-Super-120B-A12B",
    "arena_votes": 7870,
    "avg_n": 1,
-   "avg": 35.9
+   "avg": 36.0
   },
   {
    "vendor": "NVIDIA",
@@ -13963,7 +14466,7 @@
    "arena_as": "NVIDIA-Nemotron-3-Ultra-550B-A55B (NVFP4)",
    "arena_votes": 11563,
    "avg_n": 2,
-   "avg": 68.2
+   "avg": 68.5
   },
   {
    "vendor": "NVIDIA",
@@ -14218,7 +14721,7 @@
    "arena_as": "NVIDIA-Nemotron-3.5-Super-VL-120B-A12B (NVFP4)",
    "arena_votes": 4178,
    "avg_n": 1,
-   "avg": 61.5
+   "avg": 61.6
   },
   {
    "vendor": "OpenAI",
@@ -14346,7 +14849,7 @@
    "arena_as": "gpt-oss-20b",
    "arena_votes": 10416,
    "avg_n": 2,
-   "avg": 23.4
+   "avg": 23.9
   },
   {
    "vendor": "OpenAI",
@@ -14474,7 +14977,7 @@
    "arena_as": "gpt-oss-120b",
    "arena_votes": 30200,
    "avg_n": 2,
-   "avg": 39.6
+   "avg": 40.0
   },
   {
    "vendor": "Poolside",
@@ -15004,7 +15507,7 @@
    "arena_as": "Qwen3-30B-A3B-Instruct (2507)",
    "arena_votes": 23312,
    "avg_n": 2,
-   "avg": 44.4
+   "avg": 44.8
   },
   {
    "vendor": "Qwen",
@@ -15145,7 +15648,7 @@
    "arena_as": "Qwen3-235B-A22B-Instruct (2507)",
    "arena_votes": 98081,
    "avg_n": 2,
-   "avg": 61.3
+   "avg": 61.6
   },
   {
    "vendor": "Qwen",
@@ -15270,7 +15773,7 @@
    "arena_as": "Qwen3-Coder-480B-A35B-Instruct",
    "arena_votes": 25190,
    "avg_n": 1,
-   "avg": 49.7
+   "avg": 49.8
   },
   {
    "vendor": "Qwen",
@@ -15539,7 +16042,7 @@
    "arena_as": "Qwen3-Next-80B-A3B-Instruct",
    "arena_votes": 22753,
    "avg_n": 1,
-   "avg": 55.1
+   "avg": 55.2
   },
   {
    "vendor": "Qwen",
@@ -15671,7 +16174,7 @@
    "arena_as": "Qwen3-VL-235B-A22B-Instruct",
    "arena_votes": 11314,
    "avg_n": 1,
-   "avg": 61.9
+   "avg": 62.1
   },
   {
    "vendor": "Qwen",
@@ -15806,7 +16309,7 @@
    "arena_as": "Qwen3.5-35B-A3B",
    "arena_votes": 30427,
    "avg_n": 2,
-   "avg": 55.6
+   "avg": 55.9
   },
   {
    "vendor": "Qwen",
@@ -15931,7 +16434,7 @@
    "arena_as": "Qwen3.5-122B-A10B",
    "arena_votes": 29712,
    "avg_n": 1,
-   "avg": 63.4
+   "avg": 63.6
   },
   {
    "vendor": "Qwen",
@@ -16059,7 +16562,7 @@
    "arena_as": "Qwen3.5-397B-A17B",
    "arena_votes": 97675,
    "avg_n": 2,
-   "avg": 72.8
+   "avg": 73.1
   },
   {
    "vendor": "Qwen",
@@ -16682,7 +17185,7 @@
    "arena_as": "Beam 1.0 501B A23B",
    "arena_votes": 4233,
    "avg_n": 2,
-   "avg": 75.9
+   "avg": 76.1
   },
   {
    "vendor": "SKT",
@@ -17561,7 +18064,7 @@
    "arena_as": "Step-3",
    "arena_votes": 6291,
    "avg_n": 1,
-   "avg": 30.5
+   "avg": 30.6
   },
   {
    "vendor": "Step",
@@ -17690,7 +18193,7 @@
    "arena_as": "Step-3.5-Flash",
    "arena_votes": 60305,
    "avg_n": 1,
-   "avg": 52.1
+   "avg": 52.2
   },
   {
    "vendor": "Step",
@@ -17954,7 +18457,7 @@
    "arena_as": "Step 5 Preview",
    "arena_votes": 11355,
    "avg_n": 1,
-   "avg": 79.2
+   "avg": 79.3
   },
   {
    "vendor": "TeleAI",
@@ -18218,7 +18721,7 @@
    "arena_as": "Inkling-Small",
    "arena_votes": 36999,
    "avg_n": 2,
-   "avg": 68.5
+   "avg": 68.7
   },
   {
    "vendor": "Thinking Machines",
@@ -18349,7 +18852,7 @@
    "arena_as": "Inkling",
    "arena_votes": 45472,
    "avg_n": 2,
-   "avg": 73.8
+   "avg": 74.1
   },
   {
    "vendor": "Upstage",
@@ -19212,6 +19715,136 @@
    "arena_votes": null,
    "avg_n": null,
    "avg": null
+  },
+  {
+   "vendor": "xAI",
+   "name": "Grok 2",
+   "repo": "xai-org/grok-2",
+   "variants": [],
+   "derived": [],
+   "released": "2025-08",
+   "year": 2025,
+   "total": 269.5,
+   "active": 114.9,
+   "tier": "M",
+   "E": 8,
+   "k": 2,
+   "s": 1,
+   "E_over_k": 4.0,
+   "expert_activation": 33.3,
+   "param_activation": 42.6,
+   "granularity": 1.0,
+   "d_model": 8192,
+   "d_expert": 16384,
+   "d_shared": 32768,
+   "latent": null,
+   "zero_experts": null,
+   "layers": 64,
+   "mixer_layers": 64,
+   "aspect": 128.0,
+   "global_attn_frac": 100.0,
+   "kv_kib_per_token": 256.0,
+   "window": null,
+   "window_sink": null,
+   "mla": false,
+   "kv_heads": 8,
+   "head_dim": 128,
+   "heads": 64,
+   "qk_dim": 128,
+   "attn_ratio": 1.0,
+   "gqa": 8.0,
+   "rope_frac": 1.0,
+   "vocab": 131072,
+   "context": 131072,
+   "mtp": 0,
+   "moe_layers": 64,
+   "attention": "full",
+   "layout": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "dense_layers": [],
+   "linear_attn": false,
+   "sparse_attn": false,
+   "attn_gate": false,
+   "attn_sink": false,
+   "qk_norm": false,
+   "k_eq_v": false,
+   "kv_share": false,
+   "index_share": false,
+   "attn_conv": false,
+   "partial_rope": false,
+   "nope": false,
+   "len_scale": true,
+   "hyper_conn": false,
+   "attn_res": false,
+   "res_gate": false,
+   "gated_norm": false,
+   "post_norm": "三明治",
+   "parallel": false,
+   "softcap": 50,
+   "ngram_mem": false,
+   "router": "softmax",
+   "expert_bias": false,
+   "group_routing": false,
+   "hash_route": false,
+   "zero_expert": false,
+   "shared_gate": "相加 ÷√2",
+   "ffn_act": "GeGLU",
+   "act_clamp": false,
+   "gate_act": null,
+   "gate_src": null,
+   "sink_layers": null,
+   "lin_decay": null,
+   "lin_out": null,
+   "router_norm": false,
+   "router_scale": 1,
+   "norm_form": "RMSNorm",
+   "qk_norm_kind": null,
+   "emb_proc": "×√d",
+   "attn_scale": [
+    "软截断 30"
+   ],
+   "res_scale": false,
+   "logit_scale": "×0.5",
+   "out_softmax": false,
+   "rope_theta": 208533496,
+   "rope_ext": false,
+   "bias_terms": false,
+   "tied_emb": false,
+   "modality": "文本",
+   "precision": "BF16",
+   "quant": null,
+   "model_type": "git",
+   "per_layer": false,
+   "config_ok": true,
+   "config_source": null,
+   "hf_created": "2025-08-22",
+   "latest": "2025-08-22",
+   "latest_name": "grok-2",
+   "first_name": "grok-2",
+   "versions": [
+    {
+     "name": "grok-2",
+     "repo": "xai-org/grok-2",
+     "created": "2025-08-22"
+    }
+   ],
+   "hf_params": null,
+   "license": null,
+   "notes": "xAI 2024 年训练和使用的模型，2025 年 8 月开放权重；没有公布参数量，这里按 config 算（激活含嵌入）。每层有一个 32768 宽的稠密 FFN 和 8 选 2 的专家并行。注意力 logit 先过上限 30 的 tanh 软截断，位置超过 1024 后再乘 log n / log 1024；路由 logit 也截在 30。",
+   "eci": 129.8,
+   "eci_ci": [
+    127.0,
+    132.3
+   ],
+   "eci_as": "Grok-2 (Dec 2024)",
+   "arena": 1336,
+   "arena_ci": [
+    1332,
+    1339
+   ],
+   "arena_as": "Grok 2 (2024-08-13)",
+   "arena_votes": 63498,
+   "avg_n": 2,
+   "avg": 21.1
   }
  ]
 }

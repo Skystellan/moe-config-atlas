@@ -1144,3 +1144,43 @@
   total: 17.3
   active: 0.86
   notes: 阿里国际的多语言模型，由 Qwen3-0.6B-Base 切分 FFN 子矩阵再用 Drop-Upcycling 改造成 MoE。
+
+- vendor: Ai2
+  name: OLMoE-1B-7B-0125
+  repo: allenai/OLMoE-1B-7B-0125-Instruct
+  variants: [allenai/OLMoE-1B-7B-0125]
+  released: 2025-01
+  total: 6.9
+  active: 1.3
+  notes: 架构就是 2024 年 9 月的 OLMoE-1B-7B-0924，这里从 2025 年 1 月的 0125 版算起。训练数据、代码和中间检查点全部公开。
+- vendor: Ai2
+  name: EMO 14B-A1B
+  repo: allenai/Emo_1b14b_1T
+  derived: [allenai/EMO]
+  released: 2026-04
+  total: 13.6
+  active: 1.1
+  notes: 128 个专家里最后一个是共享专家，每个 token 用它加 7 个路由专家（论文写作 1B 激活、14B 总参数）。训练时同一篇文档的 token 只能从一个共用的专家池里选，单独留下 1/4 的专家，性能只降约 1 个点。
+
+- vendor: xAI
+  name: Grok 2
+  repo: xai-org/grok-2
+  released: 2025-08
+  total: 269.5
+  active: 114.9
+  notes: xAI 2024 年训练和使用的模型，2025 年 8 月开放权重；没有公布参数量，这里按 config 算（激活含嵌入）。每层有一个 32768 宽的稠密 FFN 和 8 选 2 的专家并行。注意力 logit 先过上限 30 的 tanh 软截断，位置超过 1024 后再乘 log n / log 1024；路由 logit 也截在 30。
+
+- vendor: Microsoft
+  name: Phi-mini-MoE
+  repo: microsoft/Phi-mini-MoE-instruct
+  released: 2025-06
+  total: 7.6
+  active: 2.4
+  notes: 用 SlimMoE 从 Phi-3.5-MoE（41.9B / 6.6B）多阶段剪枝蒸馏而来，注意力不变，专家从 6400 宽裁到 960。config 写 sliding_window = 2047，模型卡说默认走 FlashAttention，这条路径每层都按 2047 的窗口算。
+- vendor: Microsoft
+  name: Phi-tiny-MoE
+  repo: microsoft/Phi-tiny-MoE-instruct
+  released: 2025-06
+  total: 3.8
+  active: 1.1
+  notes: 用 SlimMoE 从 Phi-3.5-MoE 剪枝蒸馏而来，专家裁到 448 宽，query 和 KV 头数也减半。config 写 sliding_window = 2047，模型卡说默认走 FlashAttention，这条路径每层都按 2047 的窗口算。

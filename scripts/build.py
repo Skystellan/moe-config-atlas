@@ -120,7 +120,9 @@ def precision(raw, info):
     if params:
         top = max(params, key=params.get)
         return {"BF16": "BF16", "F32": "FP32", "F16": "FP16"}.get(top, top), None
-    return None, None
+    # HF indexes no safetensors metadata for some layouts (Grok 2's tensor-parallel shards): use the config's dtype
+    dtype = str(raw.get("torch_dtype") or raw.get("dtype") or c.get("torch_dtype") or "")
+    return {"bfloat16": "BF16", "float32": "FP32", "float16": "FP16"}.get(dtype), None
 
 
 def tier(total):

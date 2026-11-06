@@ -16,6 +16,7 @@ import os
 import re
 import sys
 import urllib.error
+import urllib.request
 from pathlib import Path
 
 from ruamel.yaml import YAML
@@ -34,9 +35,21 @@ def signature(raw, override=None):
 
 
 def list_org(org, since):
-    url = (f"{HF}/api/models?author={org}&sort=createdAt&direction=-1&limit=500"
+    """The org's repos created on or after `since`, newest first. Large orgs (allenai has 600+ since 2025) take
+    more than one page, so follow the listing's next links until the pages reach back past `since`."""
+    url = (f"{HF}/api/models?author={org}&sort=createdAt&direction=-1&limit=1000"
            "&expand[]=createdAt&expand[]=safetensors&expand[]=tags")
-    return [m for m in http_json(url) if (m.get("createdAt") or "") >= since]
+    out = []
+    while url:
+        req = urllib.request.Request(url, headers={"User-Agent": "moe-config-atlas"})
+        if os.environ.get("HF_TOKEN"):
+            req.add_header("Authorization", f"Bearer {os.environ['HF_TOKEN']}")
+        with urllib.request.urlopen(req, timeout=60) as r:
+            page, link = json.load(r), r.headers.get("Link") or ""
+        out += [m for m in page if (m.get("createdAt") or "") >= since]
+        nxt = re.search(r'<([^>]+)>;\s*rel="next"', link)
+        url = nxt.group(1) if nxt and page and (page[-1].get("createdAt") or "") >= since else None
+    return out
 
 
 def base_models(info):

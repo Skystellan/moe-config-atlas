@@ -132,7 +132,7 @@
     "match": {
      "qk_norm_kind": "整层"
     },
-    "note": "OLMo 2 的写法。MiniMax-M3 换回了逐头。"
+    "note": "OLMoE 和 OLMo 2 的写法，MiniMax-M2 也这样写；MiniMax-M3 换回了逐头。"
    },
    {
     "label": "不带权重",
@@ -190,7 +190,7 @@
      "len_scale": "*"
     },
     "show": "len_scale",
-    "note": "Llama 4、Beam、Inkling 只用在不加 RoPE 的全局层；Mistral Large 4 每层都用，系数按头学习。",
+    "note": "Llama 4、Beam、Inkling 只用在不加 RoPE 的全局层；Mistral Large 4 每层都用，系数按头学习。Grok 2 也每层都用：位置 n 超过 1024 后，软截断后的 logit 乘 log n / log 1024，相当于 n₀ = 1024、β = 1/ln 1024。",
     "source": {
      "title": "Scalable-Softmax Is Superior for Attention",
      "url": "https://arxiv.org/abs/2501.19399"
@@ -229,6 +229,15 @@
      "attn_scale": "MLA*"
     },
     "note": "d 是隐藏维度，r 是 q、kv 的 LoRA 秩。dots3-note 和 GigaChat 3.5 乘在归一化后的潜向量上，LongCat 乘在投影后的 q、k 上，两者等价。"
+   },
+   {
+    "label": "logit 软截断",
+    "formula": "c · tanh(z / c)",
+    "match": {
+     "attn_scale": "软截断*"
+    },
+    "show": "attn_scale",
+    "note": "Grok 2：c = 30，和 Gemma 2 一样把注意力 logit 限在 ±c 以内。"
    }
   ]
  },
@@ -460,7 +469,7 @@
      "router": "softmax",
      "router_norm": false
     },
-    "note": "LongCat 的零计算专家也参与 softmax，权重再乘 6 或 9；ZAYA1 的路由器是一个跨层传递状态的小 MLP，每个 token 只选 1 个专家。"
+    "note": "LongCat 的零计算专家也参与 softmax，权重再乘 6 或 9；ZAYA1 的路由器是一个跨层传递状态的小 MLP，每个 token 只选 1 个专家；Grok 2 先把路由 logit 用 tanh 截在 30 以内。"
    },
    {
     "label": "sigmoid，不归一化",
@@ -470,6 +479,18 @@
      "router_norm": false
     },
     "note": "Llama 4 是 top-1，σ(z) 乘在专家的输入上而不是输出上；Kolibri 先在 z + b 上选 top-k 再取 σ。"
+   },
+   {
+    "label": "SparseMixer，逐个选",
+    "formula": "第 1 个专家取 argmax，权重是 logit 与最大值相差不到 2ε 的那几个专家上的 softmax；去掉它，再用同样的办法选第 2 个",
+    "match": {
+     "router": "SparseMixer"
+    },
+    "note": "Phi-mini-MoE 和 Phi-tiny-MoE 沿用 Phi-3.5-MoE 和 GRIN-MoE 的 SparseMixer-v2，ε = 0.01；训练时用 Gumbel 采样选专家，再用中点法估计路由的梯度。",
+    "source": {
+     "title": "GRIN: GRadient-INformed MoE",
+     "url": "https://arxiv.org/abs/2409.12136"
+    }
    },
    {
     "label": "√softplus，归一化",
@@ -622,6 +643,14 @@
      "shared_gate": "取平均"
     },
     "note": "Command A+（shared_expert_combination_strategy = average）。"
+   },
+   {
+    "label": "相加后除以 √2",
+    "formula": "y = (Σ g_i · E_i(x) + S(x)) / √2",
+    "match": {
+     "shared_gate": "相加 ÷√2"
+    },
+    "note": "Grok 2（residual_moe）：S 是一个 32768 宽的稠密 GeGLU FFN，比每个路由专家宽一倍。"
    },
    {
     "label": "按 softmax 系数混合",
@@ -833,6 +862,14 @@
     "note": "Command A+ 沿用 Cohere 的 LayerNorm（减均值）；同家的 North Mini Code 用 RMSNorm。"
    },
    {
+    "label": "LayerNorm，带偏置",
+    "formula": "(x − μ) / σ_x ⊙ w + b",
+    "match": {
+     "norm_form": "LayerNorm，带偏置"
+    },
+    "note": "Phi-mini-MoE 和 Phi-tiny-MoE 沿用 Phi-3.5-MoE 的 nn.LayerNorm。"
+   },
+   {
     "label": "分组 RMSNorm",
     "formula": "把 x 切成 n 段，每段 x_j / rms(x_j)，再乘 w",
     "match": {
@@ -917,11 +954,12 @@
    },
    {
     "label": "乘常数再软截断",
-    "formula": "c · tanh(m·z / c)，m ≈ 0.177",
+    "formula": "c · tanh(m·z / c)",
     "match": {
      "logit_scale": "×*"
     },
-    "note": "Muse Spark：同一个 m 也乘在路由器的 logit 上。"
+    "show": "logit_scale",
+    "note": "Muse Spark：m ≈ 0.177，同一个 m 也乘在路由器的 logit 上；Grok 2：m = 0.5，c = 50，m 直接乘进输出层的权重。"
    },
    {
     "label": "MultiMax",
@@ -977,6 +1015,13 @@
      "bias_terms": "QKV"
     },
     "note": "GLM-4.5 / 4.5-Air；之后的 GLM-4.7、GLM-5 去掉了。"
+   },
+   {
+    "label": "注意力和输出层带",
+    "match": {
+     "bias_terms": "QKV、O、输出层"
+    },
+    "note": "Phi-mini-MoE 和 Phi-tiny-MoE（attention_bias、lm_head_bias），专家和路由器不带。"
    },
    {
     "label": "全部线性层都带",

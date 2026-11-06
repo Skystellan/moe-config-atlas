@@ -46,6 +46,9 @@ orgs:
   bharatgenai: BharatGen
   Tiiny: SmallThinker
   ATH-MaaS: Marco
+  allenai: Ai2
+  xai-org: xAI
+  microsoft: Microsoft
 
 # Only repos created on/after this date are considered.
 since: "2025-01-01"
@@ -58,6 +61,7 @@ skip_patterns:
   - "fp8|fp4|nvfp4|mxfp4|int4|int8|w4a16|w8a8|awq|gptq|bnb|mlx|onnx|exl2"
   - "eagle|dflash|mtp-draft|-draft"
   - "optimal-sparsity|loopedlm|-checkpoints$"
+  - "^allenai/(StdMoE_|Dense_|Emo_.*_130B)"  # EMO paper baselines and ablations
 
 # Not chat/base LLMs even when they reuse an MoE backbone: skipped entirely.
 non_llm_patterns:
