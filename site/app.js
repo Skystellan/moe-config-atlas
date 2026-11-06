@@ -938,20 +938,20 @@ function initAdoption() {
   box.addEventListener("pointerleave", hideTip);
 }
 
-/* ---------- fingerprint: one row per config, or aggregated by vendor / tier ---------- */
+/* ---------- fingerprint: one row per config (all together or grouped by tier), or aggregated by vendor ---------- */
 
 function renderFingerprint(rows) {
   const rerender = () => renderFingerprint(filtered());
-  groupChips($("#fp-mode"), state.fpMode, [{ id: "model", label: "逐个模型" }, { id: "vendor", label: "按厂家汇总" }, { id: "tier", label: "按档位汇总" }],
-    (id) => { state.fpMode = id; if (id !== "model" && state.fpGroup === "shape") state.fpGroup = "all"; rerender(); });
-  const byModel = state.fpMode === "model";
+  groupChips($("#fp-mode"), state.fpMode, [{ id: "model", label: "逐个模型" }, { id: "tier", label: "按档位分组" }, { id: "vendor", label: "按厂家汇总" }],
+    (id) => { state.fpMode = id; if (id === "vendor" && state.fpGroup === "shape") state.fpGroup = "all"; rerender(); });
+  const perModel = state.fpMode !== "vendor";
   groupChips($("#fp-groups"), state.fpGroup,
-    [{ id: "all", label: "全部" }, ...(byModel ? [{ id: "shape", label: "形状" }] : []), ...FEATURE_GROUPS],
+    [{ id: "all", label: "全部" }, ...(perModel ? [{ id: "shape", label: "形状" }] : []), ...FEATURE_GROUPS],
     (id) => { state.fpGroup = id; rerender(); });
-  $("#fp-table").hidden = !byModel;
-  $("#fp-heat").hidden = byModel;
-  $("#fp-sort").hidden = !byModel;
-  if (byModel) renderMatrix(rows);
+  $("#fp-table").hidden = !perModel;
+  $("#fp-heat").hidden = perModel;
+  $("#fp-sort").hidden = !perModel;
+  if (perModel) renderMatrix(rows);
   else renderHeatmap(rows);
 }
 
@@ -993,7 +993,11 @@ function renderMatrix(rows) {
   // drops the sort instead of leaving it to come back later.
   const col = cols.find((c) => !c.bench && c.key === state.fpSort.key);
   if (!col && !bench && state.fpSort.key !== "released") state.fpSort = { ...FP_SORT_DEFAULT };
-  const sorted = sortMatrix(rows, col);
+  // Grouped by tier, each tier is sorted on its own, so small and mid-size configs are ranked among themselves.
+  const byTier = state.fpMode === "tier";
+  const sections = byTier
+    ? TIERS.map((t) => ({ t, ms: sortMatrix(rows.filter((m) => m.tier === t.id), col) })).filter((s) => s.ms.length)
+    : [{ t: null, ms: sortMatrix(rows, col) }];
   const grouped = state.fpSort.key === "vendor";
 
   const sortBox = $("#fp-sort");
@@ -1034,19 +1038,45 @@ function renderMatrix(rows) {
     const text = esc(featureText(c.f, m));
     return `<td class="on${gs}" title="${tip}：${text}">${text}</td>`;
   };
+  // The first row of each tier sums it up: the median of each shape number, and for each feature
+  // how many of the configs whose config shows it either way use it.
+  const sumCell = (c, t, ms) => {
+    const gs = c.gs ? " gs" : "";
+    if (c.bench) {
+      const n = ms.filter((m) => m[c.key] != null).length;
+      return `<td class="na${gs}" title="${esc(t.label)}：${ms.length} 个配置里 ${n} 个有分数">${n} 个有分</td>`;
+    }
+    if (c.num) {
+      const med = median(ms.filter((m) => !(c.key === "gqa" && m.mla)).map((m) => m[c.key]));
+      const b = binOf(c.key, med);
+      const text = med == null ? "–" : c.fmt({ [c.key]: med });
+      return `<td class="${b >= 0 ? `q${b + 1}` : "na"}${gs}" title="${esc(t.label)} · ${esc(c.label)}的中位数：${esc(text)}">${esc(text)}</td>`;
+    }
+    const ks = ms.filter((m) => c.f.has(m) != null);
+    const yes = ks.filter((m) => c.f.has(m));
+    const tip = `${esc(t.label)} · ${esc(c.f.label)}`;
+    if (!ks.length) return `<td class="na${gs}" title="${tip}：都看不出">?</td>`;
+    const share = yes.length / ks.length;
+    const b = share ? Math.min(4, Math.floor(share * 5 - 1e-9)) : -1;
+    return `<td class="${b >= 0 ? `q${b + 1}` : "off"}${gs}" title="${tip}：${ks.length} 个看得出的配置里 ${yes.length} 个用了（${Math.round(100 * share)}%）">${yes.length}<span>/${ks.length}</span></td>`;
+  };
+  const sumRow = (t, ms) => `<tr class="tier-sum">
+        <th class="l" scope="rowgroup"><span class="nm"><span class="tier-dot" style="background:${tierColor(t.id)}"></span>${esc(t.label)}</span><small>${ms.length} 个配置</small></th>
+        ${cols.map((c) => sumCell(c, t, ms)).join("")}</tr>`;
+  const modelRow = (m, i, ms) => {
+    const first = i > 0 && (grouped ? ms[i - 1].vendor !== m.vendor : bench ? m[bench] == null && ms[i - 1][bench] != null : false);
+    const on = state.compare.includes(m.name);
+    return `<tr class="${first ? "grp" : ""}${on ? " picked" : ""}">
+        <th class="l" scope="row"><div class="rh"><button type="button" class="pick" aria-pressed="${on}" data-name="${esc(m.name)}" title="${on ? "移出对比" : "加入下面的并排对比"}">${on ? "✓" : "+"}</button><span><span class="nm"><span class="tier-dot" style="background:${tierColor(m.tier)}"></span>${esc(m.name)}</span><small>${esc(m.vendor)} · 首发 ${m.released}</small></span></div></th>
+        ${cols.map((c) => cell(c, m)).join("")}</tr>`;
+  };
   const sortAttr = (c) => (state.fpSort.key === c.key ? (state.fpSort.dir > 0 ? "ascending" : "descending") : "none");
   $("#fp-table").innerHTML = `
     <thead>
       <tr class="gh"><th class="l corner" rowspan="2">型号<span class="muted"> · 点 + 加入对比</span></th>${heads.map((h) => `<th class="gs" colspan="${h.n}">${esc(h.label)}</th>`).join("")}</tr>
       <tr class="ch">${cols.map((c) => `<th class="${c.gs ? "gs" : ""}" data-key="${c.key}" aria-sort="${sortAttr(c)}" title="${esc(c.title)}（点击排序：第一次降序，第二次升序，第三次取消）">${esc(c.label)}</th>`).join("")}</tr>
     </thead>
-    <tbody>${sorted.map((m, i) => {
-      const first = i > 0 && (grouped ? sorted[i - 1].vendor !== m.vendor : bench ? m[bench] == null && sorted[i - 1][bench] != null : false);
-      const on = state.compare.includes(m.name);
-      return `<tr class="${first ? "grp" : ""}${on ? " picked" : ""}">
-        <th class="l" scope="row"><div class="rh"><button type="button" class="pick" aria-pressed="${on}" data-name="${esc(m.name)}" title="${on ? "移出对比" : "加入下面的并排对比"}">${on ? "✓" : "+"}</button><span><span class="nm"><span class="tier-dot" style="background:${tierColor(m.tier)}"></span>${esc(m.name)}</span><small>${esc(m.vendor)} · 首发 ${m.released}</small></span></div></th>
-        ${cols.map((c) => cell(c, m)).join("")}</tr>`;
-    }).join("")}</tbody>`;
+    ${sections.map((s) => `<tbody>${s.t ? sumRow(s.t, s.ms) : ""}${s.ms.map((m, i) => modelRow(m, i, s.ms)).join("")}</tbody>`).join("")}`;
   // descending → ascending → back to the default order
   $("#fp-table").querySelectorAll("th[data-key]").forEach((th) => th.onclick = () => {
     const k = th.dataset.key, cur = state.fpSort;
@@ -1055,17 +1085,18 @@ function renderMatrix(rows) {
   });
   $("#fp-table").querySelectorAll("button.pick").forEach((b) => b.onclick = () => togglePick(b.dataset.name));
   const colored = [bench ? "榜单分数" : "", shape.length ? "形状数值" : ""].filter(Boolean).join("和");
+  const ramp = `<span class="ramp">${[1, 2, 3, 4, 5].map((i) => `<i class="sw q${i}"></i>`).join("")}</span>`;
   $("#fp-legend").innerHTML = `<span><i class="sw on"></i>用了（格子里是取值）</span><span><i class="sw off"></i>没用</span><span><i class="sw na"></i>? 未知</span>` +
-    (colored ? `<span>${colored}按全部配置的五分位上色：小<span class="ramp">${[1, 2, 3, 4, 5].map((i) => `<i class="sw q${i}"></i>`).join("")}</span>大</span>` : "") +
+    (colored ? `<span>${colored}按全部配置的五分位上色：小${ramp}大</span>` : "") +
+    (byTier ? `<span>每档第一行是这一档的汇总：${[bench ? "榜单列是有分数的配置数" : "", shape.length ? "形状取中位数" : "",
+      feats.length ? `特征格是“用了的 / 看得出的”配置数，按用了的比例上色：低${ramp}高（每 20% 一档）` : ""].filter(Boolean).join("，")}</span>` : "") +
     (bench ? `<span>${esc(benchNote(bench))}；横线以下没有分数</span>` : "");
 }
 
 function renderHeatmap(rows) {
   const feats = shownFeatures(state.fpGroup);
-  const groups = state.fpMode === "tier"
-    ? TIERS.map((t) => ({ label: t.label, ms: rows.filter((m) => m.tier === t.id) })).filter((g) => g.ms.length)
-    : [...new Set(rows.map((m) => m.vendor))].map((v) => ({ label: v, ms: rows.filter((m) => m.vendor === v) }))
-      .sort((a, b) => b.ms.length - a.ms.length || a.label.localeCompare(b.label));
+  const groups = [...new Set(rows.map((m) => m.vendor))].map((v) => ({ label: v, ms: rows.filter((m) => m.vendor === v) }))
+    .sort((a, b) => b.ms.length - a.ms.length || a.label.localeCompare(b.label));
   const steps = [1, 2, 3, 4, 5].map((i) => css(`--seq-${i}`));
   const inkOn = [1, 2, 3, 4, 5].map((i) => css(`--seq-ink-${i}`));
   const data = [];
@@ -1125,7 +1156,7 @@ function togglePick(name) {
     state.compare.push(name);
   }
   saveHash();
-  if (state.fpMode === "model") renderMatrix(filtered());
+  if (state.fpMode !== "vendor") renderMatrix(filtered());
   renderCompare();
   syncDetailPicks();
   syncLayerPicks();

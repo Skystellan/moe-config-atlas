@@ -99,7 +99,7 @@
   <h2 class="sec">结构特征</h2>
   <section class="card">
     <h2>结构指纹</h2>
-    <p class="sub">每行一个配置：左边是形状数值，右边是 <span id="fp-n">33</span> 项结构特征，格子里是具体取值（窗口大小、稀疏注意力种类、超连接路数等）。点列名排序（第一次降序，第二次升序，第三次取消）；按归一均分或单个榜单排序时，最左边多一列分数，可以看表现好的模型都用了哪些结构。也可以切到按厂家或档位汇总的采用比例。随上面的筛选变化。</p>
+    <p class="sub">每行一个配置：左边是形状数值，右边是 <span id="fp-n">33</span> 项结构特征，格子里是具体取值（窗口大小、稀疏注意力种类、超连接路数等）。点列名排序（第一次降序，第二次升序，第三次取消）；按归一均分或单个榜单排序时，最左边多一列分数，可以看表现好的模型都用了哪些结构。按档位分组时，小、中、大三档各排一段，排序只在档内进行，方便比较同一档的模型，每档第一行是这一档的汇总；按厂家汇总看各厂家的采用比例。随上面的筛选变化。</p>
     <div class="fp-bar">
       <div class="chips" id="fp-mode" role="group" aria-label="视图"></div>
       <div class="chips" id="fp-groups" role="group" aria-label="列分组"></div>
@@ -192,7 +192,7 @@
       <dt>KV cache / token</dt><dd>上下文足够长时每多一个 token 要多存的 bf16 KV：全局层数 × 每层每 token 的 K、V 维度 × 2 字节。MLA 按 kv_lora_rank + RoPE 维度算；DeepSeek V4 的压缩层按压缩率摊到每个 token（CSA 每 4 个 token 存一条，HCA 每 128 个）。不含线性层状态、滑窗缓存和稀疏注意力的索引键；DeepSeek V4.1 改了压缩配置的写法，暂不计算。</dd>
       <dt>注意力</dt><dd>按 config.json 里的层类型字段推断（layer_types、kda_layers、full_attention_interval 等），只数 token mixer 的种类和层数，细节以技术报告为准。</dd>
       <dt>结构特征</dt><dd>按 config.json 的字段识别，config 里没有写的部分（比如 Qwen3 的 QK-norm、gpt-oss 的 sink、各家的路由打分函数）对照 transformers 5.21 和厂家仓库里的建模代码核对，规则在 <code>scripts/hfconfig.py</code> 的 <code>ARCH</code> 里。config 未公开或看不出的记为"?"，不计入采用率。</dd>
-      <dt>结构指纹</dt><dd>形状数值按全部配置的五分位上色，只表示在收录范围内的相对大小；格子里的值和全表一致。按厂家或档位汇总时，格子是用了该特征的配置数 / 该组配置数。</dd>
+      <dt>结构指纹</dt><dd>形状数值按全部配置的五分位上色，只表示在收录范围内的相对大小；格子里的值和全表一致。按档位分组时每档的第一行、按厂家汇总时的格子，是用了该特征的配置数 / 看得出用没用的配置数；档位汇总行的形状数值是这一档的中位数。</dd>
       <dt>线性注意力</dt><dd>状态大小固定的 token mixer：Gated DeltaNet（GDN）、Kimi Delta Attention（KDA）、MiniMax 和百灵 Ring linear、Ling 2.5 / 2.6 的 Lightning Attention、Mamba-2，以及 LFM2 的门控短卷积（表中记为“门控卷积”）。</dd>
       <dt>稀疏注意力</dt><dd>每个 query 只看部分 KV：DeepSeek 的 DSA、LongCat 的 LSA（DSA 的 top-k 预算里固定留开头和最近的 token，并跨层复用索引）、Qwen3.8-Flash-Next 的 QSA、Step-5 的 CSA、MiniMax M3 的块稀疏、Ring-mini-sparse 的 MoBA（KV 分块，每个 query 只读选中的几块）、DeepSeek V4 的压缩注意力（CSA + HCA）。ERNIE 5.5 Flash 大部分层是 HCA，每 7 层一个 MLA+DSA 层，记为 DSA+HCA。</dd>
       <dt>输出门</dt><dd>softmax 注意力层的输出乘一个由输入算出的门（Gated Attention，多数用 sigmoid，Laguna 用 softplus），每个头一个标量的记"逐头"，每个元素一个的记"逐元素"，config 没写明的记 ✓。线性注意力层自带的门不算。</dd>
