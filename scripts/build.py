@@ -3,7 +3,7 @@
     python scripts/build.py            # uses .cache/ when present
     python scripts/build.py --refresh  # re-download everything
 
-Set HF_TOKEN to read gated repos, and AA_API_KEY for the Artificial Analysis scores (scripts/bench.py).
+Set HF_TOKEN to read gated repos. The leaderboard scores (scripts/bench.py) need no key.
 Writes site/data/models.json and models.csv.
 """
 import argparse

@@ -38,12 +38,13 @@ function fmtCtx(n) {
   return `${Math.round(n / 1024)}K`;
 }
 
-/* ---------- leaderboard scores (scripts/bench.py): Epoch's ECI, the Arena text leaderboard, the Artificial
-   Analysis Intelligence Index, and "avg", their normalized average ---------- */
+/* ---------- leaderboard scores (scripts/bench.py): Epoch's ECI, Arena's text and WebDev leaderboards,
+   and "avg", their normalized average ---------- */
 
-const BENCH_KEYS = ["avg", "eci", "arena", "aa"];
+const BENCH_KEYS = ["avg", "eci", "arena", "webdev"];
 let BENCH = {}; // per key: label, name, url, date, n; avg has the boards it averages (sources) instead of a date
-const benchFmt = (k, v) => (v == null ? "–" : k === "arena" ? String(Math.round(v)) : v.toFixed(1));
+const ELO = new Set(["arena", "webdev"]); // Elo ratings: whole numbers, with vote counts
+const benchFmt = (k, v) => (v == null ? "–" : ELO.has(k) ? String(Math.round(v)) : v.toFixed(1));
 const boardList = (ks) => ks.map((s) => BENCH[s].label).join("、");
 // the name key scripts/bench.py matches on: no org, no "(...)", no -Instruct / -it / precision / date tail
 function nameKey(s) {
@@ -75,7 +76,7 @@ function benchTip(m, k) {
   if (m[k] == null) return `${m.name}：${b.name ?? k} 上没有这个配置的任何版本`;
   const ci = m[`${k}_ci`];
   return `${m.name} · ${b.name}：${benchFmt(k, m[k])}${ci ? `（区间 ${benchFmt(k, ci[0])}–${benchFmt(k, ci[1])}）` : ""}\n` +
-    `取自 ${m[`${k}_as`]}${k === "arena" && m.arena_votes ? `，${m.arena_votes.toLocaleString("en-US")} 票` : ""}${b.date ? ` · 榜单日期 ${b.date}` : ""}`;
+    `取自 ${m[`${k}_as`]}${ELO.has(k) && m[`${k}_votes`] ? `，${m[`${k}_votes`].toLocaleString("en-US")} 票` : ""}${b.date ? ` · 榜单日期 ${b.date}` : ""}`;
 }
 // best first; configurations no leaderboard has scored go last, newest first
 const benchOrder = (k, dir = -1) => (a, b) => {
@@ -633,7 +634,7 @@ function layerName(m, code) {
   if (code === "C" || code === "H") return `${name}${m.window ? `，另带窗口 ${m.window} 的滑窗` : ""}`;
   return name;
 }
-const LAY_SORTS = [["vendor", "按厂家"], ["released", "按时间"], ["global", "按全局层占比"], ["avg", "按均分"], ["eci", "按 ECI"], ["arena", "按 Arena"], ["aa", "按 AA"]];
+const LAY_SORTS = [["vendor", "按厂家"], ["released", "按时间"], ["global", "按全局层占比"], ["avg", "按均分"], ["eci", "按 ECI"], ["arena", "按 Arena"], ["webdev", "按 WebDev"]];
 let layGeom = { cw: 8, gap: 1, H: 13 };
 
 function layerOrder(rows) {
@@ -970,7 +971,7 @@ function sortMatrix(rows, col) {
     a.released.localeCompare(b.released) || a.total - b.total);
 }
 
-const FP_SORTS = [["vendor", "按厂家"], ["released", "按时间"], ["avg", "按均分"], ["eci", "按 ECI"], ["arena", "按 Arena"], ["aa", "按 AA"]];
+const FP_SORTS = [["vendor", "按厂家"], ["released", "按时间"], ["avg", "按均分"], ["eci", "按 ECI"], ["arena", "按 Arena"], ["webdev", "按 WebDev"]];
 
 function renderMatrix(rows) {
   const g = state.fpGroup;
@@ -1167,7 +1168,7 @@ const CMP_SECTIONS = [
     { label: "归一均分", need: "avg", title: "下面几个榜各自换成标准分后的平均，站内最高 100、最低 0", f: (m) => benchCmp(m, "avg") },
     { label: "ECI", need: "eci", title: "Epoch Capabilities Index，同一配置的多个版本取最高", f: (m) => benchCmp(m, "eci") },
     { label: "Arena", need: "arena", title: "Arena 文本榜分数，同一配置的多个版本取最高", f: (m) => benchCmp(m, "arena") },
-    { label: "AA", need: "aa", title: "Artificial Analysis 智能指数，同一配置的多个版本取最高", f: (m) => benchCmp(m, "aa") },
+    { label: "WebDev", need: "webdev", title: "Arena WebDev 榜分数，同一配置的多个版本取最高", f: (m) => benchCmp(m, "webdev") },
   ] },
   { label: "稀疏度", rows: [
     { label: "E/k+s", f: fmtConfig },
@@ -1686,11 +1687,12 @@ COL_GROUPS.bench = { label: "榜单", cols: [
   { key: "eci_as", need: "eci", label: "ECI 取自", l: true, f: (m) => esc(m.eci_as ?? "–") },
   { key: "arena", need: "arena", label: "Arena", title: "Arena 文本榜分数（默认的 style control 榜），同一配置的多个版本取最高", f: (m) => benchFmt("arena", m.arena) },
   { key: "arena_as", need: "arena", label: "Arena 取自", l: true, f: (m) => esc(m.arena_as ?? "–") },
-  { key: "arena_votes", need: "arena", label: "票数", title: "Arena 上取分那个版本的投票数", f: (m) => (m.arena_votes == null ? "–" : m.arena_votes.toLocaleString("en-US")) },
-  { key: "aa", need: "aa", label: "AA", title: "Artificial Analysis 智能指数：他们自己跑的一组评测合成的指数，同一配置的多个版本取最高", f: (m) => benchFmt("aa", m.aa) },
-  { key: "aa_as", need: "aa", label: "AA 取自", l: true, f: (m) => esc(m.aa_as ?? "–") },
+  { key: "arena_votes", need: "arena", label: "Arena 票数", title: "Arena 文本榜上取分那个版本的投票数", f: (m) => (m.arena_votes == null ? "–" : m.arena_votes.toLocaleString("en-US")) },
+  { key: "webdev", need: "webdev", label: "WebDev", title: "Arena WebDev 榜分数：让模型写网页和小应用再投票，更偏代码；同一配置的多个版本取最高", f: (m) => benchFmt("webdev", m.webdev) },
+  { key: "webdev_as", need: "webdev", label: "WebDev 取自", l: true, f: (m) => esc(m.webdev_as ?? "–") },
+  { key: "webdev_votes", need: "webdev", label: "WebDev 票数", title: "WebDev 榜上取分那个版本的投票数", f: (m) => (m.webdev_votes == null ? "–" : m.webdev_votes.toLocaleString("en-US")) },
 ] };
-// a leaderboard column shows once its board has scores (AA needs an API key at build time)
+// a leaderboard column shows once its board has scores (a board never read yet has none)
 const cols = () => BASE_COLS.concat(COL_GROUPS[state.group].cols.filter((c) => !c.need || BENCH[c.need]));
 
 // Model name plus the newest same-config versions, so a fresh post-training
@@ -1878,7 +1880,6 @@ async function main() {
   const data = await res.json();
   DATA = data.models;
   BENCH = data.bench || {};
-  $("#aa-credit").hidden = !BENCH.aa;
   TECHS = tres.ok ? await tres.json() : [];
   DPOS = dres.ok ? await dres.json() : [];
   CMP_SECTIONS.push({ label: "设计细节", rows: DPOS.map((p) => ({ label: p.name, title: p.what, f: (m) => esc(detailText(p, m)) })) });

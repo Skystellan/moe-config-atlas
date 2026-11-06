@@ -1,6 +1,7 @@
 # Leaderboard entries whose names don't match a configuration's own name, repo or variants on
 # their own (scripts/bench.py strips -Instruct, -it, precisions, dates and "(...)" before matching).
-# Keys are model names from models.yaml; under each leaderboard, the exact entry names.
+# Keys are model names from models.yaml; under each leaderboard (eci, arena, webdev), the exact entry
+# names. Arena's text and WebDev boards name models the same way, so the arena names count for both.
 Kimi K2:
   arena: [Kimi K2 Preview (0711), Kimi K2 Preview (0905)]
 MiniMax-Text-01:
