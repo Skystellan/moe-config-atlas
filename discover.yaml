@@ -36,20 +36,32 @@ orgs:
   sarvamai: Sarvam
   amd: AMD
   jdopensource: JoyAI
+  XingChen-AGI: TeleAI
+  Tele-AI: TeleAI
+  IFM: IFM
+  ai-sage: GigaChat
+  Kwai-Klear: Klear
+  kakaocorp: Kanana
+  llm-jp: LLM-jp
+  bharatgenai: BharatGen
+  Tiiny: SmallThinker
+  ATH-MaaS: Marco
 
 # Only repos created on/after this date are considered.
 since: "2025-01-01"
 
 # Repo names matching any of these (case-insensitive regex) are quantized /
-# draft / converted copies and are skipped without fetching config.json.
+# draft / converted copies or research sweeps (dozens of small ablation
+# checkpoints) and are skipped without fetching config.json.
 skip_patterns:
   - gguf
   - "fp8|fp4|nvfp4|mxfp4|int4|int8|w4a16|w8a8|awq|gptq|bnb|mlx|onnx|exl2"
   - "eagle|dflash|mtp-draft|-draft"
+  - "optimal-sparsity|loopedlm|-checkpoints$"
 
 # Not chat/base LLMs even when they reuse an MoE backbone: skipped entirely.
 non_llm_patterns:
-  - "ocr|tts|asr|speech|audio|transcribe|image|video|diffusion|llada"
+  - "ocr|tts|asr|speech|audio|transcribe|image|video|diffusion|llada|gfusion"
   - "embed|rerank|genrm|reward|guard|privacy|embodied"
 
 # Same-shape repos matching these are not worth listing as variants

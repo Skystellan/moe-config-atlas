@@ -49,7 +49,7 @@
   - label: softplus
     formula: o ⊙ softplus(x·W_g)
     match: {gate_act: softplus}
-    note: softplus 没有上界，门可以大于 1，既能关掉也能放大。XS.2 和 S 2.1 逐头，M.1 逐元素。
+    note: softplus 没有上界，门可以大于 1，既能关掉也能放大。Laguna XS.2 和 S 2.1 逐头，M.1 逐元素；K2-Horizon-MoVA 逐元素，softplus 的 β = ln 2，x·W_g = 0 时门正好是 1。
   - label: 2·sigmoid，逐头
     formula: o_h · 2σ(x·w_h)
     related: true
@@ -141,7 +141,7 @@
   - label: MLA 潜向量乘 √(d/r)
     formula: q × √(d / r_q)，k × √(d / r_kv)
     match: {attn_scale: "MLA*"}
-    note: d 是隐藏维度，r 是 q、kv 的 LoRA 秩。dots3-note 乘在归一化后的潜向量上，LongCat 乘在投影后的 q、k 上，两者等价。
+    note: d 是隐藏维度，r 是 q、kv 的 LoRA 秩。dots3-note 和 GigaChat 3.5 乘在归一化后的潜向量上，LongCat 乘在投影后的 q、k 上，两者等价。
 
 - id: rope
   sec: attn
@@ -224,7 +224,7 @@
   - label: sigmoid 门，先 norm
     formula: RMSNorm(o) ⊙ σ(x·W_g)
     match: {lin_out: sigmoid，先 norm}
-    note: KDA（Kimi K3.1 Pro、Ling 3、Youtu）、Lightning，以及 Qwen3.8-Flash-Next 的 GDN（output_gate_type = sigmoid）。
+    note: KDA（Kimi K3.1 Pro、Ling 3、Youtu）、Lightning，以及 Qwen3.8-Flash-Next 的 GDN（output_gate_type = sigmoid）。GigaChat 3.5 的 GDN 用 2σ，norm 乘 (1 + w)。
   - label: sigmoid 门，低秩
     formula: RMSNorm(o) ⊙ σ(x·W_a·W_b)
     match: {lin_out: sigmoid 低秩，先 norm}
@@ -254,7 +254,7 @@
   - label: softmax，top-k 后再归一化
     formula: g = topk(softmax(z)) / Σ
     match: {router: softmax, router_norm: true}
-    note: gpt-oss、Granite 先取 top-k 的 logit 再做 softmax，结果相同。Gemma 4 的路由输入先过不带权重的 RMSNorm，再乘可学习的缩放和 d^−½。
+    note: gpt-oss、Granite、SmallThinker-21B 先取 top-k 的 logit 再做 softmax，结果相同。Gemma 4 的路由输入先过不带权重的 RMSNorm，再乘可学习的缩放和 d^−½。
   - label: softmax，不再归一化
     formula: g = topk(softmax(z))，Σg < 1
     match: {router: softmax, router_norm: false}
@@ -285,7 +285,7 @@
     match: {router_scale: [1.5, 1.8, 2]}
   - label: λ ≈ √6
     match: {router_scale: [2.446, 2.448]}
-    note: Moonlight（k = 6）用 2.446，Kimi Linear（k = 8）也用 2.446；Trinity-Large（k = 4）用 2.448。
+    note: Moonlight（k = 6）用 2.446，Kimi Linear（k = 8）也用 2.446；Trinity-Large（k = 4）和 Kanana-2（k = 6）用 2.448。
   - label: λ = 2.5
     match: {router_scale: 2.5}
     show: []
@@ -331,6 +331,10 @@
     formula: y = (Σ g_i · E_i(x) + S(x)) / 2
     match: {shared_gate: 取平均}
     note: Command A+（shared_expert_combination_strategy = average）。
+  - label: 按 softmax 系数混合
+    formula: y = c₁ · Σ g_i · E_i(x) + c₂ · S(x)，(c₁, c₂) = softmax(x·W_c)
+    match: {shared_gate: softmax 混合}
+    note: Klear：W_c 是 d×2 的线性层，每个 token 的两路权重加起来是 1；config 里的 λ = 2.5 建模代码没有用到。
 
 - id: ffn_act
   sec: moe
@@ -362,6 +366,10 @@
     formula: ReLU(x·W_u)²
     match: {ffn_act: ReLU²}
     note: Nemotron 3 的专家只有两个矩阵。
+  - label: ReGLU
+    formula: ReLU(g) ⊙ u
+    match: {ffn_act: ReGLU}
+    note: SmallThinker：ReLU 让大部分中间激活正好为 0，端侧推理引擎可以跳过这些神经元，模型卡把这叫作 MoE 之外的第二层稀疏。
 
 - id: res_add
   sec: resid
@@ -415,7 +423,7 @@
   - label: GatedNorm：RMSNorm 后乘低秩 sigmoid 门
     formula: y ⊙ σ(W₂·SiLU(W₁·y))，y = RMSNorm(x)
     match: {gated_norm: "*"}
-    note: A.X K2，秩 16。
+    note: A.X K2 和 GigaChat 3.5，秩都是 16。GigaChat 用 2σ（初值约为 1），norm 本身乘 (1 + w)，子层前后都有 norm。
     source: [A Unified View of Attention and Residual Sinks, https://arxiv.org/abs/2601.22966]
   - label: RMSNorm，乘 w
     formula: x / rms(x) ⊙ w，w 初值 1
@@ -429,6 +437,11 @@
     formula: (x − μ) / σ_x ⊙ w
     match: {norm_form: LayerNorm}
     note: Command A+ 沿用 Cohere 的 LayerNorm（减均值）；同家的 North Mini Code 用 RMSNorm。
+  - label: 分组 RMSNorm
+    formula: 把 x 切成 n 段，每段 x_j / rms(x_j)，再乘 w
+    match: {norm_form: "分组 RMSNorm*"}
+    show: norm_form
+    note: K2-Horizon-MoVA-36B 分 2 段；同家的 375B 不分。
 
 - id: emb
   sec: resid

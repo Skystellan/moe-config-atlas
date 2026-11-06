@@ -772,3 +772,147 @@
   variants:
   - tencent/Hy-Memory-30B-A3B
   notes: 翻译专用模型；Hy-Memory 是同一配置的记忆写入模型。
+
+- vendor: TeleAI
+  name: Xing4.0-29B-A4B
+  repo: XingChen-AGI/Xing4.0-29B-A4B
+  variants: [XingChen-AGI/Xing4.0-29B-Intent]
+  released: 2026-09
+  total: 29
+  active: 4
+  notes: 中国电信人工智能研究院（TeleAI）的星辰模型，在昇腾 910C 上训练；Intent 是同一配置的意图识别模型。
+
+- vendor: IFM
+  name: K2-Horizon-375B-A23B
+  repo: IFM/K2-Horizon-375B-A23B
+  released: 2026-09
+  total: 375
+  active: 23
+  notes: MBZUAI 基础模型研究院（IFM）的 K2 系列，权重、训练数据、代码和中间检查点都公开。
+- vendor: IFM
+  name: K2-Horizon-MoVA-36B-A4B
+  repo: IFM/K2-Horizon-MoVA-36B-A4B
+  released: 2026-09
+  total: 36
+  active: 4
+  notes: MoVA（Mixture-of-Values attention）：45 个 MoE 层的注意力把 V 投影换成 64 选 4 的路由值专家；RMSNorm 把 d_model 分成两组各自归一化。
+
+- vendor: GigaChat
+  name: GigaChat3-10B-A1.8B
+  repo: ai-sage/GigaChat3-10B-A1.8B
+  variants: [ai-sage/GigaChat3.1-10B-A1.8B]
+  released: 2025-11
+  total: 10
+  active: 1.8
+  notes: Sber 的 GigaChat 3 Lightning。
+- vendor: GigaChat
+  name: GigaChat3.1-702B-A36B
+  repo: ai-sage/GigaChat3.1-702B-A36B
+  variants:
+  - name: GigaChat3-702B-A36B-preview
+    released: 2025-11
+    note: 已下架；第三方 GGUF 的文件头显示 MoE 配置与 3.1 相同
+  released: 2025-11
+  total: 702
+  active: 36
+  notes: Sber 的 GigaChat 3 Ultra，首发是 2025 年 11 月的预览版。
+- vendor: GigaChat
+  name: GigaChat3.5-432B-A28B
+  repo: ai-sage/GigaChat3.5-432B-A28B
+  variants: [ai-sage/GigaChat3.5-432B-A28B-Reasoning]
+  released: 2026-06
+  total: 432
+  active: 28
+  notes: 每个 RMSNorm 后乘一个秩 16、初值约为 1 的 2·sigmoid 门；模型卡说是为了取代注意力和残差里自发形成的 sink。
+
+- vendor: Klear
+  name: Klear-46B-A2.5B
+  repo: Kwai-Klear/Klear-46B-A2.5B-Instruct
+  released: 2025-09
+  total: 46
+  active: 2.5
+  notes: 快手 Klear 团队。共享专家和路由专家的输出按输入算出的两个 softmax 系数加权相加。
+
+- vendor: Kanana
+  name: Kanana-1.5-15.7B-A3B
+  repo: kakaocorp/kanana-1.5-15.7b-a3b-instruct
+  released: 2025-07
+  total: 15.7
+  active: 3
+  notes: Kakao 的第一个 MoE。
+- vendor: Kanana
+  name: Kanana-2-30B-A3B
+  repo: kakaocorp/kanana-2-30b-a3b-instruct
+  variants: [kakaocorp/kanana-2-30b-a3b-thinking, kakaocorp/kanana-2-30b-a3b-instruct-2601, kakaocorp/kanana-2-30b-a3b-thinking-2601]
+  released: 2025-12
+  total: 30
+  active: 3
+
+- vendor: LLM-jp
+  name: llm-jp-3-8x1.8b
+  repo: llm-jp/llm-jp-3-8x1.8b-instruct3
+  variants: [llm-jp/llm-jp-3-8x1.8b-instruct2]
+  released: 2025-03
+  total: 9.3
+  active: 2.9
+  notes: 日本国立情报学研究所（NII）；Mixtral 式 8 选 2，模型卡引用 Drop-Upcycling。
+- vendor: LLM-jp
+  name: llm-jp-3-8x13b
+  repo: llm-jp/llm-jp-3-8x13b-instruct3
+  variants: [llm-jp/llm-jp-3-8x13b-instruct2, llm-jp/llm-jp-3.1-8x13b-instruct4, llm-jp/llm-jp-3.1-8x13b-32K-instruct4]
+  released: 2025-03
+  total: 73.2
+  active: 22.2
+  notes: 日本国立情报学研究所（NII）；Mixtral 式 8 选 2，模型卡引用 Drop-Upcycling。
+- vendor: LLM-jp
+  name: llm-jp-4-32b-a3b
+  repo: llm-jp/llm-jp-4-32b-a3b-thinking
+  variants: [llm-jp/llm-jp-4.1-32b-a3b-thinking]
+  released: 2026-03
+  total: 32.1
+  active: 3.8
+
+- vendor: BharatGen
+  name: Param-1-7B-MoE
+  repo: bharatgenai/Param-1-7B
+  released: 2025-12
+  total: 6.7
+  active: 1.0
+  notes: 印度政府支持的 BharatGen 项目。
+- vendor: BharatGen
+  name: Param-2-17B-A2.4B
+  repo: bharatgenai/Param2-17B-A2.4B-Thinking
+  released: 2026-02
+  total: 17
+  active: 2.4
+  notes: 模型卡说是早期的后训练检查点。
+
+- vendor: SmallThinker
+  name: SmallThinker-4B-A0.6B
+  repo: Tiiny/SmallThinker-4BA0.6B-Instruct
+  released: 2025-07
+  total: 4
+  active: 0.6
+  notes: 面向端侧：路由器读的是注意力之前的层输入，推理引擎可以一边算注意力一边从存储预取专家。
+- vendor: SmallThinker
+  name: SmallThinker-21B-A3B
+  repo: Tiiny/SmallThinker-21BA3B-Instruct
+  released: 2025-07
+  total: 21
+  active: 3
+  notes: 面向端侧：路由器读的是注意力之前的层输入，推理引擎可以一边算注意力一边从存储预取专家。全局层不加 RoPE，其余 3/4 是 4096 窗口的滑窗层。
+
+- vendor: Marco
+  name: Marco-Nano
+  repo: ATH-MaaS/Marco-Nano-Instruct
+  released: 2026-04
+  total: 8
+  active: 0.6
+  notes: 阿里国际的多语言模型，由 Qwen3-0.6B-Base 切分 FFN 子矩阵再用 Drop-Upcycling 改造成 MoE。
+- vendor: Marco
+  name: Marco-Mini
+  repo: ATH-MaaS/Marco-Mini-Instruct
+  released: 2026-04
+  total: 17.3
+  active: 0.86
+  notes: 阿里国际的多语言模型，由 Qwen3-0.6B-Base 切分 FFN 子矩阵再用 Drop-Upcycling 改造成 MoE。

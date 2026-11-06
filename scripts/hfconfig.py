@@ -12,14 +12,14 @@ from statistics import mean
 NESTED = ("text_config", "llm_config", "language_config", "thinker_config")
 
 ALIASES = {
-    "E": ["n_routed_experts", "num_experts", "num_local_experts", "moe_num_experts"],
+    "E": ["n_routed_experts", "num_experts", "num_local_experts", "moe_num_experts", "moe_num_primary_experts"],
     "k": ["num_experts_per_tok", "num_experts_per_token", "moe_top_k", "moe_topk",
-          "top_k_experts", "moe_k", "experts_per_token"],
+          "top_k_experts", "moe_k", "experts_per_token", "moe_num_active_primary_experts"],
     "s": ["n_shared_experts", "num_shared_experts", "moe_num_shared_experts",
           "num_shared_expert"],
     "d_model": ["hidden_size", "dim", "d_model"],
     "layers": ["num_hidden_layers", "num_layers", "n_layers"],
-    "d_expert": ["expert_hidden_dim", "moe_intermediate_size", "expert_ffn_hidden_size",
+    "d_expert": ["expert_hidden_dim", "moe_intermediate_size", "expert_ffn_hidden_size", "moe_ffn_hidden_size",
                  "intermediate_size"],
     "d_shared": ["shared_expert_intermediate_size", "moe_shared_expert_intermediate_size",
                  "share_expert_dim", "shared_intermediate_size"],
@@ -107,6 +107,11 @@ def _mixer_types(c, n_layers):
         if c.get("index_topk") or c.get("index_n_heads"):  # dots3-note: the full layers carry a DSA indexer
             short["full_attention"] = "DSA"
         return [short.get(t, t) for t in types]
+    if isinstance(c.get("full_attention_layers"), list) and c.get("linear_attention_type") and n_layers:
+        full_ids = set(c["full_attention_layers"])  # GigaChat 3.5: 0-based; GatedDeltaNet everywhere else
+        return [full if i in full_ids else "linear" for i in range(n_layers)]
+    if isinstance(c.get("sliding_window_layout"), list):  # SmallThinker: 1 = sliding window
+        return ["sliding" if x else full for x in c["sliding_window_layout"][:n_layers or None]]
     if isinstance(c.get("local_layer_ids"), list) and n_layers:  # Inkling: the other layers are global
         local = set(c["local_layer_ids"])
         return ["sliding" if i in local else "full" for i in range(n_layers)]
@@ -267,6 +272,11 @@ def _rope_fraction(c, layer_types=None):
             return 0.0
     if isinstance(c.get("no_rope_layers"), list) and c.get("attention_chunk_size") and 0 in c["no_rope_layers"]:
         return 0.0  # Llama 4: 0 marks the global layers, which skip RoPE
+    rl, sw = c.get("rope_layout"), c.get("sliding_window_layout")
+    if isinstance(rl, list) and isinstance(sw, list):  # SmallThinker: 0 = NoPE layer, per layer
+        on_global = {r for r, s in zip(rl, sw) if not s}
+        if on_global == {0}:
+            return 0.0
     if isinstance(c.get("partial_rotary_factors"), list) and isinstance(layer_types, list):  # Step: per layer
         vals = {f for f, t in zip(c["partial_rotary_factors"], layer_types) if t == "full_attention"}
         if len(vals) == 1:
@@ -283,8 +293,9 @@ def _rope_fraction(c, layer_types=None):
     f = c.get("partial_rotary_factor") or rp.get("partial_rotary_factor") or c.get("rotary_percent")
     if f:
         return float(f)
-    if c.get("rotary_dim") and c.get("head_dim"):
-        return c["rotary_dim"] / c["head_dim"]
+    rot = c.get("rotary_dim") or c.get("rope_head_dim")  # K2-Horizon: rope_head_dim
+    if rot and c.get("head_dim"):
+        return rot / c["head_dim"]
     return 1.0
 
 
@@ -409,6 +420,22 @@ ARCH = {
     "sarvam_mla": dict(qk_norm=False, router="sigmoid"),  # use_qk_norm is set but the MLA code never reads it
     # Instella-MoE: gated MLA (sigmoid of a full-width projection); qk_layernorm only names the latent norms.
     "instella_moe": dict(qk_norm=False, attn_gate="逐元素"),
+    "mixtral": dict(router="softmax", expert_bias=False),
+    "param1MoE": dict(router="softmax", expert_bias=False),  # Param-1: Mixtral's MoE block
+    # GigaChat 3.5: GatedDeltaNet layers with MLA every 4th layer; a sigmoid gate over every MLA output channel;
+    # norms before and after each sublayer (layernorm_type pre_post), each followed by a rank-16 2·sigmoid gate
+    # (ZeroCenteredGatedNorm); sigmoid router with e_score_correction_bias.
+    "gigachat3_5": dict(attn_gate="逐元素", router="sigmoid", expert_bias=True, post_norm="三明治",
+                        gated_norm="秩 16", linear="GDN"),
+    # K2-Horizon: the gate's bias only enters the top-k choice. MoVA-36B also routes the value projection
+    # of its MoE layers over 64 value experts (top-4), noted in models.yaml.
+    "k2_horizon": dict(expert_bias=True),
+    # Klear: sigmoid router with a selection-only expert bias; the routed and shared outputs are mixed by a
+    # softmax over two input-dependent coefficients.
+    "Klear": dict(qk_norm=True, router="sigmoid", expert_bias=True, shared_gate="softmax 混合"),
+    # SmallThinker: ReGLU experts; the router reads the layer input before the attention block, so experts can
+    # be prefetched while attention runs.
+    "smallthinker": dict(qk_norm=False, expert_bias=False, ffn_act="ReGLU"),
 }
 
 # These put RoPE only on the sliding-window layers whenever a model has both kinds (global NoPE).
@@ -427,6 +454,8 @@ def family(c):
         return "instella_moe"
     if c.get("model_type"):
         return c["model_type"]
+    if arch.startswith("smallthinker"):  # the 21B config has no model_type
+        return "smallthinker"
     if arch.startswith("longcat"):
         return "longcat"
     if c.get("d_expert_moe"):  # Mistral params.json; Large 3 shares Small 4's MoE block
@@ -465,19 +494,20 @@ def features(c, mixers):
         f["sparse_attn"] = False
     gate = _flag(c, "attn_output_gate", "use_head_wise_attn_gate", "mla_use_output_gate", "gated_mla",
                  "attention_output_gate", "gated_attention_proj_granularity_type", "use_gqa_gate", "gating",
-                 "gated_attention", "attention_gate_type", "use_gated_attn")
+                 "gated_attention", "attention_gate_type", "use_gated_attn", "attention_gate_func")
     granularity = (c.get("gating_type") or c.get("mla_output_gate_type")
                    or {"headwise": "head_wise"}.get(c.get("attention_gate_type"), c.get("attention_gate_type"))
                    or {"element_wise": "elementwise"}.get(c.get("gated_attention_proj_granularity_type"),
                                                          c.get("gated_attention_proj_granularity_type"))
                    or ("head_wise" if c.get("use_head_wise_attn_gate") else None)
-                   or ("elementwise" if c.get("mla_use_output_gate") else None))  # Kimi K3: heads x v_head_dim
+                   or ("elementwise" if c.get("mla_use_output_gate") else None)  # Kimi K3: heads x v_head_dim
+                   or ("elementwise" if c.get("attention_gate_func") else None))  # K2-Horizon: heads x head_dim
     if _flag(c, "gating"):  # Laguna: True / "per-head" / "per-element" (a softplus gate)
         granularity = "elementwise" if c["gating"] == "per-element" else "head_wise"
     f["attn_gate"] = {"head_wise": "逐头", "elementwise": "逐元素"}.get(granularity, True) if gate else False
     f["attn_sink"] = (_flag(c, "learnable_sink", "add_swa_attention_sink_bias", "add_full_attention_sink_bias", "sink")
                       or c.get("softmax_type") == "learnable")
-    f["qk_norm"] = _flag(c, "use_qk_norm", "qk_norm", "qk_layernorm", "qk_norm_type")
+    f["qk_norm"] = _flag(c, "use_qk_norm", "qk_norm", "qk_layernorm", "qk_norm_type", "query_key_norm")
     if f["qk_norm"] and isinstance(c.get("no_rope_layers"), list) and c.get("attention_chunk_size"):
         # Llama 4 Scout: L2 norm on the RoPE layers only
         f["qk_norm"] = "仅局部层"
@@ -550,11 +580,13 @@ def features(c, mixers):
         f["ngram_mem"] = False
     router = (c.get("scoring_func") or c.get("moe_router_activation_func") or c.get("moe_router_activation")
               or c.get("score_func") or c.get("score_function") or c.get("expert_selection_fn")
-              or c.get("router_score_function")
+              or c.get("router_score_function") or c.get("router_score_func")
               or c.get("gate_activation")
               or ("sigmoid" if c.get("moe_router_use_sigmoid") or c.get("use_moe_router_bias") else None))
     if fam == "bailing_moe":  # Ling 1.x routes with softmax, Ling 2.0 with sigmoid + expert bias
         router = "sigmoid" if c.get("moe_router_enable_expert_bias") else "softmax"
+    if fam == "smallthinker":  # top-k on the logits, then softmax over the k, or sigmoid renormalized
+        router = "softmax" if c.get("moe_primary_router_apply_softmax") else "sigmoid"
     f["router"] = router
     f["expert_bias"] = c.get("topk_method") == "noaux_tc" or _flag(
         c, "moe_router_enable_expert_bias", "use_routing_bias", "use_moe_router_bias",
@@ -633,6 +665,9 @@ DETAIL_ARCH = {
     "beam": dict(res_scale="按深度保方差"),  # sublayer output times 1/sqrt(i), residual times sqrt((i-1)/i)
     # Solar Open 2 ships no modeling code: the weights show an elementwise g_proj, nothing about its activation
     "solar_open2": dict(gate_act=None, gate_src=None),
+    "mixtral": dict(router_norm=True),  # softmax over all experts, then the top-k weights are renormalized
+    "param1MoE": dict(router_norm=True),
+    "Klear": dict(router_scale=1),  # config.json sets routed_scaling_factor, but the modeling code never reads it
 }
 
 _SCALE_KEYS = ("routed_scaling_factor", "moe_routed_scaling_factor", "router_scaling_factor",
@@ -671,7 +706,8 @@ def details(c, raw, fam, f):
 
     # Attention output gate: activation and what it reads (the layer input x, or MLA's query latent)
     if f.get("attn_gate"):
-        d["gate_act"] = pick("gate_act", c.get("gated_attn_act") or ("softplus" if _flag(c, "gating") else "sigmoid"))
+        d["gate_act"] = pick("gate_act", c.get("gated_attn_act") or c.get("attention_gate_func")
+                             or ("softplus" if _flag(c, "gating") else "sigmoid"))
         d["gate_src"] = pick("gate_src", "q 潜向量" if _flag(c, "gated_attn_use_q_lora", "attn_gate_fused") else "x")
     # Learnable sink: one extra logit per head in the softmax, which scales the output by sigmoid(lse - s)
     if f.get("attn_sink"):
@@ -684,8 +720,8 @@ def details(c, raw, fam, f):
     kind = f.get("linear_attn")
     if kind == "GDN" or kind == "Mamba-2":
         d["lin_decay"] = "逐头标量"
-        d["lin_out"] = ("SiLU，先门后 norm" if kind == "Mamba-2"
-                        else "sigmoid，先 norm" if c.get("output_gate_type") == "sigmoid" else "SiLU，先 norm")
+        sig = c.get("output_gate_type") == "sigmoid" or "sigmoid" in str(c.get("linear_gating_type") or "")
+        d["lin_out"] = ("SiLU，先门后 norm" if kind == "Mamba-2" else "sigmoid，先 norm" if sig else "SiLU，先 norm")
     elif kind == "KDA" and fam == "solar_open2":
         d["lin_decay"] = "逐通道（细节未公开）"
     elif kind == "KDA":
@@ -712,6 +748,10 @@ def details(c, raw, fam, f):
     # Norms
     ln = c.get("layer_norm_eps") and not c.get("rms_norm_eps") and fam == "cohere2_moe"
     d["norm_form"] = "LayerNorm" if ln else arch.get("norm_form", "RMSNorm")
+    if str(c.get("norm_type") or "").startswith("ZeroCentered"):  # GigaChat 3.5
+        d["norm_form"] = "RMSNorm(1+w)"
+    if (c.get("layernorm_num_groups") or 1) > 1:  # K2-Horizon MoVA: each half of d_model normalized on its own
+        d["norm_form"] = f"分组 RMSNorm（{c['layernorm_num_groups']} 组）"
     if f.get("qk_norm"):
         d["qk_norm_kind"] = arch.get("qk_norm_kind", "逐头")
         if c.get("qk_scale_factor"):  # Muse Spark: weightless QK-norm, then the query times a constant
@@ -729,8 +769,8 @@ def details(c, raw, fam, f):
         scales.append(f"q×{c['qk_scale_factor']:.3g}")
     if c.get("attention_value_scale"):
         scales.append(f"V×{c['attention_value_scale']:g}")  # MiMo
-    if _flag(c, "mla_scale_q_lora", "apply_mla_qkv_lora_rescale"):
-        scales.append("MLA ×√(d/r)")  # LongCat, dots3-note: q and k times sqrt(d_model / lora rank)
+    if _flag(c, "mla_scale_q_lora", "apply_mla_qkv_lora_rescale", "use_mla_scaling_factor"):
+        scales.append("MLA ×√(d/r)")  # LongCat, dots3-note, GigaChat 3.5: q and k times sqrt(d_model / lora rank)
     d["attn_scale"] = scales
 
     # Residual adds that are not h + f(h) (hyper-connections and residual gates are features)
