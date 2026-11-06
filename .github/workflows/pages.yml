@@ -30,6 +30,7 @@ jobs:
       - name: Fetch configs and build data
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          AA_API_KEY: ${{ secrets.AA_API_KEY }}
         run: python scripts/build.py --refresh
       - name: Commit data if it changed
         run: |

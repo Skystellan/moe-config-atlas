@@ -3,7 +3,8 @@
     python scripts/build.py            # uses .cache/ when present
     python scripts/build.py --refresh  # re-download everything
 
-Set HF_TOKEN to read gated repos. Writes site/data/models.json and models.csv.
+Set HF_TOKEN to read gated repos, and AA_API_KEY for the Artificial Analysis scores (scripts/bench.py).
+Writes site/data/models.json and models.csv.
 """
 import argparse
 import csv
@@ -313,6 +314,12 @@ def main():
     scores = bench.attach(rows, boards, aliases, {x["name"]: x for x in old.get("models", [])}, old.get("bench"))
     for src, s in scores.items():
         print(f"  {s['label']}: {s['n']} of {len(rows)} configurations scored (leaderboard of {s['date']})")
+    scores = bench.composite(rows, scores)
+    if "avg" in scores:
+        a = scores["avg"]
+        base = f"the {a['common']} configurations every board scored" if a["common"] else "each board's own configurations"
+        print(f"  normalized average of {', '.join(scores[s]['label'] for s in a['sources'])}: "
+              f"{a['n']} configurations, standardized on {base}")
 
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     if old.get("models") == rows:  # keep the old timestamp when nothing changed, so the data commit stays empty

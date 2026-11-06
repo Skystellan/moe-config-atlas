@@ -1,0 +1,26 @@
+name: Build check
+
+# Builds the site data for a pull request without committing or deploying it, and lists
+# which leaderboard entry each configuration matched, so bench.yaml can be checked before merging.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Fetch configs and build data
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          AA_API_KEY: ${{ secrets.AA_API_KEY }}
+        run: python scripts/build.py --refresh
+      - name: Leaderboard matches
+        run: python scripts/bench.py
