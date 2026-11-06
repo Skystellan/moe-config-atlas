@@ -82,8 +82,8 @@ def _get(c, field):
 # Token-mixer layer types, grouped by how their state grows with context.
 GLOBAL = {"full", "MLA", "attention", "DSA", "compressed", "sparse"}  # cache grows with every token
 LOCAL = {"sliding", "chunked"}  # bounded by the window or chunk
-LINEAR = {"linear", "GDN", "KDA", "Lightning", "mamba", "conv"}  # constant-size recurrent state
-LINEAR_NAMES = {"mamba": "Mamba-2", "conv": "门控卷积"}
+LINEAR = {"linear", "GDN", "KDA", "Lightning", "mamba", "mamba1", "conv"}  # constant-size recurrent state
+LINEAR_NAMES = {"mamba": "Mamba-2", "mamba1": "Mamba-1", "conv": "门控卷积"}
 
 
 def _summary(counts):
@@ -113,6 +113,10 @@ def _mixer_seq(c, n_layers):
 def _mixer_types(c, n_layers):
     full = "MLA" if c.get("kv_lora_rank") else "full"
     types = c.get("layer_types") or c.get("layers_block_type")
+    if not types and isinstance(c.get("hybrid_layers_types_block"), list) and c.get("use_hybrid_layers"):
+        # IQuest-Q1: the first layers, then one block of layer types repeated, then the last layers
+        types = (list(c.get("first_layers_types") or []) + c["hybrid_layers_types_block"] * (c.get("num_hybrid_layers_block") or 0)
+                 + list(c.get("last_layers_types") or []))
     pattern = c.get("hybrid_override_pattern")
     if pattern:
         names = {"M": "mamba", "*": "attention"}
@@ -121,7 +125,7 @@ def _mixer_types(c, n_layers):
         if c.get("layer_types") and n_layers:
             types = types[:n_layers]  # some configs append MTP layers
         types = [t for t in types if t not in ("moe", "mlp", "dense")]
-        short = {"linear_attention": "linear", "full_attention": "full", "sliding_attention": "sliding",
+        short = {"linear_attention": "linear", "full_attention": full, "sliding_attention": "sliding",  # VAETKI: MLA
                  "deepseek_sparse_attention": "DSA", "hybrid": "full", "hybrid_sliding": "sliding",  # ZAYA1
                  "indexed_attention": "DSA"}  # Mistral Large 4
         if c.get("index_topk") or c.get("index_n_heads"):  # dots3-note: the full layers carry a DSA indexer
@@ -156,6 +160,15 @@ def _mixer_types(c, n_layers):
         dsa = c["dsa_config"].get("dsa_layers") if isinstance(c.get("dsa_config"), dict) else None
         dsa = set(dsa) if isinstance(dsa, list) else set()  # K3.1 Pro: the MLA layers gain a top-k indexer
         return ["KDA" if i in kda else "DSA" if i in dsa else full for i in sorted(kda | mla)]
+    rda = c.get("rda_config")
+    if isinstance(rda, dict) and rda.get("rda_layers") is not None:  # Raon-1 mini, 1-indexed
+        # Raon Delta Attention is KDA with the write strength split from the erase strength (one more gate)
+        lin, mla = set(rda["rda_layers"]), set(rda.get("mla_layers") or [])
+        return ["KDA" if i in lin else full for i in sorted(lin | mla)]
+    if c.get("model_type") == "jamba" and c.get("attn_layer_period") and n_layers:
+        # Jamba: one attention layer in every attn_layer_period, Mamba-1 everywhere else
+        p, o = c["attn_layer_period"], c.get("attn_layer_offset") or 0
+        return ["full" if i % p == o else "mamba1" for i in range(n_layers)]
     if c.get("layer_group_size") and any(k.startswith("kda") for k in c) and n_layers:
         g = c["layer_group_size"]  # Ling 3: the last layer of each group, and any leftover layers, are MLA
         return [full if (i + 1) % g == 0 or i >= n_layers // g * g else "KDA" for i in range(n_layers)]
@@ -195,7 +208,7 @@ def _mixer_types(c, n_layers):
 
 # One character per token-mixer layer for the site's layer strips.
 LAYOUT_CODE = {"full": "A", "attention": "A", "MLA": "X", "DSA": "D", "sparse": "S", "sliding": "W", "chunked": "U",
-               "GDN": "G", "KDA": "K", "Lightning": "N", "mamba": "B", "conv": "V", "linear": "L"}
+               "GDN": "G", "KDA": "K", "Lightning": "N", "mamba": "B", "mamba1": "M", "conv": "V", "linear": "L"}
 
 
 def _layout(c, seq, linear_label):
@@ -242,6 +255,9 @@ def _dense_layers(c, n_layers, moe_layers):
         dense = [i for i in range(n_layers) if i not in moe]
     elif c.get("mlp_only_layers"):
         dense = sorted(c["mlp_only_layers"])
+    elif c.get("model_type") == "jamba" and c.get("expert_layer_period"):
+        p, o = c["expert_layer_period"], c.get("expert_layer_offset") or 0
+        dense = [i for i in range(n_layers) if i % p != o]
     else:
         dense = list(range(c.get("first_k_dense_replace") or 0))
     return dense if n_layers - len(dense) == moe_layers else None
@@ -299,8 +315,9 @@ def _attn_shape(c):
 
 def _rope_fraction(c, layer_types=None):
     """Share of each global-attention head's query/key dims that get RoPE (0 = NoPE)."""
-    if c.get("mla_use_nope") or c.get("position_embedding_type") == "nope" or c.get("use_rope") is False:
-        return 0.0  # Granite 4.0-H, Solar Open 2
+    if (c.get("mla_use_nope") or c.get("position_embedding_type") == "nope" or c.get("use_rope") is False
+            or c.get("nope_on_global_attention")):
+        return 0.0  # Granite 4.0-H, Solar Open 2, Maple (RoPE on the sliding-window layers only)
     nope_ids = c.get("no_rope_layer_indices")
     if isinstance(nope_ids, list) and isinstance(layer_types, list):  # flint
         full = {i for i, t in enumerate(layer_types) if t == "full_attention"}
@@ -381,6 +398,9 @@ def _moe_layers(c, n_layers):
         return len(range(start, end + 1, c.get("moe_layer_interval", 1) or 1))
     if c.get("mlp_only_layers"):
         return n_layers - len(c["mlp_only_layers"])
+    if c.get("model_type") == "jamba" and c.get("expert_layer_period"):  # Jamba: MoE in every other layer
+        p, o = c["expert_layer_period"], c.get("expert_layer_offset") or 0
+        return sum(1 for i in range(n_layers) if i % p == o)
     first = c.get("first_k_dense_replace") or 0
     return n_layers - first
 
@@ -497,6 +517,30 @@ ARCH = {
                  shared_gate="相加 ÷√2"),
     # Phi-mini/tiny-MoE (SlimMoE, Phi-3.5-MoE's block): SparseMixer-v2 picks the top-2 one at a time
     "phimoe": dict(qk_norm=False, router="SparseMixer", expert_bias=False),
+    # AliceAI (modeling_alice_ai.py): Qwen3-Next's gated attention with per-head (1 + w) q/k norms, KDA with a
+    # low-rank decay and output gate, sigmoid router whose e_score_correction_bias only picks, sigmoid-gated shared
+    # expert; the residual stream is Block AttnRes over blocks of 4 layers
+    "alice_ai": dict(qk_norm=True, attn_gate="逐元素", router="sigmoid", expert_bias=True, shared_gate=True, linear="KDA"),
+    # Raon-1 mini (modeling_raon1_mini.py): sigmoid router with a selection-only bias; NoPE MLA with a sigmoid gate
+    "raon1_mini": dict(qk_norm=False, router="sigmoid", expert_bias=True),
+    # VAETKI (modeling_vaetki.py): norms before and after each sublayer, all (1 + w); sigmoid router without a bias,
+    # renormalized; one ungated shared expert
+    "vaetki": dict(qk_norm=False, router="sigmoid", expert_bias=False, post_norm="三明治"),
+    "vaetki_vl_moe_text": dict(qk_norm=False, router="sigmoid", expert_bias=False, post_norm="三明治"),
+    # IQuest-Q1 (sglang iquest_q1.py): per-head q/k RMSNorm, a zero-value sink whose logit is q times a learned key
+    # per KV head, softmax top-8 renormalized; the attention output is RMSNorm-ed before it is added
+    "iquest_q1": dict(qk_norm=True, attn_sink=True, router="softmax", expert_bias=False, post_norm="仅注意力"),
+    # Intern-S1-Pro (modeling_interns1_pro.py): Qwen3-VL-MoE's attention with per-head q/k norms; softmax over all
+    # 512 experts, then the top-1 of each group of 64, renormalized
+    "interns1_pro_text": dict(qk_norm=True, router="softmax", expert_bias=False),
+    "megrez_moe": dict(qk_norm=False),  # LlamaAttention
+    "gravity_moe": dict(qk_norm=False),  # DeepSeek-V3's modeling code
+    # Maple (modeling_maple.py): softmax router renormalized, no bias; SwiGLU experts with the gate capped at 7 and
+    # the up projection clipped to ±7
+    "maple": dict(qk_norm=True, router="softmax", expert_bias=False, act_clamp="7"),
+    # Jamba (transformers modeling_jamba.py): no positional encoding in the attention layers; softmax top-2 not
+    # renormalized
+    "jamba": dict(qk_norm=False, router="softmax", expert_bias=False, rope=0.0),
 }
 
 # These put RoPE only on the sliding-window layers whenever a model has both kinds (global NoPE).
@@ -506,7 +550,7 @@ NOPE_GLOBAL_IN_HYBRID = {"afmoe", "cohere2_moe", "exaone_moe", "kolibri1"}
 FEATURES = ("linear_attn", "sparse_attn", "attn_gate", "attn_sink", "qk_norm", "k_eq_v", "kv_share", "index_share",
             "attn_conv", "partial_rope", "nope", "len_scale", "hyper_conn", "attn_res", "res_gate", "gated_norm",
             "post_norm", "parallel", "softcap", "ngram_mem", "router", "expert_bias", "group_routing", "hash_route",
-            "zero_expert", "shared_gate", "ffn_act", "act_clamp")
+            "zero_expert", "expert_share", "shared_gate", "ffn_act", "act_clamp")
 
 
 def family(c):
@@ -515,6 +559,8 @@ def family(c):
         return "instella_moe"
     if arch.startswith("grok"):  # Grok 2's config says model_type "git"
         return "grok"
+    if arch.startswith("maple") and not c.get("model_type"):  # Maple-Preview's config has no model_type
+        return "maple"
     if c.get("model_type"):
         return c["model_type"]
     if arch.startswith("smallthinker"):  # the 21B config has no model_type
@@ -626,10 +672,11 @@ def features(c, mixers):
     if (c.get("attn_temperature_len") or 0) > 0:  # Grok 2: past position n0 the logits are multiplied by log(n)/log(n0)
         f["len_scale"] = True
 
-    n_hc = c.get("hc_mult") or c.get("hc_count") or (4 if c.get("mhc") else None)
-    hc = "mHC" if c.get("hc_sinkhorn_iters") else "iHC" if c.get("enable_ihc") else "HC"
+    # Raon-1 mini's Raon-mHC keeps the mixing matrix doubly stochastic in closed form instead of by Sinkhorn
+    n_hc = c.get("hc_mult") or c.get("hc_count") or (4 if c.get("mhc") else None) or c.get("raon_mhc_streams")
+    hc = "mHC" if c.get("hc_sinkhorn_iters") or c.get("raon_mhc_streams") else "iHC" if c.get("enable_ihc") else "HC"
     f["hyper_conn"] = f"{hc}×{n_hc}" if n_hc else False
-    f["attn_res"] = c.get("attn_res_block_size") or False
+    f["attn_res"] = c.get("attn_res_block_size") or c.get("block_attn_res_block_size") or False  # layers per block
     f["res_gate"] = _flag(c, "residual_gate_temperature")
     f["gated_norm"] = f"秩 {c['gated_norm_rank']}" if c.get("gated_norm") and c.get("gated_norm_rank") else bool(c.get("gated_norm"))
     f["post_norm"] = "Post-LN" if c.get("postnorm") else False
@@ -666,8 +713,12 @@ def features(c, mixers):
         f["expert_bias"] = "分位数"
     n_group = c.get("n_group") or c.get("num_expert_groups")
     f["group_routing"] = f"{n_group}/{c.get('topk_group') or c.get('num_expert_groups_per_tok')}" if (n_group or 0) > 1 else False
+    if (c.get("router_n_groups") or 0) > 1 and c.get("num_experts_per_tok"):  # Intern-S1-Pro: every group gives k/n
+        f["group_routing"] = f"{c['router_n_groups']} 组各选 {c['num_experts_per_tok'] // c['router_n_groups']}"
     f["hash_route"] = f"前 {c['num_hash_layers']} 层" if c.get("num_hash_layers") else False
     f["zero_expert"] = c.get("zero_expert_num") or False
+    # Megrez2: consecutive layers use one set of routed experts; each keeps its own router and shared experts
+    f["expert_share"] = f"每 {c['experts_shared_frequency']} 层" if (c.get("experts_shared_frequency") or 1) > 1 else False
     # Usually only visible in modeling code, see ARCH. Command A+ averages the routed and shared outputs.
     f["shared_gate"] = ("取平均" if c.get("shared_expert_combination_strategy") == "average"
                         and c.get("num_shared_experts") else False)
@@ -751,6 +802,12 @@ DETAIL_ARCH = {
     # Grok 2: the embeddings are multiplied by embedding_multiplier_scale = √d; the output head has its own matrix
     "grok": dict(emb_proc="×√d", router_norm=False, tied_emb=False),
     "phimoe": dict(norm_form="LayerNorm，带偏置"),  # nn.LayerNorm before each sublayer and at the end
+    "alice_ai": dict(norm_form="RMSNorm(1+w)", router_norm=True),  # the KDA output norm alone multiplies by w
+    "vaetki": dict(norm_form="RMSNorm(1+w)"),
+    "vaetki_vl_moe_text": dict(norm_form="RMSNorm(1+w)", tied_emb=False),  # text config class default; lm_head ships as its own tensor
+    "iquest_q1": dict(router_norm=True, sink_layers="所有注意力层，sink key"),
+    "interns1_pro_text": dict(router_norm=True),
+    "jamba": dict(router_norm=False),
 }
 
 _SCALE_KEYS = ("routed_scaling_factor", "moe_routed_scaling_factor", "router_scaling_factor",
@@ -766,12 +823,16 @@ def _rope(c):
     elif isinstance(rp.get("hybrid"), dict):  # ZAYA1
         rp = rp["hybrid"]
     rs = next((x for x in (c.get("rope_scaling"), c.get("yarn"), rp) if isinstance(x, dict) and x), {})
-    theta = rp.get("rope_theta") or c.get("rope_theta")
+    theta = rp.get("rope_theta") or c.get("rope_theta_global") or c.get("rope_theta")  # VAETKI: global layers' base
     if isinstance(theta, list):  # Step: one base per layer, the large one on the full-attention layers
         theta = max(theta)
     kind = str(rs.get("rope_type") or rs.get("type") or ("yarn" if c.get("yarn") else ""))
     factor = rs.get("factor") or 1
-    if "yarn" in kind and factor > 1:
+    if rs.get("fope_init_factor") is not None or rs.get("fope_sep_head"):
+        ext = "FoPE"  # Intern-S1-Pro: each dimension's cos and sin are learned mixtures over all frequencies
+    elif c.get("rope_theta_global") and family(c) in ("vaetki", "vaetki_vl_moe_text") and not rs:
+        ext = "线性插值 ×8"  # modeling_vaetki.py divides the global layers' inv_freq by 8 when rope_scaling is unset
+    elif "yarn" in kind and factor > 1:
         ext = f"YaRN ×{factor:g}"
     elif kind == "llama3" and factor > 1:
         ext = f"Llama 3 式 ×{factor:g}"
@@ -795,11 +856,11 @@ def details(c, raw, fam, f):
     # Learnable sink: one extra logit per head in the softmax, which scales the output by sigmoid(lse - s)
     if f.get("attn_sink"):
         swa, full = c.get("add_swa_attention_sink_bias"), c.get("add_full_attention_sink_bias")
-        d["sink_layers"] = ("仅滑窗层" if swa and full is False else
-                            "全局层" if full and not swa else "所有注意力层")  # ERNIE 5.5 only flags its MLA layers
+        d["sink_layers"] = pick("sink_layers", "仅滑窗层" if swa and full is False else
+                                "全局层" if full and not swa else "所有注意力层")  # ERNIE 5.5 only flags its MLA layers
 
-    # Linear-attention gates: the decay (forget) gate and the output gate
-    lac = c.get("linear_attn_config") if isinstance(c.get("linear_attn_config"), dict) else {}
+    # Linear-attention gates: the decay (forget) gate and the output gate (Raon-1 mini: rda_config)
+    lac = next((x for x in (c.get("linear_attn_config"), c.get("rda_config")) if isinstance(x, dict)), {})
     kind = f.get("linear_attn")
     if kind == "GDN" or kind == "Mamba-2":
         d["lin_decay"] = "逐头标量"
@@ -811,11 +872,13 @@ def details(c, raw, fam, f):
         bound = next((x for x in (lac.get("gate_lower_bound"), c.get("kda_lower_bound"),
                                   c.get("kda_gate_lower_bound")) if x is not None), None)
         full_decay = bool(c.get("no_kda_lora"))
-        full_out = full_decay or _flag(lac, "use_full_rank_gate") or _flag(c, "use_full_rank_gate")
+        full_out = full_decay or _flag(lac, "use_full_rank_gate", "full_rank_gate") or _flag(c, "use_full_rank_gate")
         d["lin_decay"] = "逐通道，" + ("满秩" if full_decay else "低秩") + (f"，下界 {bound:g}".replace("-", "−") if bound else "")
         d["lin_out"] = "sigmoid，先 norm" if full_out else "sigmoid 低秩，先 norm"
     elif kind == "Lightning":
         d["lin_decay"], d["lin_out"] = "固定（每头一个常数）", "sigmoid，先 norm"
+    elif kind == "Mamba-1":  # Jamba: exp(Δ·A) with Δ per channel from a low-rank projection, A per channel and state
+        d["lin_decay"], d["lin_out"] = "逐通道逐状态，Δ 低秩", "SiLU，无 norm"
     elif kind == "门控卷积":
         d["lin_decay"], d["lin_out"] = "无", "线性门 B、C"
 
@@ -864,6 +927,8 @@ def details(c, raw, fam, f):
         d["res_scale"] = f"DeepNorm α={alpha:.3g}"  # MiniMax-Text-01: Post-LN with the residual times (2N)^(1/4)
     elif c.get("residual_multiplier"):
         d["res_scale"] = f"×{c['residual_multiplier']:g}（μP）"  # Granite: h + m * f(h)
+    elif fam == "iquest_q1":  # from the second layer on, the stream is replaced by its norm before attention
+        d["res_scale"] = f"流归一化，FFN ×{c.get('ffn_out_scale') or 1:.2g}"
     else:
         d["res_scale"] = arch.get("res_scale", False)
 
@@ -896,6 +961,8 @@ def details(c, raw, fam, f):
         d["modality"] = "文本"  # Qwen-AgentWorld keeps Qwen3.6's vision_config but ships no vision tower
     elif has("audio_config", "sound_config", "speech_config", "whisper_config"):  # Nemotron Omni: sound_config
         d["modality"] = "图文音"
+    elif has("ts_config"):  # Intern-S1-Pro: a time-series encoder next to the vision tower
+        d["modality"] = "图文时序"
     elif has("vision_config", "visual_config", "vision_encoder") or isinstance(c.get("vision_n_layers"), int):
         d["modality"] = "图文"  # DeepSeek-V4-Flash-Vision-Exp gives its encoder as flat vision_* keys
     else:

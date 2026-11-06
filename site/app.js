@@ -626,7 +626,7 @@ const LAYER_KIND = {
   A: ["global", "全注意力"], X: ["global", "MLA"], D: ["sparse", "DSA"], S: ["sparse", "稀疏注意力"],
   C: ["sparse", "CSA（压缩后再稀疏）"], H: ["sparse", "HCA（重度压缩）"], W: ["local", "滑窗注意力"], U: ["local", "分块注意力"],
   G: ["linear", "Gated DeltaNet"], K: ["linear", "KDA"], N: ["linear", "Lightning Attention"], B: ["linear", "Mamba-2"],
-  V: ["linear", "门控短卷积"], L: ["linear", "线性注意力"],
+  M: ["linear", "Mamba-1"], V: ["linear", "门控短卷积"], L: ["linear", "线性注意力"],
 };
 const layerCat = (code) => (LAYER_KIND[code] || ["global"])[0];
 function layerName(m, code) {
@@ -787,7 +787,7 @@ const FEATURE_GROUPS = [
 ];
 const SHORT = { sqrtsoftplus: "√softplus" };
 const FEATURES = [
-  { key: "linear_attn", group: "attn", label: "线性注意力", th: "线性", title: "GDN、KDA、Lightning、Mamba-2 或门控短卷积层（状态大小固定）" },
+  { key: "linear_attn", group: "attn", label: "线性注意力", th: "线性", title: "GDN、KDA、Lightning、Mamba-1/2 或门控短卷积层（状态大小固定）" },
   { key: "window", group: "attn", label: "滑窗", title: "滑动窗口注意力层（窗口大小）；Llama 4 是固定分块", value: (m) => windowLabel(m) },
   { key: "sparse_attn", group: "attn", label: "稀疏注意力", th: "稀疏", title: "DSA、LSA、QSA、CSA、块稀疏或压缩注意力（CSA / HCA）" },
   { key: "mla", group: "attn", label: "MLA", title: "多头潜注意力" },
@@ -805,16 +805,17 @@ const FEATURES = [
   { key: "attn_res", group: "resid", label: "AttnRes", title: "Attention Residuals：用注意力聚合前面各层的输出（块大小）" },
   { key: "res_gate", group: "resid", label: "残差门", title: "子层输出和残差按逐通道的可学习权重相加（门或缩放）" },
   { key: "gated_norm", group: "resid", label: "GatedNorm", th: "门控 norm", title: "RMSNorm 后乘一个输入相关的低秩 sigmoid 门（秩）" },
-  { key: "post_norm", group: "resid", label: "后置 norm", title: "子层输出再过一次 norm：三明治（前后都有）、Post-LN，或只在 FFN 后" },
+  { key: "post_norm", group: "resid", label: "后置 norm", title: "子层输出再过一次 norm：三明治（前后都有）、Post-LN，或只在注意力或 FFN 后" },
   { key: "parallel", group: "resid", label: "并行块", th: "并行", title: "注意力和 FFN 读同一个输入，输出一起加回残差" },
   { key: "s", group: "moe", label: "共享专家", th: "共享", title: "共享专家数" },
   { key: "shared_gate", group: "moe", label: "共享专家门", th: "共享门", title: "共享专家的输出乘一个 sigmoid 门；也有按路由权重加权、取平均，或与路由输出按 softmax 系数混合的" },
   { key: "latent", group: "moe", label: "LatentMoE", th: "Latent", title: "专家在低维潜空间里计算（潜空间维度）" },
   { key: "zero_expert", group: "moe", label: "零计算专家", th: "零专家", title: "直接输出输入的空专家，让 token 动态少用算力（个数）" },
+  { key: "expert_share", group: "moe", label: "跨层共享专家", th: "跨层专家", title: "相邻几层共用同一组路由专家（各层的路由器和共享专家各自独立）" },
   { key: "router", group: "moe", label: "非 softmax 路由", th: "路由", title: "路由打分用 sigmoid 等，而不是 softmax",
     has: (m) => (m.router == null ? null : m.router !== "softmax") },
   { key: "expert_bias", group: "moe", label: "专家偏置", th: "偏置", title: "无辅助损失负载均衡的专家偏置；分位数 = 按分位数更新偏置" },
-  { key: "group_routing", group: "moe", label: "分组路由", th: "分组", title: "先选专家组再选专家（组数/选中组数）" },
+  { key: "group_routing", group: "moe", label: "分组路由", th: "分组", title: "先选专家组再选专家（组数/选中组数），或每组各选几个专家" },
   { key: "hash_route", group: "moe", label: "哈希路由", th: "哈希", title: "前几层按 token id 哈希分配专家" },
   { key: "ffn_act", group: "moe", label: "非 SwiGLU 激活", th: "激活", title: "FFN 激活：GeGLU、ReGLU、ReLU²、SiTU、gpt-oss 式 SwiGLU 等",
     has: (m) => (m.ffn_act == null ? null : m.ffn_act !== "SwiGLU") },
@@ -1506,7 +1507,8 @@ function detailHits(p, m) {
 const sci = (x) => { const e = Math.floor(Math.log10(x)); return `${+(x / 10 ** e).toFixed(1)}e${e}`; };
 const DFMT = {
   rope_theta: (v) => (v ? `θ=${sci(v)}` : ""),
-  rope_ext: (v) => (v ? String(v).replace(/^(YaRN|Llama 3 式|NTK) ?/, "") : ""),
+  rope_ext: (v) => (v ? String(v).replace(/^(YaRN|Llama 3 式|NTK|线性插值) ?/, "") : ""),
+  attn_res: (v) => `每块 ${v} 层`,
   router_scale: (v) => (typeof v === "number" ? `λ=${v}` : v),
   act_clamp: (v) => `c=${v}`.replace(/（(.+)）$/, "，$1"),
   softcap: (v) => `c=${v}`,

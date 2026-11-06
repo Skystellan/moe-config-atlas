@@ -49,6 +49,17 @@ orgs:
   allenai: Ai2
   xai-org: xAI
   microsoft: Microsoft
+  yandex: Yandex
+  KRAFTON: KRAFTON
+  NC-AI-consortium-VAETKI: NC AI
+  nc-ai-consortium: NC AI
+  IQuestLab: IQuest
+  internlm: InternLM
+  Infinigence: Infinigence
+  trillionlabs: Trillion Labs
+  utter-project: EuroLLM
+  deepgrove: DeepGrove
+  ai21labs: AI21
 
 # Only repos created on/after this date are considered.
 since: "2025-01-01"

@@ -1184,3 +1184,128 @@
   total: 3.8
   active: 1.1
   notes: 用 SlimMoE 从 Phi-3.5-MoE 剪枝蒸馏而来，专家裁到 448 宽，query 和 KV 头数也减半。config 写 sliding_window = 2047，模型卡说默认走 FlashAttention，这条路径每层都按 2047 的窗口算。
+
+- vendor: Yandex
+  name: AliceAI Foundation 80B-A3B
+  repo: yandex/AliceAI-Foundation-80B-A3B-Base
+  released: 2026-09
+  total: 80
+  active: 3
+  notes: Yandex 从零训练，只发布了预训练版。每 4 层是 3 层 KDA 加 1 层带输出门的 GQA；残差流换成块式 AttnRes，每 4 层合成一块，每层的输入由一个查询向量对前面各块的输出和本块的部分和做 softmax 加权得到。512 个专家选 10 个，另有 1 个带 sigmoid 门的共享专家。
+
+- vendor: KRAFTON
+  name: Raon-1 mini preview
+  repo: KRAFTON/Raon-1-mini-preview
+  derived: [KRAFTON/Raon-1-mini-preview-nvfp4]
+  released: 2026-10
+  total: 28.8
+  active: 4.3
+  notes: KRAFTON 从零训练。线性层是 RDA（Raon Delta Attention）：在 KDA 上把写入和擦除拆成两个门，多一个 σ(β + δ) 的写入门，衰减下界 −5、输出门满秩，这里按 KDA 统计。残差是 4 路 Raon-mHC，混合矩阵用 Helmert 基直接写成双随机矩阵，不跑 Sinkhorn。MLA 不加位置编码，带逐元素 sigmoid 输出门；路由专家以 MXFP8 发布。
+
+- vendor: NC AI
+  name: VAETKI
+  repo: NC-AI-consortium-VAETKI/VAETKI
+  released: 2025-12
+  total: 112.2
+  active: 10.1
+  notes: NC AI 牵头、13 家机构组成的联合体训练，预训练 9.8T token。MLA 的 40 个滑窗层（窗口 512，θ = 1 万）和 8 个全局层（θ = 100 万，代码里再把频率除以 8）交替；子层前后都有 RMSNorm，全部乘 (1 + w)。
+- vendor: NC AI
+  name: VAETKI-20B-A2B
+  repo: nc-ai-consortium/VAETKI-20B-A2B
+  released: 2025-12
+  total: 19.64
+  active: 2.2
+  notes: 和 VAETKI 同一套写法的小模型，预训练 3.62T token；λ = 1，只有第 1 层是稠密层。
+- vendor: NC AI
+  name: VAETKI-7B-A1B
+  repo: nc-ai-consortium/VAETKI-7B-A1B
+  released: 2025-12
+  total: 7.25
+  active: 1.2
+  notes: 和 VAETKI 同一套写法，64 个专家选 5 个，预训练 1.86T token。
+- vendor: NC AI
+  name: VAETKI-VL-7B-A1B
+  repo: nc-ai-consortium/VAETKI-VL-7B-A1B
+  released: 2025-12
+  total: 7.58
+  active: 1.2
+  notes: VAETKI-7B-A1B 加一个 0.33B 的视觉编码器。
+
+- vendor: IQuest
+  name: IQuest-Q1
+  repo: IQuestLab/IQuest-Q1
+  released: 2026-09
+  total: 320
+  active: 15
+  override: {mtp: 1}
+  notes: 层排布是 1 层全局、21 组（1 层全局 + 3 层滑窗）、再 3 层全局，窗口 4096。sink 的 logit 不是常数，而是 query 和每个 KV 头一个可学习 sink key 的点积，value 为 0。从第 2 层起，残差流进注意力前先换成它的 RMSNorm，注意力输出也先过 RMSNorm 再加，FFN 输出乘 0.539。MTP 权重单独放在 mtp/ 目录，推理时 1 层递归用 8 次。
+
+- vendor: InternLM
+  name: Intern-S1-Pro
+  repo: internlm/Intern-S1-Pro
+  released: 2026-02
+  total: 1000
+  active: 22
+  derived: [internlm/Intern-S1-Pro-BF16]
+  notes: 层数、宽度和每个专家的大小都和 Qwen3-235B-A22B 相同，专家从 128 个扩到 512 个；路由先在全部专家上做 softmax，再从 8 组（每组 64 个）里各选 1 个，让专家并行的各卡负载均衡。位置编码是 FoPE，另带时间序列编码器。总参数按技术报告记为 1T，权重统计约 0.92T。
+
+- vendor: Infinigence
+  name: Megrez2-3x7B-A3B
+  repo: Infinigence/Megrez2-3x7B-A3B
+  released: 2025-09
+  total: 7.5
+  active: 3
+  notes: 无问芯穹的端侧模型：每 3 层共用一组路由专家（共 10 组），各层的路由器和共享专家各自独立，所以存储只有 7.5B，按层展开约 21B。路由器读的是上一层 FFN 的输入，推理时可以提前预取专家。
+- vendor: Infinigence
+  name: Megrez2-3x7B-A3B-Preview
+  repo: Infinigence/Megrez2-3x7B-A3B-Preview
+  released: 2025-07
+  total: 7.5
+  active: 3
+  notes: Megrez2 的预览版，同样每 3 层共用一组路由专家；路由用 softmax，不加偏置也不归一化，词表也和正式版不同。
+
+- vendor: Trillion Labs
+  name: Gravity-16B-A3B-Preview
+  repo: trillionlabs/Gravity-16B-A3B-Preview
+  variants: [trillionlabs/Gravity-16B-A3B-Base]
+  derived: [trillionlabs/Gravity-bio-16B-A3B]
+  released: 2026-04
+  total: 16.24
+  active: 3.16
+  notes: Trillion Labs 和 Lunit 联合体从零训练（5.5T token），网络就是 DeepSeek-V3 的写法，词表取自 GLM-4.5。
+- vendor: Trillion Labs
+  name: Gravity-30B-A5B-Preview
+  repo: trillionlabs/Gravity-30B-A5B-Preview
+  variants: [trillionlabs/Gravity-30B-A5B-Base]
+  derived: [trillionlabs/TxGravity-30B-A5B-Open]
+  released: 2026-09
+  total: 29.56
+  active: 5.34
+  notes: 由 Gravity-16B-A3B-Base 按 LLaMA-Pro 的块扩展从 28 层加到 52 层，再继续预训练。
+
+- vendor: EuroLLM
+  name: EuroMoE-2.6B-A0.6B-Instruct-2512
+  repo: utter-project/EuroMoE-2.6B-A0.6B-Instruct-2512
+  variants: [utter-project/EuroMoE-2.6B-A0.6B-Instruct-Preview, utter-project/EuroMoE-2.6B-A0.6B-2512]
+  released: 2025-06
+  total: 2.61
+  active: 0.6
+  notes: EuroLLM 团队（UTTER 项目）的多语言模型，预训练 8T token；结构是 Mixtral 的写法，64 个专家选 8 个，没有共享专家。
+
+- vendor: DeepGrove
+  name: Maple-Preview
+  repo: deepgrove/maple-preview
+  released: 2026-08
+  total: 20
+  active: 1
+  notes: 面向端侧的推理模型。模型卡说权重是三值的（端侧检查点 5.31 GB），这个仓库存的是 BF16。3 个滑窗层（窗口 512，RoPE 只加一半维度）配 1 个不加位置编码的全局层；专家的 SwiGLU 把 gate 截在 7 以下、up 截在 ±7。
+
+- vendor: AI21
+  name: Jamba2 Mini
+  repo: ai21labs/AI21-Jamba2-Mini
+  variants: [ai21labs/AI21-Jamba-Mini-1.6, ai21labs/AI21-Jamba-Mini-1.7]
+  derived: [ai21labs/AI21-Jamba2-Mini-FP8, ai21labs/AI21-Jamba-Mini-1.7-FP8]
+  released: 2025-02
+  total: 52
+  active: 12
+  notes: SSM 与 Transformer 混合：每 8 层里 1 层注意力、7 层 Mamba-1，注意力不加位置编码；每隔一层是 16 选 2 的 MoE。架构来自 2024 年 8 月的 Jamba 1.5 Mini，这里从 2025 年 2 月的 Jamba Mini 1.6 算起。1.6 和 1.7 要申请访问，没能核对 config，但权重参数量和 Jamba2 Mini 完全相同。

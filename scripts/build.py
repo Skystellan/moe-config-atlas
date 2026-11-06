@@ -106,6 +106,9 @@ def precision(raw, info):
         return "FP4 专家 + FP8", fp8
     if str(q.get("moe_quant_algo") or "").upper() == "NVFP4":  # MiniMax-M3.1-Flash: NVFP4 experts, MXFP8 elsewhere
         return "NVFP4 专家 + " + ("MXFP8" if q.get("quant_method") == "mxfp8" else "FP8"), fp8
+    if q.get("quant_method") == "mxfp8":  # Raon-1 mini: only the routed experts, attention and the rest stay BF16
+        experts = any("self_attn" in str(x) for x in q.get("ignored_layers") or q.get("ignore") or [])
+        return ("MXFP8 专家" if experts else "MXFP8"), "每 32 个数一个缩放"
     int4 = [g for g in groups if g.get("num_bits") == 4 and g.get("type") == "int"]
     if q.get("quant_method") == "compressed-tensors" and int4:  # Kimi K2 Thinking: INT4 routed experts (QAT)
         size = int4[0].get("group_size")

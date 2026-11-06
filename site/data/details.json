@@ -106,6 +106,14 @@
      "sink_layers": "全局层"
     },
     "note": "ERNIE 5.5 的 config 只给 MLA+DSA 层开了 sink，HCA 层没写。"
+   },
+   {
+    "label": "可学习的 sink key，所有注意力层",
+    "formula": "s = q · k_s / √d，k_s 每个 KV 头一个，value 为 0",
+    "match": {
+     "sink_layers": "所有注意力层，sink key"
+    },
+    "note": "IQuest-Q1：s 随 query 变化，每个 query 让出的注意力权重不同。"
    }
   ]
  },
@@ -298,6 +306,34 @@
     "note": "Hunyuan-A13B，α = 1000。"
    },
    {
+    "label": "线性插值",
+    "formula": "频率 θ_i 全部除以 s，相当于把位置 m 换成 m / s",
+    "match": {
+     "rope_ext": "线性插值*"
+    },
+    "show": [
+     "rope_theta",
+     "rope_ext"
+    ],
+    "note": "VAETKI：全局层 θ = 100 万，代码里再把频率除以 8，config 里不写；滑窗层 θ = 1 万，不缩放。",
+    "source": {
+     "title": "Position Interpolation",
+     "url": "https://arxiv.org/abs/2306.15595"
+    }
+   },
+   {
+    "label": "FoPE",
+    "formula": "每个维度的 cos、sin 换成各频率 cos、sin 的可学习线性组合，每个 KV 头一组",
+    "match": {
+     "rope_ext": "FoPE"
+    },
+    "note": "Intern-S1-Pro：混合系数初值是单位阵加小噪声，随训练学习。论文把每个维度看作多个频率的傅里叶级数，用来改善长度外推。",
+    "source": {
+     "title": "Fourier Position Embedding",
+     "url": "https://arxiv.org/abs/2412.17739"
+    }
+   },
+   {
     "label": "config 里不写外推",
     "match": {
      "rope_ext": false
@@ -334,7 +370,7 @@
     "match": {
      "lin_decay": "逐通道，低秩，下界 −5"
     },
-    "note": "KDA 的“安全门”：log α 落在 (−5, 0)，单步最多衰减到 e⁻⁵ ≈ 0.007，不会一步清空状态。W_a·W_b 的秩等于 head_dim。"
+    "note": "KDA 的“安全门”：log α 落在 (−5, 0)，单步最多衰减到 e⁻⁵ ≈ 0.007，不会一步清空状态。W_a·W_b 的秩等于 head_dim。Raon-1 mini 的 RDA 用同样的衰减门，另把写入强度拆成单独的门，v 再乘 σ(β + δ) / σ(β)。"
    },
    {
     "label": "每个通道，满秩，下界 −5",
@@ -354,6 +390,18 @@
     "source": {
      "title": "Kimi Linear",
      "url": "https://arxiv.org/abs/2510.26692"
+    }
+   },
+   {
+    "label": "每个通道、每个状态维，Δ 低秩",
+    "formula": "α_t = exp(Δ_t ⊙ A)，Δ_t = softplus(RMSNorm(x·W_a)·W_b + b)，A < 0",
+    "match": {
+     "lin_decay": "逐通道逐状态，Δ 低秩"
+    },
+    "note": "Mamba-1（Jamba）：Δ 每个通道一个，经秩 256 的投影算出；A 是“通道 × 16 个状态维”的常数矩阵，同一通道的各个状态维衰减快慢不同。Jamba 在 Δ、B、C 上各加了一个 RMSNorm。",
+    "source": {
+     "title": "Mamba",
+     "url": "https://arxiv.org/abs/2312.00752"
     }
    },
    {
@@ -423,6 +471,14 @@
     "note": "Mamba-2 的写法，norm 分组算。"
    },
    {
+    "label": "SiLU 门，不加 norm",
+    "formula": "(y + D ⊙ x) ⊙ SiLU(z)",
+    "match": {
+     "lin_out": "SiLU，无 norm"
+    },
+    "note": "Mamba-1 的写法（Jamba）：乘门之后直接进 out_proj。"
+   },
+   {
     "label": "输入侧的线性门",
     "formula": "y = C ⊙ conv(B ⊙ x)",
     "match": {
@@ -460,7 +516,7 @@
      "router": "softmax",
      "router_norm": true
     },
-    "note": "gpt-oss、Granite、SmallThinker-21B 先取 top-k 的 logit 再做 softmax，结果相同。Gemma 4 的路由输入先过不带权重的 RMSNorm，再乘可学习的缩放和 d^−½。"
+    "note": "gpt-oss、Granite、SmallThinker-21B 先取 top-k 的 logit 再做 softmax，结果相同。Gemma 4 的路由输入先过不带权重的 RMSNorm，再乘可学习的缩放和 d^−½。Intern-S1-Pro 在 512 个专家上做 softmax，再从 8 组（每组 64 个）里各取 1 个。"
    },
    {
     "label": "softmax，不再归一化",
@@ -469,7 +525,7 @@
      "router": "softmax",
      "router_norm": false
     },
-    "note": "LongCat 的零计算专家也参与 softmax，权重再乘 6 或 9；ZAYA1 的路由器是一个跨层传递状态的小 MLP，每个 token 只选 1 个专家；Grok 2 先把路由 logit 用 tanh 截在 30 以内。"
+    "note": "LongCat 的零计算专家也参与 softmax，权重再乘 6 或 9；ZAYA1 的路由器是一个跨层传递状态的小 MLP，每个 token 只选 1 个专家；Grok 2 先把路由 logit 用 tanh 截在 30 以内；Jamba 和 Megrez2 的预览版也是直接取 top-k。"
    },
    {
     "label": "sigmoid，不归一化",
@@ -622,7 +678,7 @@
     "match": {
      "shared_gate": true
     },
-    "note": "Qwen 系，每个 token 一个标量。",
+    "note": "Qwen 系，每个 token 一个标量；AliceAI 也这样写。",
     "source": {
      "title": "Qwen2 Technical Report",
      "url": "https://arxiv.org/abs/2407.10671"
@@ -686,7 +742,7 @@
      "act_clamp": "*"
     },
     "show": "act_clamp",
-    "note": "式子取自 DeepSeek V4，其余按各自 config 的上限 c；括号里是只在部分层截。"
+    "note": "式子取自 DeepSeek V4，其余按各自 config 的上限 c；括号里是只在部分层截。Maple-Preview 的 c = 7 写在建模代码里。"
    },
    {
     "label": "SwiGLU-OAI",
@@ -742,9 +798,23 @@
     "match": {
      "hyper_conn": false,
      "res_gate": false,
-     "res_scale": false
+     "res_scale": false,
+     "attn_res": false
     },
     "default": true
+   },
+   {
+    "label": "块式 AttnRes",
+    "formula": "子层输入 = Σ_j softmax_j(w · RMSNorm(b_j)) · b_j，b_j 是嵌入、前面每块的输出之和、本块的部分和",
+    "match": {
+     "attn_res": "*"
+    },
+    "show": "attn_res",
+    "note": "残差流不再逐层相加，每个子层用自己的查询向量 w 从前面各块里取输入。Kimi K3 每 12 层一块，AliceAI 每 4 层一块。",
+    "source": {
+     "title": "Attention Residuals",
+     "url": "https://arxiv.org/abs/2603.15031"
+    }
    },
    {
     "label": "mHC，4 路残差",
@@ -752,7 +822,7 @@
     "match": {
      "hyper_conn": "mHC*"
     },
-    "note": "式子取自 DeepSeek V4 的代码，混合矩阵用 Sinkhorn 迭代归一化。",
+    "note": "式子取自 DeepSeek V4 的代码，混合矩阵用 Sinkhorn 迭代归一化。Raon-1 mini 的 Raon-mHC 不迭代：用 Helmert 基把混合矩阵直接写成双随机矩阵，读入也不加 ε。",
     "source": {
      "title": "mHC: Manifold-Constrained Hyper-Connections",
      "url": "https://arxiv.org/abs/2512.24880"
@@ -799,6 +869,15 @@
      "res_gate": "逐通道缩放"
     },
     "note": "ZAYA1：两边各一组可学习的逐通道系数。"
+   },
+   {
+    "label": "每层先把残差流归一化",
+    "formula": "h ← RMSNorm(h)；h ← h + RMSNorm(Attn(h))；h ← h + c · FFN(RMSNorm(h))",
+    "match": {
+     "res_scale": "流归一化*"
+    },
+    "show": "res_scale",
+    "note": "IQuest-Q1 从第 2 层起这样算，相当于每层做一次 Post-LN，c = 0.539（ffn_out_scale）；第 1 层仍是 Pre-LN，两个子层的输出都先过 RMSNorm。"
    },
    {
     "label": "DeepNorm",
@@ -851,7 +930,7 @@
     "match": {
      "norm_form": "RMSNorm(1+w)"
     },
-    "note": "初始化时和乘 w 一样，但对 w 做权重衰减时拉向的是“不缩放”。Gemma 1–3 也这样写，Gemma 4 改回了乘 w。Muse Spark 子层之后的 norm 不带权重，或先乘 (1 + w) 再归一化。"
+    "note": "初始化时和乘 w 一样，但对 w 做权重衰减时拉向的是“不缩放”。Gemma 1–3 也这样写，Gemma 4 改回了乘 w。Muse Spark 子层之后的 norm 不带权重，或先乘 (1 + w) 再归一化。VAETKI、AliceAI 也乘 (1 + w)。"
    },
    {
     "label": "LayerNorm，不带偏置",
@@ -1082,6 +1161,13 @@
     "note": "MiniMax-M3.1-Flash：路由专家 NVFP4（每 16 个数一个缩放），其余线性层 MXFP8（每 32 个数一个缩放）。"
    },
    {
+    "label": "MXFP8 专家",
+    "match": {
+     "precision": "MXFP8 专家"
+    },
+    "note": "Raon-1 mini：只有路由专家是 MXFP8（每 32 个数一个 2 的幂缩放），注意力、共享专家和路由器保持 BF16。"
+   },
+   {
     "label": "FP32",
     "match": {
      "precision": "FP32"
@@ -1114,6 +1200,13 @@
     "match": {
      "modality": "图文音"
     }
+   },
+   {
+    "label": "图文 + 时间序列",
+    "match": {
+     "modality": "图文时序"
+    },
+    "note": "Intern-S1-Pro 另带一个时间序列编码器，能读地震波这类长信号。"
    }
   ]
  }
