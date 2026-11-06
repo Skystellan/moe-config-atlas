@@ -1,13 +1,11 @@
 """Leaderboard scores for each configuration, used to sort the site by how well the models do.
 
-Three public sources, all CC BY 4.0 and read without a key:
+Two public sources, both CC BY 4.0 and read without a key:
 
 - Epoch AI's Capabilities Index (ECI): one number fitted from dozens of benchmarks
   (GPQA Diamond, SWE-bench Verified, HLE, FrontierMath, ...). https://epoch.ai/benchmarks
 - Arena's text leaderboard (arena.ai, formerly LMArena), the default style-controlled
   rating from blind pairwise votes. https://arena.ai/leaderboard/text
-- Arena's WebDev leaderboard: the same blind votes, on prompts that ask for a web page or an app,
-  so it leans on coding. https://arena.ai/leaderboard/webdev
 
 Artificial Analysis is left out on purpose: its terms, the free API's included, don't allow
 publishing its scores as a table or a data file, which is what this site does.
@@ -17,7 +15,7 @@ version uploaded with the same configuration (bench.yaml lists the names that do
 their own). A row takes the best score among its versions and records which one it came from,
 since a later post-training release on the same architecture is still that architecture.
 
-The three use different scales, so `composite` also gives every scored row one normalized average.
+The two use different scales, so `composite` also gives every scored row one normalized average.
 
     python scripts/bench.py   # after a build: what each row matched, and likely misses
 """
@@ -33,14 +31,12 @@ import zipfile
 from pathlib import Path
 
 EPOCH_ZIP = "https://epoch.ai/data/benchmark_data.zip"
-ARENA_PARQUET = "https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset/resolve/main/{}/latest-00000-of-00001.parquet"
+ARENA_PARQUET = ("https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset/resolve/main/"
+                 "text_style_control/latest-00000-of-00001.parquet")
 SOURCES = {
     "eci": {"label": "ECI", "name": "Epoch Capabilities Index", "url": "https://epoch.ai/benchmarks"},
     "arena": {"label": "Arena", "name": "Arena 文本榜", "url": "https://arena.ai/leaderboard/text"},
-    "webdev": {"label": "WebDev", "name": "Arena WebDev 榜", "url": "https://arena.ai/leaderboard/webdev"},
 }
-# boards from the same site name models the same way, so bench.yaml's arena names count for WebDev too
-SAME_NAMES = {"webdev": "arena"}
 
 # trailing name parts that don't change the weights' architecture: chat/instruct tags, precisions, dates
 _TAIL = re.compile(r"^(instruct|chat|it|bf16|fp8|nvfp4|base|pt|hf|\d{4,8})$")
@@ -74,17 +70,17 @@ def fetch_eci():
     return {"date": date, "entries": entries}
 
 
-def fetch_arena(board="text_style_control"):
+def fetch_arena():
     import pyarrow.parquet as pq
 
-    table = pq.read_table(io.BytesIO(_get(ARENA_PARQUET.format(board))), filters=[("category", "==", "overall")])
+    table = pq.read_table(io.BytesIO(_get(ARENA_PARQUET)), filters=[("category", "==", "overall")])
     rows = table.to_pylist()
     entries = [{"name": r["model_name"], "score": r["rating"], "lo": r["rating_lower"], "hi": r["rating_upper"],
                 "votes": int(r["vote_count"] or 0)} for r in rows if r["rating"] is not None]
     return {"date": max(r["leaderboard_publish_date"] for r in rows), "entries": entries}
 
 
-FETCH = {"eci": fetch_eci, "arena": fetch_arena, "webdev": lambda: fetch_arena("webdev")}
+FETCH = {"eci": fetch_eci, "arena": fetch_arena}
 
 
 def load(cached, refresh):
@@ -106,9 +102,8 @@ def load(cached, refresh):
     return out
 
 
-FIELDS = {"eci": ("eci", "eci_ci", "eci_as"), "arena": ("arena", "arena_ci", "arena_as", "arena_votes"),
-          "webdev": ("webdev", "webdev_ci", "webdev_as", "webdev_votes")}
-DECIMALS = {"eci": 1, "arena": 0, "webdev": 0}
+FIELDS = {"eci": ("eci", "eci_ci", "eci_as"), "arena": ("arena", "arena_ci", "arena_as", "arena_votes")}
+DECIMALS = {"eci": 1, "arena": 0}
 
 
 def _round(src, x):
@@ -124,9 +119,8 @@ def _matcher(board, aliases, src):
 
     def hits(row):
         own = {key(n) for n in [row["name"], row["repo"], *row["variants"]]}
-        listed = aliases.get(row["name"]) or {}
-        listed = dict.fromkeys([*listed.get(src, []), *listed.get(SAME_NAMES.get(src), [])])
-        return [e for k in own for e in by_key.get(k, [])] + [names[n] for n in listed if n in names]
+        return [e for k in own for e in by_key.get(k, [])] + [
+            names[n] for n in (aliases.get(row["name"]) or {}).get(src, []) if n in names]
     return hits
 
 
@@ -166,7 +160,7 @@ MIN_COMMON = 8  # fewer configs on every board than this, and each board is stan
 def composite(rows, meta):
     """Give every scored row `avg`, the normalized average of its boards (0-100 across the site), and `avg_n`.
 
-    ECI, Arena and WebDev use different scales, and they cover different configs. Each board becomes a
+    ECI and Arena use different scales, and they cover different configs. Each board becomes a
     standard score, (score - mean) / spread, with the mean and spread taken over the configs that every
     board has scored, so a config one board leaves out is still measured against the same group. A row
     averages the boards it is on; the averages are then scaled so the best on the site is 100 and the

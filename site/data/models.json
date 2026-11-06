@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-06 08:46 UTC",
+ "generated": "2026-11-06 09:08 UTC",
  "count": 95,
  "bench": {
   "eci": {
@@ -16,23 +16,15 @@
    "date": "2026-10-28",
    "n": 44
   },
-  "webdev": {
-   "label": "WebDev",
-   "name": "Arena WebDev 榜",
-   "url": "https://arena.ai/leaderboard/webdev",
-   "date": "2026-10-28",
-   "n": 32
-  },
   "avg": {
    "label": "均分",
    "name": "归一均分",
    "sources": [
     "eci",
-    "arena",
-    "webdev"
+    "arena"
    ],
-   "common": 17,
-   "n": 49
+   "common": 24,
+   "n": 45
   }
  },
  "models": [
@@ -154,10 +146,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -277,10 +265,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -403,10 +387,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -529,10 +509,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -669,15 +645,8 @@
    ],
    "arena_as": "Trinity Large Preview",
    "arena_votes": 31233,
-   "webdev": 1238,
-   "webdev_ci": [
-    1218,
-    1258
-   ],
-   "webdev_as": "Trinity Large Thinking",
-   "webdev_votes": 1352,
-   "avg_n": 2,
-   "avg": 49.4
+   "avg_n": 1,
+   "avg": 45.5
   },
   {
    "vendor": "Cohere",
@@ -795,10 +764,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -920,10 +885,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -1114,15 +1075,8 @@
    ],
    "arena_as": "DeepSeek-V3.2-Exp (Thinking)",
    "arena_votes": 8991,
-   "webdev": 1363,
-   "webdev_ci": [
-    1353,
-    1372
-   ],
-   "webdev_as": "DeepSeek-V3.2 (Thinking)",
-   "webdev_votes": 6860,
-   "avg_n": 3,
-   "avg": 67.9
+   "avg_n": 2,
+   "avg": 66.2
   },
   {
    "vendor": "DeepSeek",
@@ -1265,15 +1219,8 @@
    ],
    "arena_as": "DeepSeek-V4-Flash",
    "arena_votes": 51944,
-   "webdev": 1582,
-   "webdev_ci": [
-    1573,
-    1591
-   ],
-   "webdev_as": "DeepSeek-V4-Flash (High)",
-   "webdev_votes": 4927,
-   "avg_n": 3,
-   "avg": 83.9
+   "avg_n": 2,
+   "avg": 80.9
   },
   {
    "vendor": "DeepSeek",
@@ -1410,15 +1357,8 @@
    ],
    "arena_as": "DeepSeek-V4-Pro (High, 20260813)",
    "arena_votes": 9787,
-   "webdev": 1582,
-   "webdev_ci": [
-    1572,
-    1591
-   ],
-   "webdev_as": "DeepSeek-V4-Pro (High, 20260813)",
-   "webdev_votes": 4676,
-   "avg_n": 3,
-   "avg": 90.1
+   "avg_n": 2,
+   "avg": 90.5
   },
   {
    "vendor": "DeepSeek",
@@ -1549,15 +1489,8 @@
    ],
    "arena_as": "DeepSeek-V4.1-Flash-20260910 (Max)",
    "arena_votes": 13657,
-   "webdev": 1665,
-   "webdev_ci": [
-    1657,
-    1673
-   ],
-   "webdev_as": "DeepSeek-V4.1-Flash-20261017 (Max)",
-   "webdev_votes": 7842,
-   "avg_n": 3,
-   "avg": 97.6
+   "avg_n": 2,
+   "avg": 98.2
   },
   {
    "vendor": "ERNIE",
@@ -1684,10 +1617,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -1811,10 +1740,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -1943,10 +1868,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -2068,10 +1989,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -2201,10 +2118,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -2342,12 +2255,8 @@
    ],
    "arena_as": "GLM-4.6V",
    "arena_votes": 2833,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 1,
-   "avg": 45.8
+   "avg": 45.0
   },
   {
    "vendor": "GLM",
@@ -2488,15 +2397,8 @@
    ],
    "arena_as": "GLM-4.7",
    "arena_votes": 12239,
-   "webdev": 1435,
-   "webdev_ci": [
-    1423,
-    1447
-   ],
-   "webdev_as": "GLM-4.7",
-   "webdev_votes": 3948,
-   "avg_n": 3,
-   "avg": 70.7
+   "avg_n": 2,
+   "avg": 65.7
   },
   {
    "vendor": "GLM",
@@ -2619,12 +2521,8 @@
    ],
    "arena_as": "GLM-4.7-Flash",
    "arena_votes": 12008,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 1,
-   "avg": 39.2
+   "avg": 38.6
   },
   {
    "vendor": "GLM",
@@ -2777,15 +2675,8 @@
    ],
    "arena_as": "GLM-5.3 (Max)",
    "arena_votes": 26606,
-   "webdev": 1623,
-   "webdev_ci": [
-    1616,
-    1630
-   ],
-   "webdev_as": "GLM-5.3 (Max)",
-   "webdev_votes": 11150,
-   "avg_n": 3,
-   "avg": 95.0
+   "avg_n": 2,
+   "avg": 95.9
   },
   {
    "vendor": "GLM",
@@ -2920,15 +2811,8 @@
    ],
    "arena_as": "GLM-5.3-Flash",
    "arena_votes": 41642,
-   "webdev": 1607,
-   "webdev_ci": [
-    1600,
-    1613
-   ],
-   "webdev_as": "GLM-5.3-Flash",
-   "webdev_votes": 21587,
-   "avg_n": 3,
-   "avg": 91.1
+   "avg_n": 2,
+   "avg": 90.0
   },
   {
    "vendor": "Google",
@@ -3065,15 +2949,8 @@
    ],
    "arena_as": "Gemma 4 26B A4B",
    "arena_votes": 6090,
-   "webdev": 1359,
-   "webdev_ci": [
-    1342,
-    1376
-   ],
-   "webdev_as": "Gemma 4 26B A4B",
-   "webdev_votes": 1494,
-   "avg_n": 3,
-   "avg": 66.3
+   "avg_n": 2,
+   "avg": 62.8
   },
   {
    "vendor": "Hunyuan",
@@ -3191,10 +3068,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -3326,15 +3199,8 @@
    ],
    "arena_as": "Hy3",
    "arena_votes": 13840,
-   "webdev": 1505,
-   "webdev_ci": [
-    1497,
-    1514
-   ],
-   "webdev_as": "Hy3",
-   "webdev_votes": 6844,
-   "avg_n": 2,
-   "avg": 82.3
+   "avg_n": 1,
+   "avg": 82.6
   },
   {
    "vendor": "Hunyuan",
@@ -3461,10 +3327,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -3586,15 +3448,8 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": 1631,
-   "webdev_ci": [
-    1621,
-    1641
-   ],
-   "webdev_as": "Hy4 preview",
-   "webdev_votes": 4765,
-   "avg_n": 1,
-   "avg": 93.9
+   "avg_n": null,
+   "avg": null
   },
   {
    "vendor": "IBM",
@@ -3714,10 +3569,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -3842,10 +3693,6 @@
    ],
    "arena_as": "Granite-4.0-H-Small",
    "arena_votes": 5630,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 1,
    "avg": 0.0
   },
@@ -3967,10 +3814,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -4109,10 +3952,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -4234,10 +4073,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -4384,10 +4219,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -4546,15 +4377,8 @@
    ],
    "arena_as": "Kimi K2.6",
    "arena_votes": 39978,
-   "webdev": 1509,
-   "webdev_ci": [
-    1502,
-    1516
-   ],
-   "webdev_as": "Kimi K2.6",
-   "webdev_votes": 10119,
-   "avg_n": 3,
-   "avg": 83.4
+   "avg_n": 2,
+   "avg": 83.1
   },
   {
    "vendor": "Kimi",
@@ -4674,10 +4498,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -4812,14 +4632,7 @@
    ],
    "arena_as": "Kimi K3 (Max)",
    "arena_votes": 36780,
-   "webdev": 1695,
-   "webdev_ci": [
-    1682,
-    1708
-   ],
-   "webdev_as": "Kimi K3.1 Pro (Max)",
-   "webdev_votes": 2671,
-   "avg_n": 3,
+   "avg_n": 2,
    "avg": 100.0
   },
   {
@@ -5017,10 +4830,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -5147,10 +4956,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -5291,10 +5096,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -5456,12 +5257,8 @@
    ],
    "arena_as": "Ling-flash-2.0",
    "arena_votes": 6952,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 1,
-   "avg": 28.2
+   "avg": 27.7
   },
   {
    "vendor": "Ling",
@@ -5615,10 +5412,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -5740,10 +5533,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -5885,10 +5674,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -6020,10 +5805,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -6153,10 +5934,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -6286,10 +6063,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -6451,12 +6224,8 @@
    ],
    "arena_as": "LongCat-Flash-Chat",
    "arena_votes": 11167,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 1,
-   "avg": 57.4
+   "avg": 56.4
   },
   {
    "vendor": "LongCat",
@@ -6595,10 +6364,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -6720,10 +6485,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -6856,12 +6617,8 @@
    ],
    "arena_as": "Llama 4 Scout 17B 16E Instruct",
    "arena_votes": 29823,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 2,
-   "avg": 20.5
+   "avg": 13.2
   },
   {
    "vendor": "Meta",
@@ -7017,12 +6774,8 @@
    ],
    "arena_as": "Llama 4 Maverick 17B 128E Instruct",
    "arena_votes": 39439,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 2,
-   "avg": 27.2
+   "avg": 21.1
   },
   {
    "vendor": "Meta",
@@ -7145,15 +6898,8 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": 1526,
-   "webdev_ci": [
-    1511,
-    1542
-   ],
-   "webdev_as": "Muse Spark Open (Max)",
-   "webdev_votes": 1721,
-   "avg_n": 2,
-   "avg": 86.8
+   "avg_n": 1,
+   "avg": 91.4
   },
   {
    "vendor": "MiMo",
@@ -7303,15 +7049,8 @@
    ],
    "arena_as": "MiMo-V2.6-Flash",
    "arena_votes": 15312,
-   "webdev": 1637,
-   "webdev_ci": [
-    1629,
-    1646
-   ],
-   "webdev_as": "MiMo-V2.6-Flash",
-   "webdev_votes": 7068,
-   "avg_n": 2,
-   "avg": 87.7
+   "avg_n": 1,
+   "avg": 79.6
   },
   {
    "vendor": "MiMo",
@@ -7455,15 +7194,8 @@
    ],
    "arena_as": "MiMo-V2.6-Pro",
    "arena_votes": 4037,
-   "webdev": 1625,
-   "webdev_ci": [
-    1617,
-    1634
-   ],
-   "webdev_as": "MiMo-V2.6-Pro",
-   "webdev_votes": 6820,
-   "avg_n": 2,
-   "avg": 95.2
+   "avg_n": 1,
+   "avg": 95.4
   },
   {
    "vendor": "MiniMax",
@@ -7621,12 +7353,8 @@
    ],
    "arena_as": "MiniMax-M1",
    "arena_votes": 34293,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 1,
-   "avg": 38.7
+   "avg": 38.1
   },
   {
    "vendor": "MiniMax",
@@ -7766,15 +7494,8 @@
    ],
    "arena_as": "MiniMax-M2.7",
    "arena_votes": 89197,
-   "webdev": 1398,
-   "webdev_ci": [
-    1392,
-    1404
-   ],
-   "webdev_as": "MiniMax-M2.7",
-   "webdev_votes": 15890,
-   "avg_n": 2,
-   "avg": 66.9
+   "avg_n": 1,
+   "avg": 63.3
   },
   {
    "vendor": "MiniMax",
@@ -7909,15 +7630,8 @@
    ],
    "arena_as": "MiniMax-M3",
    "arena_votes": 68611,
-   "webdev": 1582,
-   "webdev_ci": [
-    1571,
-    1594
-   ],
-   "webdev_as": "MiniMax-M3.1-Flash",
-   "webdev_votes": 3062,
-   "avg_n": 3,
-   "avg": 79.0
+   "avg_n": 2,
+   "avg": 71.7
   },
   {
    "vendor": "Mistral",
@@ -8049,15 +7763,8 @@
    ],
    "arena_as": "Mistral Large 3",
    "arena_votes": 88325,
-   "webdev": 1233,
-   "webdev_ci": [
-    1207,
-    1258
-   ],
-   "webdev_as": "Mistral Large 3",
-   "webdev_votes": 838,
-   "avg_n": 2,
-   "avg": 58.0
+   "avg_n": 1,
+   "avg": 62.8
   },
   {
    "vendor": "Mistral",
@@ -8188,10 +7895,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -8319,15 +8022,8 @@
    ],
    "arena_as": "Mistral Large 4",
    "arena_votes": 12066,
-   "webdev": 1544,
-   "webdev_ci": [
-    1534,
-    1555
-   ],
-   "webdev_as": "Mistral Large 4",
-   "webdev_votes": 4068,
-   "avg_n": 3,
-   "avg": 82.3
+   "avg_n": 2,
+   "avg": 80.5
   },
   {
    "vendor": "NVIDIA",
@@ -8485,12 +8181,8 @@
    ],
    "arena_as": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B (NVFP4)",
    "arena_votes": 24230,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 1,
-   "avg": 33.2
+   "avg": 32.6
   },
   {
    "vendor": "NVIDIA",
@@ -8624,15 +8316,8 @@
    ],
    "arena_as": "NVIDIA-Nemotron-3.5-Super-VL-120B-A12B (NVFP4)",
    "arena_votes": 4178,
-   "webdev": 1399,
-   "webdev_ci": [
-    1386,
-    1412
-   ],
-   "webdev_as": "NVIDIA-Nemotron-3.5-Super-VL-120B-A12B (NVFP4)",
-   "webdev_votes": 3193,
-   "avg_n": 2,
-   "avg": 66.2
+   "avg_n": 1,
+   "avg": 61.8
   },
   {
    "vendor": "NVIDIA",
@@ -8799,12 +8484,8 @@
    ],
    "arena_as": "NVIDIA-Nemotron-3-Ultra-550B-A55B (NVFP4)",
    "arena_votes": 11563,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 2,
-   "avg": 70.5
+   "avg": 68.0
   },
   {
    "vendor": "NVIDIA",
@@ -8929,10 +8610,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -9058,12 +8735,8 @@
    ],
    "arena_as": "gpt-oss-20b",
    "arena_votes": 10416,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 2,
-   "avg": 28.2
+   "avg": 22.9
   },
   {
    "vendor": "OpenAI",
@@ -9187,12 +8860,8 @@
    ],
    "arena_as": "gpt-oss-120b",
    "arena_votes": 30200,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 2,
-   "avg": 43.3
+   "avg": 39.3
   },
   {
    "vendor": "Poolside",
@@ -9319,15 +8988,8 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": 1302,
-   "webdev_ci": [
-    1292,
-    1313
-   ],
-   "webdev_as": "Laguna XS.2",
-   "webdev_votes": 4204,
-   "avg_n": 1,
-   "avg": 59.3
+   "avg_n": null,
+   "avg": null
   },
   {
    "vendor": "Poolside",
@@ -9449,15 +9111,8 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": 1349,
-   "webdev_ci": [
-    1340,
-    1358
-   ],
-   "webdev_as": "Laguna M.1",
-   "webdev_votes": 5359,
-   "avg_n": 1,
-   "avg": 64.3
+   "avg_n": null,
+   "avg": null
   },
   {
    "vendor": "Poolside",
@@ -9577,10 +9232,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -9737,12 +9388,8 @@
    ],
    "arena_as": "Qwen3-30B-A3B-Instruct (2507)",
    "arena_votes": 23312,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 2,
-   "avg": 48.7
+   "avg": 44.0
   },
   {
    "vendor": "Qwen",
@@ -9891,12 +9538,8 @@
    ],
    "arena_as": "Qwen3-235B-A22B-Instruct (2507)",
    "arena_votes": 98081,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 2,
-   "avg": 64.6
+   "avg": 61.0
   },
   {
    "vendor": "Qwen",
@@ -10017,15 +9660,8 @@
    ],
    "arena_as": "Qwen3-Coder-480B-A35B-Instruct",
    "arena_votes": 25190,
-   "webdev": 1275,
-   "webdev_ci": [
-    1267,
-    1283
-   ],
-   "webdev_as": "Qwen3-Coder-480B-A35B-Instruct",
-   "webdev_votes": 12675,
-   "avg_n": 2,
-   "avg": 53.7
+   "avg_n": 1,
+   "avg": 49.9
   },
   {
    "vendor": "Qwen",
@@ -10159,12 +9795,8 @@
    ],
    "arena_as": "Qwen3-Next-80B-A3B-Instruct",
    "arena_votes": 22753,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 1,
-   "avg": 56.3
+   "avg": 55.4
   },
   {
    "vendor": "Qwen",
@@ -10301,15 +9933,8 @@
    ],
    "arena_as": "Qwen3.5-35B-A3B",
    "arena_votes": 30427,
-   "webdev": 1254,
-   "webdev_ci": [
-    1237,
-    1272
-   ],
-   "webdev_as": "Qwen3.5-35B-A3B",
-   "webdev_votes": 1612,
-   "avg_n": 3,
-   "avg": 57.1
+   "avg_n": 2,
+   "avg": 55.3
   },
   {
    "vendor": "Qwen",
@@ -10430,15 +10055,8 @@
    ],
    "arena_as": "Qwen3.5-122B-A10B",
    "arena_votes": 29712,
-   "webdev": 1360,
-   "webdev_ci": [
-    1353,
-    1368
-   ],
-   "webdev_as": "Qwen3.5-122B-A10B",
-   "webdev_votes": 8210,
-   "avg_n": 2,
-   "avg": 65.2
+   "avg_n": 1,
+   "avg": 63.8
   },
   {
    "vendor": "Qwen",
@@ -10562,15 +10180,8 @@
    ],
    "arena_as": "Qwen3.5-397B-A17B",
    "arena_votes": 97675,
-   "webdev": 1400,
-   "webdev_ci": [
-    1395,
-    1405
-   ],
-   "webdev_as": "Qwen3.5-397B-A17B",
-   "webdev_votes": 21096,
-   "avg_n": 3,
-   "avg": 73.2
+   "avg_n": 2,
+   "avg": 72.7
   },
   {
    "vendor": "Qwen",
@@ -10688,15 +10299,8 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": 1628,
-   "webdev_ci": [
-    1621,
-    1636
-   ],
-   "webdev_as": "Qwen3.8-Flash-Next",
-   "webdev_votes": 9703,
-   "avg_n": 1,
-   "avg": 93.6
+   "avg_n": null,
+   "avg": null
   },
   {
    "vendor": "Qwen",
@@ -10814,10 +10418,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -10940,10 +10540,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -11073,15 +10669,8 @@
    ],
    "arena_as": "Beam 1.0 501B A23B",
    "arena_votes": 4233,
-   "webdev": 1436,
-   "webdev_ci": [
-    1423,
-    1449
-   ],
-   "webdev_as": "Beam 1.0 501B A23B",
-   "webdev_votes": 2932,
-   "avg_n": 3,
-   "avg": 76.0
+   "avg_n": 2,
+   "avg": 75.7
   },
   {
    "vendor": "SKT",
@@ -11201,10 +10790,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -11326,10 +10911,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -11451,10 +11032,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -11583,10 +11160,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -11715,12 +11288,8 @@
    ],
    "arena_as": "Step-3",
    "arena_votes": 6291,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 1,
-   "avg": 31.2
+   "avg": 30.7
   },
   {
    "vendor": "Step",
@@ -11852,12 +11421,8 @@
    ],
    "arena_as": "Step-3.5-Flash",
    "arena_votes": 60305,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": 1,
-   "avg": 53.3
+   "avg": 52.4
   },
   {
    "vendor": "Step",
@@ -11990,15 +11555,8 @@
    ],
    "arena_as": "Step 5 Preview",
    "arena_votes": 11355,
-   "webdev": 1571,
-   "webdev_ci": [
-    1562,
-    1580
-   ],
-   "webdev_as": "Step 5 Preview (High)",
-   "webdev_votes": 5966,
-   "avg_n": 2,
-   "avg": 84.3
+   "avg_n": 1,
+   "avg": 79.6
   },
   {
    "vendor": "Thinking Machines",
@@ -12125,15 +11683,8 @@
    ],
    "arena_as": "Inkling-Small",
    "arena_votes": 36999,
-   "webdev": 1409,
-   "webdev_ci": [
-    1400,
-    1418
-   ],
-   "webdev_as": "Inkling-Small",
-   "webdev_votes": 5295,
-   "avg_n": 3,
-   "avg": 70.0
+   "avg_n": 2,
+   "avg": 68.3
   },
   {
    "vendor": "Thinking Machines",
@@ -12260,15 +11811,8 @@
    ],
    "arena_as": "Inkling",
    "arena_votes": 45472,
-   "webdev": 1415,
-   "webdev_ci": [
-    1409,
-    1421
-   ],
-   "webdev_as": "Inkling",
-   "webdev_votes": 17073,
-   "avg_n": 3,
-   "avg": 74.3
+   "avg_n": 2,
+   "avg": 73.7
   },
   {
    "vendor": "Upstage",
@@ -12386,10 +11930,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -12509,10 +12049,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -12634,10 +12170,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -12757,10 +12289,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -12880,10 +12408,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -13005,10 +12529,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   },
@@ -13132,10 +12652,6 @@
    "arena_ci": null,
    "arena_as": null,
    "arena_votes": null,
-   "webdev": null,
-   "webdev_ci": null,
-   "webdev_as": null,
-   "webdev_votes": null,
    "avg_n": null,
    "avg": null
   }

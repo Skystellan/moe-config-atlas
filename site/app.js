@@ -38,12 +38,12 @@ function fmtCtx(n) {
   return `${Math.round(n / 1024)}K`;
 }
 
-/* ---------- leaderboard scores (scripts/bench.py): Epoch's ECI, Arena's text and WebDev leaderboards,
+/* ---------- leaderboard scores (scripts/bench.py): Epoch's ECI, the Arena text leaderboard,
    and "avg", their normalized average ---------- */
 
-const BENCH_KEYS = ["avg", "eci", "arena", "webdev"];
+const BENCH_KEYS = ["avg", "eci", "arena"];
 let BENCH = {}; // per key: label, name, url, date, n; avg has the boards it averages (sources) instead of a date
-const ELO = new Set(["arena", "webdev"]); // Elo ratings: whole numbers, with vote counts
+const ELO = new Set(["arena"]); // Elo ratings: whole numbers, with vote counts
 const benchFmt = (k, v) => (v == null ? "–" : ELO.has(k) ? String(Math.round(v)) : v.toFixed(1));
 const boardList = (ks) => ks.map((s) => BENCH[s].label).join("、");
 // the name key scripts/bench.py matches on: no org, no "(...)", no -Instruct / -it / precision / date tail
@@ -634,7 +634,7 @@ function layerName(m, code) {
   if (code === "C" || code === "H") return `${name}${m.window ? `，另带窗口 ${m.window} 的滑窗` : ""}`;
   return name;
 }
-const LAY_SORTS = [["vendor", "按厂家"], ["released", "按时间"], ["global", "按全局层占比"], ["avg", "按均分"], ["eci", "按 ECI"], ["arena", "按 Arena"], ["webdev", "按 WebDev"]];
+const LAY_SORTS = [["vendor", "按厂家"], ["released", "按时间"], ["global", "按全局层占比"], ["avg", "按均分"], ["eci", "按 ECI"], ["arena", "按 Arena"]];
 let layGeom = { cw: 8, gap: 1, H: 13 };
 
 function layerOrder(rows) {
@@ -971,7 +971,7 @@ function sortMatrix(rows, col) {
     a.released.localeCompare(b.released) || a.total - b.total);
 }
 
-const FP_SORTS = [["vendor", "按厂家"], ["released", "按时间"], ["avg", "按均分"], ["eci", "按 ECI"], ["arena", "按 Arena"], ["webdev", "按 WebDev"]];
+const FP_SORTS = [["vendor", "按厂家"], ["released", "按时间"], ["avg", "按均分"], ["eci", "按 ECI"], ["arena", "按 Arena"]];
 
 function renderMatrix(rows) {
   const g = state.fpGroup;
@@ -1168,7 +1168,6 @@ const CMP_SECTIONS = [
     { label: "归一均分", need: "avg", title: "下面几个榜各自换成标准分后的平均，站内最高 100、最低 0", f: (m) => benchCmp(m, "avg") },
     { label: "ECI", need: "eci", title: "Epoch Capabilities Index，同一配置的多个版本取最高", f: (m) => benchCmp(m, "eci") },
     { label: "Arena", need: "arena", title: "Arena 文本榜分数，同一配置的多个版本取最高", f: (m) => benchCmp(m, "arena") },
-    { label: "WebDev", need: "webdev", title: "Arena WebDev 榜分数，同一配置的多个版本取最高", f: (m) => benchCmp(m, "webdev") },
   ] },
   { label: "稀疏度", rows: [
     { label: "E/k+s", f: fmtConfig },
@@ -1688,9 +1687,6 @@ COL_GROUPS.bench = { label: "榜单", cols: [
   { key: "arena", need: "arena", label: "Arena", title: "Arena 文本榜分数（默认的 style control 榜），同一配置的多个版本取最高", f: (m) => benchFmt("arena", m.arena) },
   { key: "arena_as", need: "arena", label: "Arena 取自", l: true, f: (m) => esc(m.arena_as ?? "–") },
   { key: "arena_votes", need: "arena", label: "Arena 票数", title: "Arena 文本榜上取分那个版本的投票数", f: (m) => (m.arena_votes == null ? "–" : m.arena_votes.toLocaleString("en-US")) },
-  { key: "webdev", need: "webdev", label: "WebDev", title: "Arena WebDev 榜分数：让模型写网页和小应用再投票，更偏代码；同一配置的多个版本取最高", f: (m) => benchFmt("webdev", m.webdev) },
-  { key: "webdev_as", need: "webdev", label: "WebDev 取自", l: true, f: (m) => esc(m.webdev_as ?? "–") },
-  { key: "webdev_votes", need: "webdev", label: "WebDev 票数", title: "WebDev 榜上取分那个版本的投票数", f: (m) => (m.webdev_votes == null ? "–" : m.webdev_votes.toLocaleString("en-US")) },
 ] };
 // a leaderboard column shows once its board has scores (a board never read yet has none)
 const cols = () => BASE_COLS.concat(COL_GROUPS[state.group].cols.filter((c) => !c.need || BENCH[c.need]));

@@ -214,8 +214,8 @@
       <dt>设计细节对照</dt><dd>每个位置（注意力输出门、路由权重、残差相加、norm 等）列出收录模型里出现过的写法，公式按建模代码写；config 和代码都看不出的记为“细节未公开”。“相关工作”是论文或训练配置里的写法，收录的模型还没用。名单和匹配规则在 <code>details.yaml</code>，构建时检查每个模型都归到了某种写法下。</dd>
       <dt>前沿技术追踪</dt><dd>名单在 <code>techniques.yaml</code>，每条有最早出处、独立实验的结果和链接。采用数由结构特征自动统计；config 看不出的技术（优化器、损失函数）只列技术报告里写明的，没有就留空，不靠猜。</dd>
       <dt>config 来源</dt><dd>仓库需申请访问时，config 取自 transformers 里对应的默认配置或公开副本，存档在本仓库的 <code>configs/</code> 下，并在表格详情里注明。</dd>
-      <dt>榜单分数</dt><dd>三个公开榜单的分数，用来给配置排序，每次构建时重新读取。ECI 是 Epoch AI 的能力指数（Epoch Capabilities Index），由 GPQA Diamond、SWE-bench Verified、HLE、FrontierMath 等几十项 benchmark 的成绩拟合成一个数，开源和闭源模型在同一把尺子上；Arena 是 arena.ai（原 LMArena）文本榜的分数，来自用户对匿名回答的两两投票，用的是默认的 style control 榜，更接近聊天体验而不是 benchmark；WebDev 是同一网站的 WebDev 榜，用户提一个做网页或小应用的需求，两个匿名模型各写一版，再投票选更好的那个，更偏代码和前端能力。榜单上的名字和每个配置的型号、仓库名和同配置的各个版本对上（规则在 <code>scripts/bench.py</code>，对不上的写在 <code>bench.yaml</code>），同一配置取最高分，并注明取自哪个版本：后续版本只换了后训练，架构还是这一个。分数只反映收录时的版本，小模型和地区性模型覆盖得少。三个榜的数据都按 CC BY 4.0 使用。Artificial Analysis 的智能指数没有收录：它的条款不允许把分数做成表格或数据文件公开。</dd>
-      <dt>归一均分</dt><dd>三个榜的尺度不同（ECI 大约 120–160，Arena 文本榜是 1300–1500 上下的 Elo 分，WebDev 榜也是 Elo 分但拉得更开，大约 1200–1700），收录的配置也不一样，所以先把每个榜换成标准分：（分数 − 均值）÷ 标准差，均值和标准差都按三个榜都有分的那些配置来算，只上了一两个榜的配置也就和同一组配置比。每个配置平均它有分数的那几个榜，最后把站内最高记 100、最低记 0。缺了某个榜的配置会标出来（如“仅 Arena”），它的均分只代表上了的那几个榜。哪个榜都没有的配置排在最后。</dd>
+      <dt>榜单分数</dt><dd>两个公开榜单的分数，用来给配置排序，每次构建时重新读取。ECI 是 Epoch AI 的能力指数（Epoch Capabilities Index），由 GPQA Diamond、SWE-bench Verified、HLE、FrontierMath 等几十项 benchmark 的成绩拟合成一个数，开源和闭源模型在同一把尺子上；Arena 是 arena.ai（原 LMArena）文本榜的分数，来自用户对匿名回答的两两投票，用的是默认的 style control 榜，更接近聊天体验而不是 benchmark。榜单上的名字和每个配置的型号、仓库名和同配置的各个版本对上（规则在 <code>scripts/bench.py</code>，对不上的写在 <code>bench.yaml</code>），同一配置取最高分，并注明取自哪个版本：后续版本只换了后训练，架构还是这一个。分数只反映收录时的版本，小模型和地区性模型覆盖得少。两个榜的数据都按 CC BY 4.0 使用。Artificial Analysis 的智能指数没有收录：它的条款不允许把分数做成表格或数据文件公开。</dd>
+      <dt>归一均分</dt><dd>两个榜的尺度不同（ECI 大约 120–160，Arena 是 1300–1500 上下的 Elo 分），收录的配置也不一样，所以先把每个榜换成标准分：（分数 − 均值）÷ 标准差，均值和标准差都按两个榜都有分的那些配置来算，只上了一个榜的配置也就和同一组配置比。每个配置平均它有分数的榜，最后把站内最高记 100、最低记 0。只上了一个榜的配置会标出来（如“仅 Arena”），它的均分只代表那一个榜。哪个榜都没有的配置排在最后。</dd>
       <dt>档位</dt><dd>按总参数：小 ≤ 50B，中 50–500B，大 ≥ 500B。</dd>
       <dt>收录范围</dt><dd>2025 年及以后首次上传的开源 MoE；只改了后训练、注意力或量化而 MoE 配置不变的版本合并为一行。</dd>
     </dl>
@@ -223,7 +223,7 @@
 </main>
 
 <footer class="wrap foot">
-  数据来自各模型在 Hugging Face 上的 config.json 与模型卡；榜单分数来自 <a href="https://epoch.ai/benchmarks">Epoch AI</a> 和 <a href="https://arena.ai/leaderboard">Arena</a> 的文本榜和 WebDev 榜（CC BY 4.0）。发现错误请到 <a href="https://github.com/Skystellan/moe-config-atlas/issues">GitHub issues</a> 反馈。
+  数据来自各模型在 Hugging Face 上的 config.json 与模型卡；榜单分数来自 <a href="https://epoch.ai/benchmarks">Epoch AI</a> 和 <a href="https://arena.ai/leaderboard/text">Arena</a> 文本榜（CC BY 4.0）。发现错误请到 <a href="https://github.com/Skystellan/moe-config-atlas/issues">GitHub issues</a> 反馈。
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.6.0/echarts.min.js"></script>
