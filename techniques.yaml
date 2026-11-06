@@ -221,7 +221,7 @@
   source: ["LongCat Sparse Attention: Taming the Lightning via Streaming-aware Hierarchical Cross-Layer Indexing", https://arxiv.org/abs/2608.01662]
   feature: sparse_attn
   match: [LSA]
-  note: DSA 的三处改动：top-k 预算里固定留开头 16 个和最近 1024 个 token，读 KV 时更连续；相邻层复用一次索引；推理时先按块粗选再逐 token 细选。LongCat-Flash-Lite-Sparse 也用它，归在 LongCat-Flash-Lite 一行
+  note: DSA 的三处改动：top-k 预算里固定留开头 16 个和最近 1024 个 token，读 KV 时更连续；相邻层复用一次索引；推理时先按块粗选再逐 token 细选。LongCat-Flash-Lite-Sparse 也用它
 
 - name: LSA（Latent Sparse Attention）
   cat: mixer
@@ -477,8 +477,8 @@
   source: ["Muon: An optimizer for hidden layers in neural networks", https://kellerjordan.github.io/posts/muon/]
   models:
   - {name: Moonlight-16B-A3B, cite: "https://arxiv.org/abs/2502.16982"}
-  - {name: Kimi K2, cite: "https://arxiv.org/abs/2507.20534"}
-  - {name: GLM-4.5, cite: "https://arxiv.org/abs/2508.06471"}
+  - {name: Kimi K2 Thinking, cite: "https://arxiv.org/abs/2507.20534"}
+  - {name: GLM-4.7, cite: "https://arxiv.org/abs/2508.06471"}
   - {name: GLM-4.5-Air, cite: "https://arxiv.org/abs/2508.06471"}
   - {name: JoyAI-LLM Flash, cite: "https://huggingface.co/jdopensource/JoyAI-LLM-Flash"}
   - {name: ERNIE-5.5-Flash, cite: "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base"}

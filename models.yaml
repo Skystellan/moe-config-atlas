@@ -1,10 +1,16 @@
 # MoE Config Atlas: curated model list.
-# Each entry is one distinct MoE configuration. Versions that only changed
-# post-training / attention / quantization but kept the same MoE config go
-# under `variants`.
+# Each entry is one MoE architecture. Versions that share it (they changed only post-training,
+# context length, RoPE scaling, MTP layers or the weight format) go in one entry named after the
+# latest of them; a version whose architecture differs in any way (attention, MoE, layer count or
+# widths, modality, vocabulary) gets an entry of its own. scripts/build.py checks every version's
+# config.json against the entry's.
 #
-#   repo          HF repo whose config.json is parsed (the canonical one)
-#   released      YYYY-MM of the first HF upload of this configuration
+#   name          name of the latest mainline version, shown on the site
+#   repo          HF repo of that version, whose config.json is parsed
+#   variants      earlier mainline versions with the same architecture
+#   derived       same-architecture models made from it for one use (code, math, a domain, a
+#                 draft head) and copies in another precision or format; never the entry's name
+#   released      YYYY-MM of the first HF upload of this architecture
 #   total, active parameters in billions, from the model card / tech report
 #   override      fields the parser cannot read from config.json (see scripts/hfconfig.py)
 #   notes         short free-text footnote shown on the site
@@ -12,55 +18,80 @@
 # Only models first released 2025-01 or later are tracked.
 
 - vendor: DeepSeek
-  name: DeepSeek-V3.2
-  repo: deepseek-ai/DeepSeek-V3.2
-  released: 2025-12
+  name: DeepSeek-V3.1-Terminus
+  repo: deepseek-ai/DeepSeek-V3.1-Terminus
+  released: 2025-01
   total: 671
   active: 37
   variants:
-  - deepseek-ai/DeepSeek-R1-Zero
   - deepseek-ai/DeepSeek-R1
+  - deepseek-ai/DeepSeek-R1-Zero
   - deepseek-ai/DeepSeek-V3-0324
-  - deepseek-ai/DeepSeek-Prover-V2-671B
   - deepseek-ai/DeepSeek-R1-0528
   - deepseek-ai/DeepSeek-V3.1
-  - deepseek-ai/DeepSeek-V3.1-Terminus
-  - deepseek-ai/DeepSeek-V3.2-Exp
-  - deepseek-ai/DeepSeek-Math-V2
-  - deepseek-ai/DeepSeek-V3.2-Speciale
+  derived:
+  - deepseek-ai/DeepSeek-Prover-V2-671B
+  notes: 架构就是 2024 年 12 月的 DeepSeek-V3，这里从 2025 年 1 月上传的 R1 算起。
 - vendor: DeepSeek
-  name: DeepSeek-V4-Flash
-  repo: deepseek-ai/DeepSeek-V4-Flash
+  name: DeepSeek-V3.2
+  repo: deepseek-ai/DeepSeek-V3.2
+  released: 2025-09
+  total: 671
+  active: 37
+  variants:
+  - deepseek-ai/DeepSeek-V3.2-Exp
+  - deepseek-ai/DeepSeek-V3.2-Speciale
+  derived:
+  - deepseek-ai/DeepSeek-Math-V2
+  notes: 在 V3.1-Terminus 的 MLA 上加了 DSA 索引器。
+- vendor: DeepSeek
+  name: DeepSeek-V4-Flash-0731
+  repo: deepseek-ai/DeepSeek-V4-Flash-0731
+  variants: [deepseek-ai/DeepSeek-V4-Flash]
+  derived: [deepseek-ai/DeepSeek-V4-Flash-DSpark]
   released: 2026-04
   total: 284
   active: 13
-  variants:
-  - deepseek-ai/DeepSeek-V4-Flash-DSpark
-  - deepseek-ai/DeepSeek-V4-Flash-0731
-  - deepseek-ai/DeepSeek-V4-Flash-Vision-Exp
 - vendor: DeepSeek
-  name: DeepSeek-V4-Pro
-  repo: deepseek-ai/DeepSeek-V4-Pro
-  variants: [deepseek-ai/DeepSeek-V4-Pro-0813, deepseek-ai/DeepSeek-V4-Pro-DSpark]
+  name: DeepSeek-V4-Flash-Vision-Exp
+  repo: deepseek-ai/DeepSeek-V4-Flash-Vision-Exp
+  released: 2026-08
+  total: 284
+  active: 13
+  notes: V4-Flash 加视觉编码器的实验版，语言模型的配置不变。
+- vendor: DeepSeek
+  name: DeepSeek-V4-Pro-0813
+  repo: deepseek-ai/DeepSeek-V4-Pro-0813
+  variants: [deepseek-ai/DeepSeek-V4-Pro]
+  derived: [deepseek-ai/DeepSeek-V4-Pro-DSpark]
   released: 2026-04
   total: 1600
   active: 49
 - vendor: DeepSeek
-  name: DeepSeek-V4.1-Flash
-  repo: deepseek-ai/DeepSeek-V4.1-Flash
-  variants: [deepseek-ai/DeepSeek-V4.1-Flash-1017]
+  name: DeepSeek-V4.1-Flash-1017
+  repo: deepseek-ai/DeepSeek-V4.1-Flash-1017
+  variants: [deepseek-ai/DeepSeek-V4.1-Flash]
   released: 2026-09
   total: 552
   active: 16
   notes: 另有 196B Engram；激活取 decode 的 16B（prefill 8B）。
 
 - vendor: Kimi
-  name: Kimi K2
-  repo: moonshotai/Kimi-K2-Instruct
-  variants: [moonshotai/Kimi-K2.5, moonshotai/Kimi-K2.6, moonshotai/Kimi-K2-Instruct-0905, moonshotai/Kimi-K2-Thinking, moonshotai/Kimi-K2.7-Code]
+  name: Kimi K2 Thinking
+  repo: moonshotai/Kimi-K2-Thinking
+  variants: [moonshotai/Kimi-K2-Instruct, moonshotai/Kimi-K2-Instruct-0905]
   released: 2025-07
   total: 1040
   active: 32
+- vendor: Kimi
+  name: Kimi K2.6
+  repo: moonshotai/Kimi-K2.6
+  variants: [moonshotai/Kimi-K2.5]
+  derived: [moonshotai/Kimi-K2.7-Code]
+  released: 2026-01
+  total: 1040
+  active: 32
+  notes: K2 的语言模型加上 MoonViT 视觉编码器（4 亿参数）。
 - vendor: Kimi
   name: Kimi Linear 48B-A3B
   repo: moonshotai/Kimi-Linear-48B-A3B-Instruct
@@ -68,51 +99,78 @@
   total: 48
   active: 3
 - vendor: Kimi
+  name: Kimi K3
+  repo: moonshotai/Kimi-K3
+  released: 2026-06
+  total: 2780
+  active: 104
+- vendor: Kimi
   name: Kimi K3.1 Pro
   repo: moonshotai/Kimi-K3.1-Pro
-  variants: [moonshotai/Kimi-K3]
   released: 2026-11
   total: 2780
   active: 104
-  notes: 在 K3 上继续后训练，并把 24 个门控 MLA 全局层换成门控 DSA（加 top-2048 索引器），MoE 配置不变，所以 K3 算作同一配置的早期版本。
+  notes: 在 K3 上继续后训练，并把 24 个门控 MLA 全局层换成门控 DSA（加 top-2048 索引器），MoE 配置不变。
 
 - vendor: Qwen
-  name: Qwen3-30B-A3B
-  repo: Qwen/Qwen3-30B-A3B
+  name: Qwen3-30B-A3B-2507
+  repo: Qwen/Qwen3-30B-A3B-Instruct-2507
   released: 2025-04
   total: 30.5
   active: 3.3
   variants:
-  - Qwen/Qwen3-30B-A3B-Instruct-2507
+  - Qwen/Qwen3-30B-A3B
   - Qwen/Qwen3-30B-A3B-Thinking-2507
+  derived:
   - Qwen/Qwen3-Coder-30B-A3B-Instruct
-  - Qwen/Qwen3-VL-30B-A3B-Instruct
-  - Qwen/Qwen3-VL-30B-A3B-Thinking
 - vendor: Qwen
-  name: Qwen3-235B-A22B
-  repo: Qwen/Qwen3-235B-A22B
+  name: Qwen3-VL-30B-A3B
+  repo: Qwen/Qwen3-VL-30B-A3B-Instruct
+  variants: [Qwen/Qwen3-VL-30B-A3B-Thinking]
+  released: 2025-09
+  total: 31.1
+  active: 3.3
+  notes: Qwen3-30B-A3B 的语言模型加视觉编码器。
+- vendor: Qwen
+  name: Qwen3-235B-A22B-2507
+  repo: Qwen/Qwen3-235B-A22B-Instruct-2507
   released: 2025-04
   total: 235
   active: 22
   variants:
-  - Qwen/Qwen3-235B-A22B-Instruct-2507
+  - Qwen/Qwen3-235B-A22B
   - Qwen/Qwen3-235B-A22B-Thinking-2507
-  - Qwen/Qwen3-VL-235B-A22B-Instruct
-  - Qwen/Qwen3-VL-235B-A22B-Thinking
+- vendor: Qwen
+  name: Qwen3-VL-235B-A22B
+  repo: Qwen/Qwen3-VL-235B-A22B-Instruct
+  variants: [Qwen/Qwen3-VL-235B-A22B-Thinking]
+  released: 2025-09
+  total: 236
+  active: 22
+  notes: Qwen3-235B-A22B 的语言模型加视觉编码器。
 - vendor: Qwen
   name: Qwen3-Next-80B-A3B
   repo: Qwen/Qwen3-Next-80B-A3B-Instruct
-  variants: [Qwen/Qwen3-Coder-Next, Qwen/Qwen3-Next-80B-A3B-Thinking]
+  variants: [Qwen/Qwen3-Next-80B-A3B-Thinking]
+  derived: [Qwen/Qwen3-Coder-Next]
   released: 2025-09
   total: 80
   active: 3
 - vendor: Qwen
-  name: Qwen3.5-35B-A3B
-  repo: Qwen/Qwen3.5-35B-A3B
-  variants: [Qwen/Qwen3.6-35B-A3B, Qwen/Qwen-AgentWorld-35B-A3B]
+  name: Qwen3.6-35B-A3B
+  repo: Qwen/Qwen3.6-35B-A3B
+  variants: [Qwen/Qwen3.5-35B-A3B]
   released: 2026-02
   total: 35
   active: 3
+- vendor: Qwen
+  name: Qwen-AgentWorld-35B-A3B
+  repo: Qwen/Qwen-AgentWorld-35B-A3B
+  released: 2026-06
+  total: 35
+  active: 3
+  override: {mtp: 0}
+  notes: 只放出语言模型（config 写明 language_model_only），权重里没有 Qwen3.6-35B-A3B 的视觉编码器和 MTP 层。
 - vendor: Qwen
   name: Qwen3.5-122B-A10B
   repo: Qwen/Qwen3.5-122B-A10B
@@ -145,13 +203,18 @@
   released: 2025-07
   total: 106
   active: 12
-  variants:
-  - zai-org/GLM-4.5V
-  - zai-org/GLM-4.6V
 - vendor: GLM
-  name: GLM-4.5
-  repo: zai-org/GLM-4.5
-  variants: [zai-org/GLM-4.6, zai-org/GLM-4.7]
+  name: GLM-4.6V
+  repo: zai-org/GLM-4.6V
+  variants: [zai-org/GLM-4.5V]
+  released: 2025-08
+  total: 108
+  active: 12
+  notes: GLM-4.5-Air 的语言模型加视觉编码器。
+- vendor: GLM
+  name: GLM-4.7
+  repo: zai-org/GLM-4.7
+  variants: [zai-org/GLM-4.5, zai-org/GLM-4.6]
   released: 2025-07
   total: 355
   active: 32
@@ -162,35 +225,48 @@
   total: 30
   active: 3
 - vendor: GLM
-  name: GLM-5
-  repo: zai-org/GLM-5
-  variants: [zai-org/GLM-5.1, zai-org/GLM-5.2, zai-org/GLM-5.3, zai-org/GLM-5.3-BF16]
+  name: GLM-5.1
+  repo: zai-org/GLM-5.1
+  variants: [zai-org/GLM-5]
   released: 2026-02
   total: 744
   active: 40
 - vendor: GLM
+  name: GLM-5.3
+  repo: zai-org/GLM-5.3
+  variants: [zai-org/GLM-5.2]
+  derived: [zai-org/GLM-5.3-BF16]
+  released: 2026-06
+  total: 744
+  active: 40
+  notes: 比 GLM-5.1 多了索引复用（IndexShare）：78 层里有 57 层沿用前面层的 DSA top-k 选择。
+- vendor: GLM
   name: GLM-5.3-Flash
   repo: zai-org/GLM-5.3-Flash
+  derived: [zai-org/GLM-5.3-Flash-BF16]
   released: 2026-08
   total: 320
   active: 18
-
-  variants:
-  - zai-org/GLM-5.3-Flash-BF16
 - vendor: MiniMax
-  name: MiniMax-M2
-  repo: MiniMaxAI/MiniMax-M2
-  variants: [MiniMaxAI/MiniMax-M2.1, MiniMaxAI/MiniMax-M2.5, MiniMaxAI/MiniMax-M2.7]
+  name: MiniMax-M2.7
+  repo: MiniMaxAI/MiniMax-M2.7
+  variants: [MiniMaxAI/MiniMax-M2, MiniMaxAI/MiniMax-M2.1, MiniMaxAI/MiniMax-M2.5]
   released: 2025-10
   total: 230
   active: 10
 - vendor: MiniMax
   name: MiniMax-M3
   repo: MiniMaxAI/MiniMax-M3
-  variants: [MiniMaxAI/MiniMax-M3.1-Flash]
   released: 2026-06
   total: 428
   active: 23
+- vendor: MiniMax
+  name: MiniMax-M3.1-Flash
+  repo: MiniMaxAI/MiniMax-M3.1-Flash
+  released: 2026-10
+  total: 428
+  active: 23
+  notes: 60 层全是块稀疏注意力，M3 的前 3 层是全注意力。
 
 - vendor: Ling
   name: Ling-mini-2.0
@@ -200,22 +276,65 @@
   active: 1.4
   variants:
   - inclusionAI/Ring-mini-2.0
-  - inclusionAI/Ring-mini-linear-2.0
-  - inclusionAI/Ring-mini-sparse-2.0-exp
+- vendor: Ling
+  name: Ring-mini-linear-2.0
+  repo: inclusionAI/Ring-mini-linear-2.0
+  released: 2025-09
+  total: 16.4
+  active: 1.6
+  notes: Lightning Attention 与 softmax 注意力 4:1 混合。
+- vendor: Ling
+  name: Ring-mini-sparse-2.0-exp
+  repo: inclusionAI/Ring-mini-sparse-2.0-exp
+  released: 2025-10
+  total: 16.3
+  active: 1.4
+  notes: MoBA 块稀疏注意力：KV 每 1024 个 token 一块，每个 query 选 8 块，同一 GQA 组的头共用一份选择；config 里前 3 层和最后一层不用 MoBA。
 - vendor: Ling
   name: Ling-flash-2.0
   repo: inclusionAI/Ling-flash-2.0
-  variants: [inclusionAI/Ling-2.6-flash, inclusionAI/Ring-flash-2.0, inclusionAI/Ring-flash-linear-2.0, inclusionAI/Ming-flash-omni-Preview, inclusionAI/Ring-flash-linear-2.0-128k, inclusionAI/Ming-flash-omni-2.0]
+  variants: [inclusionAI/Ring-flash-2.0]
   released: 2025-09
   total: 103
   active: 6.1
 - vendor: Ling
+  name: Ring-flash-linear-2.0-128k
+  repo: inclusionAI/Ring-flash-linear-2.0-128k
+  variants: [inclusionAI/Ring-flash-linear-2.0]
+  released: 2025-09
+  total: 104
+  active: 6.1
+  notes: Lightning Attention 与 softmax 注意力 7:1 混合。
+- vendor: Ling
+  name: Ming-flash-omni-2.0
+  repo: inclusionAI/Ming-flash-omni-2.0
+  variants: [inclusionAI/Ming-flash-omni-Preview]
+  released: 2025-10
+  total: 100
+  active: 6
+  notes: 文本、图像、音频多模态；文本、图像、音频 token 各用一个路由门（MultiRouter）。
+- vendor: Ling
+  name: Ling-2.6-flash
+  repo: inclusionAI/Ling-2.6-flash
+  released: 2026-04
+  total: 104
+  active: 7.4
+  notes: Lightning Attention 与 MLA 7:1 混合，q/k 只在 Lightning 层归一化。
+- vendor: Ling
   name: Ling-1T
   repo: inclusionAI/Ling-1T
-  variants: [inclusionAI/Ling-2.5-1T, inclusionAI/Ling-2.6-1T, inclusionAI/Ring-1T, inclusionAI/Ring-2.5-1T, inclusionAI/Ring-2.6-1T]
+  variants: [inclusionAI/Ring-1T]
   released: 2025-10
   total: 1000
   active: 50
+- vendor: Ling
+  name: Ling-2.6-1T
+  repo: inclusionAI/Ling-2.6-1T
+  variants: [inclusionAI/Ling-2.5-1T, inclusionAI/Ring-2.5-1T, inclusionAI/Ring-2.6-1T]
+  released: 2026-02
+  total: 1000
+  active: 63
+  notes: Lightning Attention 与 MLA 7:1 混合，q/k 只在 Lightning 层归一化。
 - vendor: Ling
   name: Ling-3.0-tiny
   repo: inclusionAI/Ling-3.0-tiny
@@ -228,41 +347,72 @@
   released: 2026-08
   total: 124
   active: 5.1
-  variants:
+  derived:
   - inclusionAI/Ling-3.0-flash-Fin
-  - inclusionAI/Ling-3.0-flash-VL
   - inclusionAI/Ling-3.0-flash-Sante
 - vendor: Ling
-  name: Ling-3.1-flash
-  repo: inclusionAI/Ling-3.1-flash
+  name: Ling-3.0-flash-VL
+  repo: inclusionAI/Ling-3.0-flash-VL
+  released: 2026-09
+  total: 124
+  active: 5.5
+  notes: Ling-3.0-flash 的语言模型加视觉编码器。
+- vendor: Ling
+  name: Ling-3.1-flash-1019
+  repo: inclusionAI/Ling-3.1-flash-1019
+  variants: [inclusionAI/Ling-3.1-flash]
   released: 2026-10
   total: 560
   active: 25
-
-  variants:
-  - inclusionAI/Ling-3.1-flash-1019
 - vendor: LongCat
-  name: LongCat-Flash
-  repo: meituan-longcat/LongCat-Flash-Chat
+  name: LongCat-Flash-Thinking-2601
+  repo: meituan-longcat/LongCat-Flash-Thinking-2601
   released: 2025-08
   total: 560
   active: 27
   notes: k 按 12 个槽位计，另有 256 个零计算专家；按平均落到 FFN 专家的个数算会更稀疏（约 64）。
   variants:
+  - meituan-longcat/LongCat-Flash-Chat
   - meituan-longcat/LongCat-Flash-Thinking
-  - meituan-longcat/LongCat-Flash-Omni
-  - meituan-longcat/LongCat-Flash-Thinking-2601
+  derived:
   - meituan-longcat/LongCat-HeavyMode-Summary
-  - meituan-longcat/LongCat-Flash-Thinking-ZigZag
   - meituan-longcat/LongCat-Flash-Prover
+- vendor: LongCat
+  name: LongCat-Flash-Omni
+  repo: meituan-longcat/LongCat-Flash-Omni
+  released: 2025-10
+  total: 560
+  active: 27
+  override: {modality: 图文音}
+  notes: 文本、图像、视频、音频多模态，编码器不写在 config.json 里，模态按模型卡标注；语言模型与 LongCat-Flash 相同，k 按 12 个槽位计，另有 256 个零计算专家。
+- vendor: LongCat
+  name: LongCat-Flash-Thinking-ZigZag
+  repo: meituan-longcat/LongCat-Flash-Thinking-ZigZag
+  released: 2026-01
+  total: 560
+  active: 27
+  notes: 56 个注意力子层里一半是流式稀疏注意力，每个 query 只看开头 128 个和最近 896 个 token，另一半仍是完整的 MLA；k 按 12 个槽位计，另有 256 个零计算专家。
 - vendor: LongCat
   name: LongCat-Flash-Lite
   repo: meituan-longcat/LongCat-Flash-Lite
-  variants: [LongCat-Flash-Lite-Next, meituan-longcat/LongCat-Next, meituan-longcat/LongCat-Flash-Lite-Sparse]
   released: 2026-01
   total: 68.5
   active: 3
   notes: k 按 12 个槽位计，另有 128 个零计算专家；总参数含 n-gram 嵌入。
+- vendor: LongCat
+  name: LongCat-Next
+  repo: meituan-longcat/LongCat-Next
+  released: 2026-03
+  total: 74
+  active: 3
+  notes: 以 LongCat-Flash-Lite 为主干，图像和音频都离散成 token，和文本共用一个词表。
+- vendor: LongCat
+  name: LongCat-Flash-Lite-Sparse
+  repo: meituan-longcat/LongCat-Flash-Lite-Sparse
+  released: 2026-07
+  total: 69
+  active: 3
+  notes: 在 LongCat-Flash-Lite 上把 MLA 换成 LSA（LongCat Sparse Attention）；k 按 12 个槽位计，另有 128 个零计算专家，总参数含 n-gram 嵌入。
 - vendor: LongCat
   name: LongCat-2.0
   repo: meituan-longcat/LongCat-2.0
@@ -280,33 +430,51 @@
 - vendor: Step
   name: Step-3.5-Flash
   repo: stepfun-ai/Step-3.5-Flash
-  variants: [stepfun-ai/Step-3.7-Flash]
   released: 2026-02
   total: 196
   active: 11
 - vendor: Step
+  name: Step-3.7-Flash
+  repo: stepfun-ai/Step-3.7-Flash
+  released: 2026-05
+  total: 198
+  active: 11
+  notes: Step-3.5-Flash 的语言模型加视觉编码器。
+- vendor: Step
   name: Step-5-Preview
   repo: stepfun-ai/Step-5-Preview
+  derived: [stepfun-ai/Step-5-Preview-BF16]
   released: 2026-09
   total: 600
   active: 27
-
-  variants:
-  - stepfun-ai/Step-5-Preview-BF16
 - vendor: MiMo
   name: MiMo-V2-Flash
   repo: XiaomiMiMo/MiMo-V2-Flash
-  variants: [XiaomiMiMo/MiMo-V2.5, MiMo-V2.6-Flash, XiaomiMiMo/MiMo-V2.6-Flash-RL, XiaomiMiMo/MiMo-V2.6-Flash-MOPD]
   released: 2025-12
   total: 309
   active: 15
 - vendor: MiMo
+  name: MiMo-V2.6-Flash
+  repo: XiaomiMiMo/MiMo-V2.6-Flash-MOPD
+  variants: [XiaomiMiMo/MiMo-V2.5, XiaomiMiMo/MiMo-V2.6-Flash-RL]
+  released: 2026-04
+  total: 309
+  active: 15
+  notes: MiMo-V2-Flash 的语言模型加视觉和音频编码器；V2.6 有 RL 和 MOPD 两个后训练版本。
+- vendor: MiMo
   name: MiMo-V2.5-Pro
   repo: XiaomiMiMo/MiMo-V2.5-Pro
-  variants: [MiMo-V2.6-Pro, XiaomiMiMo/MiMo-V2.6-Pro-RL, XiaomiMiMo/MiMo-V2.6-Pro-MOPD]
   released: 2026-04
   total: 1020
   active: 42
+- vendor: MiMo
+  name: MiMo-V2.6-Pro
+  repo: XiaomiMiMo/MiMo-V2.6-Pro-MOPD
+  variants: [XiaomiMiMo/MiMo-V2.6-Pro-RL]
+  released: 2026-09
+  total: 1020
+  active: 42
+  notes: MiMo-V2.5-Pro 的语言模型加视觉和音频编码器；有 RL 和 MOPD 两个后训练版本。
 
 - vendor: Hunyuan
   name: Hunyuan-A13B
@@ -334,12 +502,12 @@
   released: 2025-12
   total: 675
   active: 41
-  variants:
+  derived:
   - mistralai/Mistral-Large-3-675B-Instruct-2512-BF16
 - vendor: Mistral
   name: Mistral Small 4
   repo: mistralai/Mistral-Small-4-119B-2603
-  variants: [mistralai/Leanstral-1.5-119B-A6B, mistralai/Leanstral-2603]
+  derived: [mistralai/Leanstral-2603, mistralai/Leanstral-1.5-119B-A6B]
   released: 2026-03
   total: 119
   active: 6.5
@@ -352,12 +520,21 @@
   notes: 图文多模态，激活 52B 含嵌入（不含为 49B）。72 层都是带 DSA 索引器的 MLA；每 4 层有一层不加 RoPE，第 39 层起的 9 个这种层直接读第 35 层的 KV。RoPE 频率可学习（LeRoPE）；权重里带一个 DSpark 投机解码草稿头。
 
 - vendor: NVIDIA
-  name: Nemotron 3 Nano
-  repo: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
-  variants: [nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16, nvidia/Nemotron-Cascade-2-30B-A3B, nvidia/NVIDIA-Nemotron-Labs-3-Elastic-30B-A3B-BF16, nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16, nvidia/NVIDIA-NemotronLabs-AI-for-Media-Sports-Tennis, nvidia/NVIDIA-NemotronLabs-AI-for-Media-Sports-Basketball]
+  name: Nemotron 3.5 Lightning
+  repo: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16
+  variants: [nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16]
+  derived: [nvidia/Nemotron-Cascade-2-30B-A3B, nvidia/NVIDIA-Nemotron-Labs-3-Elastic-30B-A3B-BF16]
   released: 2025-12
   total: 30
   active: 3.5
+- vendor: NVIDIA
+  name: Nemotron 3 Nano Omni
+  repo: nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16
+  derived: [nvidia/NVIDIA-NemotronLabs-AI-for-Media-Sports-Tennis, nvidia/NVIDIA-NemotronLabs-AI-for-Media-Sports-Basketball]
+  released: 2026-04
+  total: 31
+  active: 3.5
+  notes: Nemotron 3 Nano 的语言模型加视觉和音频编码器。
 - vendor: NVIDIA
   name: Nemotron 3 Super
   repo: nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16
@@ -365,9 +542,15 @@
   total: 120
   active: 12
   notes: LatentMoE，专家在压缩后的潜空间里计算，G 不适用。
-  variants:
+  derived:
   - nvidia/Nemotron-3-Super-120B-A12B-BF16-MTPv2
-  - nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16
+- vendor: NVIDIA
+  name: Nemotron 3.5 Super VL
+  repo: nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16
+  released: 2026-10
+  total: 120
+  active: 12
+  notes: Nemotron 3 Super 的语言模型加视觉编码器；LatentMoE，G 不适用。
 - vendor: NVIDIA
   name: Nemotron 3 Ultra
   repo: nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16
@@ -375,7 +558,7 @@
   total: 550
   active: 55
   notes: LatentMoE，G 不适用。
-  variants:
+  derived:
   - nvidia/NVIDIA-Nemotron-Labs-Teacher-STEM
   - nvidia/NVIDIA-Nemotron-Labs-Teacher-General-Reasoning
   - nvidia/NVIDIA-Nemotron-Labs-Teacher-Instruction-Following
@@ -390,8 +573,7 @@
   total: 74
   active: 9
   notes: LatentMoE；逐层 240–496 个专家，取均值。
-
-  variants:
+  derived:
   - nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB
 - vendor: OpenAI
   name: gpt-oss-20b
@@ -412,9 +594,9 @@
   released: 2026-03
   total: 25.2
   active: 3.8
-
   variants:
   - google/gemma-4-26B-A4B
+  derived:
   - google/gemma-4-26B-A4B-it-qat-q4_0-unquantized
 - vendor: Meta
   name: Muse Spark Open
@@ -424,13 +606,13 @@
   active: 42
 
 - vendor: ERNIE
-  name: ERNIE-4.5-21B-A3B
-  repo: baidu/ERNIE-4.5-21B-A3B-PT
+  name: ERNIE-4.5-21B-A3B-Thinking
+  repo: baidu/ERNIE-4.5-21B-A3B-Thinking
   released: 2025-06
   total: 21
   active: 3
   variants:
-  - baidu/ERNIE-4.5-21B-A3B-Thinking
+  - baidu/ERNIE-4.5-21B-A3B-PT
 - vendor: ERNIE
   name: ERNIE-4.5-300B-A47B
   repo: baidu/ERNIE-4.5-300B-A47B-PT
@@ -440,7 +622,7 @@
 - vendor: ERNIE
   name: ERNIE-5.5-Flash
   repo: baidu/ERNIE-5.5-Flash-Base
-  variants: [baidu/ERNIE-5.5-Flash-Base-BF16]
+  derived: [baidu/ERNIE-5.5-Flash-Base-BF16]
   released: 2026-10
   total: 280
   active: 14
@@ -479,9 +661,9 @@
   active: 12
 
 - vendor: Arcee
-  name: Trinity-Large
-  repo: arcee-ai/Trinity-Large-Preview
-  variants: [arcee-ai/Trinity-Large-Thinking]
+  name: Trinity-Large-Thinking
+  repo: arcee-ai/Trinity-Large-Thinking
+  variants: [arcee-ai/Trinity-Large-Preview]
   released: 2026-01
   total: 398
   active: 13
@@ -530,7 +712,7 @@
 - vendor: EXAONE
   name: K-EXAONE 2.0 750B-A37B
   repo: LGAI-EXAONE/K-EXAONE-2.0-750B-A37B
-  variants: [LGAI-EXAONE/K-EXAONE-2.0-750B-A37B-DSpark]
+  derived: [LGAI-EXAONE/K-EXAONE-2.0-750B-A37B-DSpark]
   released: 2026-07
   total: 750
   active: 37
@@ -549,9 +731,9 @@
   active: 33
 
 - vendor: Poolside
-  name: Laguna XS.2
-  repo: poolside/Laguna-XS.2
-  variants: [poolside/Laguna-XS-2.1]
+  name: Laguna XS 2.1
+  repo: poolside/Laguna-XS-2.1
+  variants: [poolside/Laguna-XS.2]
   released: 2026-04
   total: 33
   active: 3
@@ -574,17 +756,29 @@
 - vendor: Liquid AI
   name: LFM2-8B-A1B
   repo: LiquidAI/LFM2-8B-A1B
-  variants: [LiquidAI/LFM2.5-8B-A1B]
   released: 2025-10
   total: 8.3
   active: 1.5
 - vendor: Liquid AI
+  name: LFM2.5-8B-A1B
+  repo: LiquidAI/LFM2.5-8B-A1B
+  released: 2026-05
+  total: 8.3
+  active: 1.5
+  notes: 词表从 LFM2 的 65536 扩到 128000，其余结构不变。
+- vendor: Liquid AI
   name: LFM2-24B-A2B
   repo: LiquidAI/LFM2-24B-A2B
-  variants: [LiquidAI/LFM2.5-24B-A2B]
   released: 2026-02
   total: 24
   active: 2.3
+- vendor: Liquid AI
+  name: LFM2.5-24B-A2B
+  repo: LiquidAI/LFM2.5-24B-A2B
+  released: 2026-10
+  total: 24
+  active: 2.3
+  notes: 词表从 LFM2 的 65536 扩到 128000，其余结构不变。
 
 - vendor: IBM
   name: Granite 4.0-H-Small
@@ -634,9 +828,10 @@
   notes: 没有公开建模代码，结构按 config 和权重名推断。
 
 - vendor: JetBrains
-  name: Mellum2-12B-A2.5B
-  repo: JetBrains/Mellum2-12B-A2.5B-Instruct
-  variants: [JetBrains/Mellum2-12B-A2.5B-Thinking, JetBrains/Mellum2.1-12B-A2.5B-Thinking, JetBrains/Mellum2.1-12B-A2.5B-Thinking-MTP]
+  name: Mellum2.1-12B-A2.5B-Thinking
+  repo: JetBrains/Mellum2.1-12B-A2.5B-Thinking
+  variants: [JetBrains/Mellum2-12B-A2.5B-Instruct, JetBrains/Mellum2-12B-A2.5B-Thinking]
+  derived: [JetBrains/Mellum2.1-12B-A2.5B-Thinking-MTP]
   released: 2026-05
   total: 12
   active: 2.5
@@ -677,7 +872,7 @@
 - vendor: Sarvam
   name: Sarvam-105B
   repo: sarvamai/sarvam-105b
-  variants: [sarvamai/prism]
+  derived: [sarvamai/prism]
   released: 2026-03
   total: 105
   active: 10.3
@@ -704,10 +899,15 @@
   active: 3
   variants:
   - moonshotai/Moonlight-16B-A3B-Instruct
-  - moonshotai/Kimi-VL-A3B-Instruct
-  - moonshotai/Kimi-VL-A3B-Thinking
-  - moonshotai/Kimi-VL-A3B-Thinking-2506
   notes: Muon 优化器的验证模型。
+- vendor: Kimi
+  name: Kimi-VL-A3B-Thinking-2506
+  repo: moonshotai/Kimi-VL-A3B-Thinking-2506
+  variants: [moonshotai/Kimi-VL-A3B-Instruct, moonshotai/Kimi-VL-A3B-Thinking]
+  released: 2025-04
+  total: 16.4
+  active: 2.8
+  notes: Moonlight-16B-A3B 的语言模型加 MoonViT 视觉编码器。
 - vendor: Qwen
   name: Qwen3-Coder-480B-A35B
   repo: Qwen/Qwen3-Coder-480B-A35B-Instruct
@@ -715,39 +915,66 @@
   total: 480
   active: 35
 - vendor: MiniMax
-  name: MiniMax-Text-01
-  repo: MiniMaxAI/MiniMax-Text-01
+  name: MiniMax-M1
+  repo: MiniMaxAI/MiniMax-M1-80k
   released: 2025-01
   total: 456
   active: 45.9
   variants:
-  - MiniMaxAI/MiniMax-VL-01
-  - MiniMaxAI/MiniMax-Text-01-hf
+  - MiniMaxAI/MiniMax-Text-01
   - MiniMaxAI/MiniMax-M1-40k
-  - MiniMaxAI/MiniMax-M1-80k
-  - MiniMaxAI/MiniMax-M1-80k-hf
+  derived:
+  - MiniMaxAI/MiniMax-Text-01-hf
   - MiniMaxAI/MiniMax-M1-40k-hf
-  notes: Lightning Attention 与 softmax 注意力 7:1 混合。
+  - MiniMaxAI/MiniMax-M1-80k-hf
+  notes: Lightning Attention 与 softmax 注意力 7:1 混合；-hf 是转成 transformers 格式的副本。
+- vendor: MiniMax
+  name: MiniMax-VL-01
+  repo: MiniMaxAI/MiniMax-VL-01
+  released: 2025-01
+  total: 456
+  active: 45.9
+  notes: MiniMax-Text-01 的语言模型加视觉编码器。
 - vendor: Ling
-  name: Ling-lite
-  repo: inclusionAI/Ling-lite-base
+  name: Ling-lite-1.5-2507
+  repo: inclusionAI/Ling-lite-1.5-2507
   released: 2025-02
   total: 16.8
   active: 2.75
   variants:
+  - inclusionAI/Ling-lite-base
   - inclusionAI/Ling-lite
-  - inclusionAI/Ling-Coder-lite
   - inclusionAI/Ring-lite-distill-preview
-  - inclusionAI/Ring-lite-linear-preview
-  - inclusionAI/Ming-Lite-Omni
   - inclusionAI/Ling-lite-1.5
   - inclusionAI/Ring-lite
-  - inclusionAI/Ming-Lite-Omni-1.5
   - inclusionAI/Ling-lite-1.5-2506
   - inclusionAI/Ring-lite-2507
   - inclusionAI/Ring-lite-2506
-  - inclusionAI/Ling-lite-1.5-2507
-  - inclusionAI/Ming-UniVision-16B-A3B
+  derived:
+  - inclusionAI/Ling-Coder-lite
+- vendor: Ling
+  name: Ring-lite-linear-preview
+  repo: inclusionAI/Ring-lite-linear-preview
+  released: 2025-04
+  total: 17.1
+  active: 3.0
+  notes: Lightning Attention 与 softmax 注意力 6:1 混合。
+- vendor: Ling
+  name: Ming-Lite-Omni-1.5
+  repo: inclusionAI/Ming-Lite-Omni-1.5
+  variants: [inclusionAI/Ming-Lite-Omni]
+  released: 2025-05
+  total: 18.9
+  active: 2.8
+  notes: 文本、图像、音频多模态；不同模态的 token 各用一个路由门。
+- vendor: Ling
+  name: Ming-UniVision-16B-A3B
+  repo: inclusionAI/Ming-UniVision-16B-A3B
+  released: 2025-09
+  total: 18.8
+  active: 2.8
+  override: {modality: 图文}
+  notes: 图像理解和生成共用 MingTok 的连续视觉 token；config 里留着 audio_config，但权重里没有音频部分。
 - vendor: Ling
   name: Ling-plus
   repo: inclusionAI/Ling-plus-base
@@ -769,18 +996,18 @@
   released: 2026-05
   total: 30
   active: 3
-  variants:
+  derived:
   - tencent/Hy-Memory-30B-A3B
-  notes: 翻译专用模型；Hy-Memory 是同一配置的记忆写入模型。
+  notes: 翻译专用模型；Hy-Memory 是同一架构的记忆写入模型。
 
 - vendor: TeleAI
   name: Xing4.0-29B-A4B
   repo: XingChen-AGI/Xing4.0-29B-A4B
-  variants: [XingChen-AGI/Xing4.0-29B-Intent]
+  derived: [XingChen-AGI/Xing4.0-29B-Intent]
   released: 2026-09
   total: 29
   active: 4
-  notes: 中国电信人工智能研究院（TeleAI）的星辰模型，在昇腾 910C 上训练；Intent 是同一配置的意图识别模型。
+  notes: 中国电信人工智能研究院（TeleAI）的星辰模型，在昇腾 910C 上训练；Intent 是同一架构的意图识别模型。
 
 - vendor: IFM
   name: K2-Horizon-375B-A23B
@@ -798,9 +1025,9 @@
   notes: MoVA（Mixture-of-Values attention）：45 个 MoE 层的注意力把 V 投影换成 64 选 4 的路由值专家；RMSNorm 把 d_model 分成两组各自归一化。
 
 - vendor: GigaChat
-  name: GigaChat3-10B-A1.8B
-  repo: ai-sage/GigaChat3-10B-A1.8B
-  variants: [ai-sage/GigaChat3.1-10B-A1.8B]
+  name: GigaChat3.1-10B-A1.8B
+  repo: ai-sage/GigaChat3.1-10B-A1.8B
+  variants: [ai-sage/GigaChat3-10B-A1.8B]
   released: 2025-11
   total: 10
   active: 1.8
@@ -817,9 +1044,9 @@
   active: 36
   notes: Sber 的 GigaChat 3 Ultra，首发是 2025 年 11 月的预览版。
 - vendor: GigaChat
-  name: GigaChat3.5-432B-A28B
-  repo: ai-sage/GigaChat3.5-432B-A28B
-  variants: [ai-sage/GigaChat3.5-432B-A28B-Reasoning]
+  name: GigaChat3.5-432B-A28B-Reasoning
+  repo: ai-sage/GigaChat3.5-432B-A28B-Reasoning
+  variants: [ai-sage/GigaChat3.5-432B-A28B]
   released: 2026-06
   total: 432
   active: 28
@@ -841,9 +1068,9 @@
   active: 3
   notes: Kakao 的第一个 MoE。
 - vendor: Kanana
-  name: Kanana-2-30B-A3B
-  repo: kakaocorp/kanana-2-30b-a3b-instruct
-  variants: [kakaocorp/kanana-2-30b-a3b-thinking, kakaocorp/kanana-2-30b-a3b-instruct-2601, kakaocorp/kanana-2-30b-a3b-thinking-2601]
+  name: Kanana-2-30B-A3B-2601
+  repo: kakaocorp/kanana-2-30b-a3b-instruct-2601
+  variants: [kakaocorp/kanana-2-30b-a3b-instruct, kakaocorp/kanana-2-30b-a3b-thinking, kakaocorp/kanana-2-30b-a3b-thinking-2601]
   released: 2025-12
   total: 30
   active: 3
@@ -857,17 +1084,18 @@
   active: 2.9
   notes: 日本国立情报学研究所（NII）；Mixtral 式 8 选 2，模型卡引用 Drop-Upcycling。
 - vendor: LLM-jp
-  name: llm-jp-3-8x13b
-  repo: llm-jp/llm-jp-3-8x13b-instruct3
-  variants: [llm-jp/llm-jp-3-8x13b-instruct2, llm-jp/llm-jp-3.1-8x13b-instruct4, llm-jp/llm-jp-3.1-8x13b-32K-instruct4]
+  name: llm-jp-3.1-8x13b
+  repo: llm-jp/llm-jp-3.1-8x13b-instruct4
+  variants: [llm-jp/llm-jp-3-8x13b-instruct3, llm-jp/llm-jp-3-8x13b-instruct2]
+  derived: [llm-jp/llm-jp-3.1-8x13b-32K-instruct4]
   released: 2025-03
   total: 73.2
   active: 22.2
   notes: 日本国立情报学研究所（NII）；Mixtral 式 8 选 2，模型卡引用 Drop-Upcycling。
 - vendor: LLM-jp
-  name: llm-jp-4-32b-a3b
-  repo: llm-jp/llm-jp-4-32b-a3b-thinking
-  variants: [llm-jp/llm-jp-4.1-32b-a3b-thinking]
+  name: llm-jp-4.1-32b-a3b-thinking
+  repo: llm-jp/llm-jp-4.1-32b-a3b-thinking
+  variants: [llm-jp/llm-jp-4-32b-a3b-thinking]
   released: 2026-03
   total: 32.1
   active: 3.8

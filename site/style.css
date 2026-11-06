@@ -302,7 +302,7 @@ tbody tr.detail td { text-align: left; white-space: normal; color: var(--ink-2);
 .take { display: block; margin-top: 2px; color: var(--ink-2); font-size: 12px; }
 .take b { color: var(--ink); }
 .lay-wrap { max-height: 78vh; overflow: auto; border: 1px solid var(--grid); border-radius: 8px; padding: 6px 10px 8px; }
-.lay-row { display: grid; grid-template-columns: 76px 164px 1fr; align-items: center; column-gap: 8px; height: 17px; }
+.lay-row { display: grid; grid-template-columns: 76px 216px 1fr; align-items: center; column-gap: 8px; height: 17px; }
 .lay-row.grp { margin-top: 7px; }
 .lay-row .lv { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lay-row .lv.sc { color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; cursor: default; }

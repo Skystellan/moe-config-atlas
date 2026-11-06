@@ -104,6 +104,13 @@ def precision(raw, info):
     fp8 = ("块 " + "×".join(map(str, block)) if block else "逐张量") + ("，ue8m0 缩放" if q.get("scale_fmt") == "ue8m0" else "")
     if "fp4" in (q.get("expert_dtype"), c.get("expert_dtype")):  # DeepSeek V4: FP4 experts, FP8 elsewhere
         return "FP4 专家 + FP8", fp8
+    if str(q.get("moe_quant_algo") or "").upper() == "NVFP4":  # MiniMax-M3.1-Flash: NVFP4 experts, MXFP8 elsewhere
+        return "NVFP4 专家 + " + ("MXFP8" if q.get("quant_method") == "mxfp8" else "FP8"), fp8
+    int4 = [g for g in groups if g.get("num_bits") == 4 and g.get("type") == "int"]
+    if q.get("quant_method") == "compressed-tensors" and int4:  # Kimi K2 Thinking: INT4 routed experts (QAT)
+        size = int4[0].get("group_size")
+        experts = any("self_attn" in str(x) for x in q.get("ignore") or [])  # attention and shared experts stay BF16
+        return "INT4 专家" if experts else "INT4", f"每 {size} 个数一个缩放" if size else None
     fmt = str(q.get("format") or "")
     if q.get("quant_method") == "mxfp4" or "mxfp4" in fmt:  # only the routed experts are quantized
         return "MXFP4 专家", None
@@ -124,6 +131,37 @@ def r(x, n=1):
     return None if x is None else round(x, n)
 
 
+# Problems with how models.yaml groups versions; main() lists them all and stops before writing anything.
+PROBLEMS = []
+ARCHS = {}  # (vendor, architecture) -> row name: one vendor's versions of one architecture share a row
+NEWER_OK = dt.timedelta(days=31)  # a sibling (Instruct / Thinking) may follow the row's repo by up to a month
+
+
+def check_versions(m, parsed, versions, refresh):
+    """A row holds one architecture under the name of its latest mainline version: every version on HF must
+    parse to the repo's architecture signature, and no earlier mainline version may be much newer than the repo."""
+    want = hfconfig.arch_signature(parsed)
+    for v in versions[1:]:
+        if not v["repo"]:
+            continue
+        raw, _ = fetch_config(v["repo"], refresh)
+        if raw is None:
+            print(f"  · {v['repo']}: config.json unreadable, architecture not checked", file=sys.stderr)
+            continue
+        got = hfconfig.parse(raw)
+        got.update(m.get("override") or {})
+        got = hfconfig.arch_signature(got)
+        diff = [f"{k}: {want.get(k)!r} -> {got.get(k)!r}" for k in sorted(set(want) | set(got)) if want.get(k) != got.get(k)]
+        if diff:
+            PROBLEMS.append(f"{m['name']}: {v['repo']} has another architecture ({'; '.join(diff[:6])}); give it its own row")
+    top = versions[0]["created"]
+    for v in versions[1:]:
+        if v["repo"] and not v.get("derived") and top and v["created"] and \
+                dt.date.fromisoformat(v["created"]) - dt.date.fromisoformat(top) > NEWER_OK:
+            PROBLEMS.append(f"{m['name']}: variant {v['repo']} ({v['created']}) is newer than the repo {m['repo']} "
+                            f"({top}); make the latest version the repo and the name, or list it under derived")
+
+
 def build_entry(m, refresh):
     repo = m["repo"]
     raw, config_source = fetch_config(repo, refresh)
@@ -131,7 +169,8 @@ def build_entry(m, refresh):
     parsed.update(m.get("override") or {})
     info = fetch_info(repo, refresh)
 
-    # Every upload of this configuration (main repo + variants), newest first.
+    # Every upload of this architecture: the main repo, the earlier mainline versions (variants), and the models
+    # made from it for one use or copied into another format (derived).
     versions = [{"name": repo.split("/")[-1], "repo": repo, "created": (info.get("createdAt") or "")[:10] or None}]
     for v in m.get("variants") or []:
         if isinstance(v, dict):  # a version whose weights are not on HF yet, e.g. {name, released, note}
@@ -140,8 +179,20 @@ def build_entry(m, refresh):
             continue
         created = (fetch_info(v, refresh).get("createdAt") or "")[:10] or None if "/" in v else None
         versions.append({"name": v.split("/")[-1], "repo": v if "/" in v else None, "created": created})
+    for v in m.get("derived") or []:
+        created = (fetch_info(v, refresh).get("createdAt") or "")[:10] or None
+        versions.append({"name": v.split("/")[-1], "repo": v, "created": created, "derived": True})
+    if raw:
+        arch = (m["vendor"], json.dumps(hfconfig.arch_signature(parsed), sort_keys=True, default=str))
+        if arch in ARCHS:
+            PROBLEMS.append(f"{ARCHS[arch]} and {m['name']} have the same architecture; make them one row")
+        ARCHS[arch] = m["name"]
+        check_versions(m, parsed, versions, refresh)
     dated = sorted((x for x in versions if x["created"]), key=lambda x: x["created"], reverse=True)
     latest = dated[0] if dated else versions[0]
+    # the mainline version this architecture first shipped as (list order breaks ties, e.g. R1 before R1-Zero)
+    mainline = [x for x in versions if not x.get("derived")]
+    first = min((x for x in mainline if x["created"]), key=lambda x: x["created"], default=versions[0])
 
     E, k, s = parsed.get("E"), parsed.get("k"), parsed.get("s") or 0
     d, de = parsed.get("d_model"), parsed.get("d_expert")
@@ -152,6 +203,7 @@ def build_entry(m, refresh):
         "name": m["name"],
         "repo": repo,
         "variants": [v["name"] if isinstance(v, dict) else v for v in m.get("variants") or []],
+        "derived": list(m.get("derived") or []),
         "released": str(m["released"]),
         "year": int(str(m["released"])[:4]),
         "total": total,
@@ -173,6 +225,7 @@ def build_entry(m, refresh):
         "global_attn_frac": parsed.get("global_attn_frac"),
         "kv_kib_per_token": parsed.get("kv_kib_per_token"),
         "window": parsed.get("window"),
+        "window_sink": parsed.get("window_sink"),
         "mla": parsed.get("mla", False),
         "kv_heads": parsed.get("kv_heads"),
         "head_dim": parsed.get("head_dim"),
@@ -199,6 +252,7 @@ def build_entry(m, refresh):
         "hf_created": (info.get("createdAt") or "")[:10] or None,
         "latest": latest["created"],
         "latest_name": latest["name"],
+        "first_name": first["name"],
         "versions": dated + [x for x in versions if not x["created"]],
         "hf_params": r((info.get("safetensors") or {}).get("total", 0) / 1e9, 1) or None,
         "license": (info.get("cardData") or {}).get("license"),
@@ -299,6 +353,8 @@ def main():
             print("  ! skipped: total / active parameters missing in models.yaml", file=sys.stderr)
             continue
         rows.append(build_entry(m, args.refresh))
+    if PROBLEMS:
+        sys.exit("models.yaml groups versions wrongly:\n- " + "\n- ".join(PROBLEMS))
     rows.sort(key=lambda x: (x["vendor"], x["released"], x["total"]))
 
     OUT.mkdir(parents=True, exist_ok=True)
@@ -331,12 +387,12 @@ def main():
         "models": rows,
     }
     (OUT / "models.json").write_text(json.dumps(payload, ensure_ascii=False, indent=1))
-    cols = [c for c in rows[0] if c not in ("variants", "versions")]
+    cols = [c for c in rows[0] if c not in ("variants", "derived", "versions")] + ["variants", "derived"]
     with open(OUT / "models.csv", "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=cols + ["variants"])
+        w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
         for row in rows:
-            w.writerow({c: "; ".join(map(str, row[c])) if isinstance(row[c], list) else row[c] for c in cols + ["variants"]})
+            w.writerow({c: "; ".join(map(str, row[c])) if isinstance(row[c], list) else row[c] for c in cols})
 
     write_techniques(rows)
     write_details(rows)

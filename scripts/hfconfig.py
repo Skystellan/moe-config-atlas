@@ -34,10 +34,30 @@ def text_config(cfg):
     for key in NESTED:
         sub = cfg.get(key)
         if isinstance(sub, dict) and sub:
-            return {**{k: v for k, v in cfg.items() if k not in NESTED}, **sub}
+            return _class_defaults({**{k: v for k, v in cfg.items() if k not in NESTED}, **sub})
     if isinstance(cfg.get("moe"), dict):  # Mistral params.json
         return {**cfg, **cfg["moe"], "d_expert_moe": cfg["moe"].get("expert_hidden_dim")}
-    return cfg
+    return _class_defaults(cfg)
+
+
+def _class_defaults(c):
+    """Fill in what a config.json leaves to its transformers config class, so that a checkpoint which writes
+    the defaults out and one which doesn't parse the same. The Llama 4 base checkpoints give no_rope_layers
+    as [] (which transformers reads as unset) and leave out moe_layers and attn_temperature_tuning."""
+    n = c.get("num_hidden_layers")
+    if c.get("model_type") != "llama4_text" or not isinstance(n, int):
+        return c
+    c = dict(c)
+    if not c.get("no_rope_layers"):  # every 4th layer is a NoPE layer
+        every = c.get("no_rope_layer_interval") or 4
+        c["no_rope_layers"] = [int((i + 1) % every != 0) for i in range(n)]
+    if c.get("moe_layers") is None:
+        step = c.get("interleave_moe_layer_step") or 1
+        c["moe_layers"] = list(range(step - 1, n, step))
+    for key, default in (("attn_temperature_tuning", True), ("tie_word_embeddings", False)):
+        if c.get(key) is None:
+            c[key] = default
+    return c
 
 
 def _scalar(v):
@@ -139,9 +159,21 @@ def _mixer_types(c, n_layers):
     if c.get("layer_group_size") and any(k.startswith("kda") for k in c) and n_layers:
         g = c["layer_group_size"]  # Ling 3: the last layer of each group, and any leftover layers, are MLA
         return [full if (i + 1) % g == 0 or i >= n_layers // g * g else "KDA" for i in range(n_layers)]
+    if c.get("layer_group_size") and str(c.get("model_type") or "").startswith("bailing") and n_layers:
+        # Ring linear and Ling 2.5 / 2.6: Lightning Attention-2 except in the last layer of each group and any
+        # leftover layers, which are softmax attention (MLA in Ling 2.5 / 2.6)
+        g = c["layer_group_size"]
+        return [full if (i + 1) % g == 0 or i >= n_layers // g * g else "linear" for i in range(n_layers)]
+    if isinstance(c.get("moba_layer_freq"), list) and n_layers:  # Ring-mini-sparse: 1 = MoBA block-sparse attention
+        return ["sparse" if x else full for x in c["moba_layer_freq"][:n_layers]]
     kind = full
     if any(a.lower().startswith("longcat") for a in c.get("architectures") or []) and n_layers:
-        return [kind if not c.get("index_topk") else "DSA"] * (2 * n_layers)  # two attention sublayers per layer
+        kind = kind if not c.get("index_topk") else "DSA"
+        ssa = c.get("streaming_sparse_attention") if isinstance(c.get("streaming_sparse_attention"), dict) else {}
+        types = str(ssa.get("layer_type") or "")
+        if len(types) == 2 * n_layers:  # ZigZag: in a "1" sublayer each query sees only the first and latest tokens
+            return ["sliding" if t == "1" else kind for t in types]
+        return [kind] * (2 * n_layers)  # two attention sublayers per layer
     if isinstance(c.get("compress_ratios"), list) and n_layers:
         # DeepSeek V4: 0 = sliding window only, otherwise sliding window + compressed KV (CSA / HCA).
         # ERNIE 5.5 Flash marks its MLA + DSA layers with a negative ratio.
@@ -366,9 +398,18 @@ ARCH = {
     "deepseek_v4": dict(qk_norm=True, attn_sink=True, k_eq_v=True),
     "deepseek_v41_text": dict(qk_norm=True, attn_sink=True, k_eq_v=True),  # no public modeling code; attention assumed as in V4
     "kimi_linear": dict(expert_bias=True),
-    "bailing_hybrid": dict(qk_norm=False),  # use_qk_norm is set but unused by the modeling code
+    # Ling 3 (KDA + MLA) and Ling 2.5 / 2.6 (Lightning + MLA); qk_norm is set in features()
+    "bailing_hybrid": dict(linear="Lightning"),
+    # Ring linear: Lightning Attention-2 (a fixed decay per head) in all but the last layer of each group
+    "bailing_moe_linear": dict(linear="Lightning"),
+    # Ming flash omni (inclusionAI/Ming, modeling_bailing_moe_v2.py): q/k RMSNorm in every layer, whatever the
+    # config says; sigmoid gates with an expert bias, one each for text, image and audio tokens (MultiRouter)
+    "bailing_moe_v2": dict(qk_norm=True, router="sigmoid", expert_bias=True),
+    # Ling 3.0 flash VL: use_qk_norm is set, but the checkpoint has no q/k norm weights, as in Ling 3.0
+    "bailing_moe_v3_vl": dict(qk_norm=False),
     "longcat": dict(router="softmax", expert_bias=True),
     "minimax_text_01": dict(router="softmax", expert_bias=False, linear="Lightning"),
+    "minimax_m1": dict(router="softmax", expert_bias=False, linear="Lightning"),  # MiniMax-Text-01's network
     "minimax_m3_vl": dict(qk_norm=True, expert_bias=True),
     "mistral4": dict(router="softmax", expert_bias=False),
     # Nemotron-H attention layers apply no rotary embedding; the Mamba-2 layers carry position.
@@ -436,6 +477,12 @@ ARCH = {
     # SmallThinker: ReGLU experts; the router reads the layer input before the attention block, so experts can
     # be prefetched while attention runs.
     "smallthinker": dict(qk_norm=False, expert_bias=False, ffn_act="ReGLU"),
+    # Vision-language releases whose language model is one of the families above
+    "qwen3_vl_moe_text": dict(qk_norm=True, router="softmax", expert_bias=False),
+    "glm4v_moe_text": dict(router="sigmoid", expert_bias=True),
+    "longcat_next": dict(router="softmax", expert_bias=True),  # LongCat-Flash-Lite's backbone
+    "minimax": dict(router="softmax", expert_bias=False, linear="Lightning"),  # MiniMax-Text-01 / M1 in HF format
+    "step3p5": dict(qk_norm=True),  # Step 3.7 Flash drops use_qk_norm from its config; the q/k norm weights remain
 }
 
 # These put RoPE only on the sliding-window layers whenever a model has both kinds (global NoPE).
@@ -488,7 +535,7 @@ def features(c, mixers):
     elif comp:
         f["sparse_attn"] = comp
     elif "sparse" in kinds:
-        f["sparse_attn"] = ("QSA" if c.get("indexer_budget")
+        f["sparse_attn"] = ("QSA" if c.get("indexer_budget") else "MoBA" if c.get("moba_topk")
                             else "CSA" if str(sc.get("compression_method", "")).startswith("csa") else "块稀疏")
     else:
         f["sparse_attn"] = False
@@ -585,6 +632,12 @@ def features(c, mixers):
               or ("sigmoid" if c.get("moe_router_use_sigmoid") or c.get("use_moe_router_bias") else None))
     if fam == "bailing_moe":  # Ling 1.x routes with softmax, Ling 2.0 with sigmoid + expert bias
         router = "sigmoid" if c.get("moe_router_enable_expert_bias") else "softmax"
+    if fam == "bailing_moe_linear":  # Ring-lite-linear keeps Ling-lite's softmax router and says nothing
+        router = router or "softmax"
+    if fam == "bailing_hybrid":
+        # Ling 3 sets use_qk_norm but its KDA and MLA layers have no q/k norm; Ling 2.5 / 2.6 normalize q and k
+        # per head in the Lightning layers only, not in MLA
+        f["qk_norm"] = "仅线性层" if f["qk_norm"] and "Lightning" in kinds else False
     if fam == "smallthinker":  # top-k on the logits, then softmax over the k, or sigmoid renormalized
         router = "softmax" if c.get("moe_primary_router_apply_softmax") else "sigmoid"
     f["router"] = router
@@ -652,7 +705,15 @@ DETAIL_ARCH = {
     "ernie4_5_moe": dict(router_norm=True),
     # ERNIE 5.5 model card: each routed expert's weight is multiplied by a learnable scalar of its own
     "ernie5_5_moe": dict(router_scale="3，逐专家可学习"),
-    "minimax_text_01": dict(router_norm=True),
+    "minimax_text_01": dict(router_norm=True, tied_emb=False),  # MiniMax-VL-01 drops tie_word_embeddings
+    "minimax_m1": dict(router_norm=True, tied_emb=False),
+    # Ming flash omni: the config class defaults routed_scaling_factor to 2.5, and 2.0's config.json leaves it out
+    "bailing_moe_v2": dict(router_scale=2.5),
+    "minimax": dict(router_norm=True, tied_emb=False),
+    "qwen3_vl_moe_text": dict(router_norm=True),  # the top-k weights are always renormalized
+    "bailing_hybrid": dict(router_norm=True),  # Ling 2.5 / 2.6 renormalize whenever k > 1; Ling 3 says so in config
+    "longcat_next": dict(router_norm=False, tied_emb=False),
+    "step3p5": dict(tied_emb=False),  # lm_head ships as its own tensor
     "mistral4": dict(router_norm=True),  # Mistral Large 3's params.json has no flag; it shares Small 4's MoE block
     "mistral_large4_text": dict(router_norm=True),
     "laguna": dict(router_norm=True),
@@ -774,7 +835,7 @@ def details(c, raw, fam, f):
     d["attn_scale"] = scales
 
     # Residual adds that are not h + f(h) (hyper-connections and residual gates are features)
-    alpha = c.get("layernorm_mlp_alpha") or 1
+    alpha = c.get("layernorm_mlp_alpha") or c.get("mlp_alpha_factor") or 1  # the second is the HF-format name
     if alpha != 1:
         d["res_scale"] = f"DeepNorm α={alpha:.3g}"  # MiniMax-Text-01: Post-LN with the residual times (2N)^(1/4)
     elif c.get("residual_multiplier"):
@@ -804,9 +865,15 @@ def details(c, raw, fam, f):
     tie = next((x for x in (c.get("tie_word_embeddings"), raw.get("tie_word_embeddings"),
                             raw.get("tied_embeddings")) if x is not None), None)  # Mistral params.json
     d["tied_emb"] = arch.get("tied_emb") if tie is None else bool(tie)
-    has = lambda *keys: any(isinstance(raw.get(k), dict) for k in keys)
-    d["modality"] = ("图文音" if has("audio_config") else
-                     "图文" if has("vision_config") or raw.get("vision_encoder") else "文本")
+    has = lambda *keys: any(isinstance(src.get(k), dict) for src in (raw, c) for k in keys)
+    if raw.get("language_model_only") or c.get("language_model_only"):
+        d["modality"] = "文本"  # Qwen-AgentWorld keeps Qwen3.6's vision_config but ships no vision tower
+    elif has("audio_config", "sound_config", "speech_config", "whisper_config"):  # Nemotron Omni: sound_config
+        d["modality"] = "图文音"
+    elif has("vision_config", "visual_config", "vision_encoder") or isinstance(c.get("vision_n_layers"), int):
+        d["modality"] = "图文"  # DeepSeek-V4-Flash-Vision-Exp gives its encoder as flat vision_* keys
+    else:
+        d["modality"] = "文本"
     return d
 
 
@@ -866,9 +933,12 @@ def parse(raw):
     out["kv_kib_per_token"] = round(kv_bytes / 1024, 1) if kv_bytes else None
     local = sum(v for k, v in mixers.items() if k in LOCAL)
     has_window = local or c.get("compress_ratios")  # every DeepSeek V4 layer keeps a sliding window
+    ssa = c.get("streaming_sparse_attention") if isinstance(c.get("streaming_sparse_attention"), dict) else {}
     window = (c.get("attention_chunk_size") if mixers.get("chunked") else
-              c.get("sliding_window") or c.get("sliding_window_size") or _scalar(c.get("sliding_windows"))[0])
+              c.get("sliding_window") or c.get("sliding_window_size") or _scalar(c.get("sliding_windows"))[0]
+              or ssa.get("recent_size"))  # LongCat ZigZag: the latest 896 tokens, besides the first 128
     out["window"] = window if has_window else None
+    out["window_sink"] = ssa.get("sink_size") if has_window and ssa else None  # ZigZag also keeps the first 128 tokens
     out["mla"] = bool(c.get("kv_lora_rank"))
     out["head_dim"] = c.get("head_dim") or c.get("attention_head_dim")
     # Attention width of the global layers: query heads x per-head query/key dims, against d_model.
@@ -890,6 +960,19 @@ def parse(raw):
     out.update(details(c, raw, family(c), out))
     out["per_layer"] = per_layer
     return out
+
+
+# Fields of parse() that don't make a different network: context length, RoPE base and extension, the class name,
+# whether some value varies per layer, MTP / draft layers, which a release may ship or leave out, and head_dim as
+# written in the config: qk_dim holds the width the heads really use, while head_dim may be nominal (GLM-5's MLA)
+# or missing where it equals d_model / heads (Ling-lite before 1.5-2506).
+NOT_ARCH = ("context", "rope_theta", "rope_ext", "model_type", "per_layer", "mtp", "head_dim")
+
+
+def arch_signature(parsed):
+    """What two checkpoints must share to count as one architecture: everything parse() reads except NOT_ARCH.
+    The versions in one models.yaml row must all have the same signature."""
+    return {k: v for k, v in parsed.items() if k not in NOT_ARCH}
 
 
 def is_moe(raw):

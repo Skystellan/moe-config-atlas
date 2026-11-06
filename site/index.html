@@ -166,7 +166,7 @@
 
   <section class="card">
     <h2>全表</h2>
-    <p class="sub">默认按最近上传排序；型号下面的小字是同配置的后续版本（只换了后训练、注意力或量化）。点列名排序，点一行看全部版本和备注；「榜单」分组里是归一均分、各榜分数和取分的版本。</p>
+    <p class="sub">默认按最近上传排序；型号是同架构里最新的版本，下面的小字是同架构的其他版本（只换了后训练、上下文或权重格式）。点列名排序，点一行看全部版本和备注，标“衍生”的是在它上面做的专用模型或换了格式的副本；「榜单」分组里是归一均分、各榜分数和取分的版本。</p>
     <div class="chips col-groups" id="col-groups" role="group" aria-label="列分组"></div>
     <div class="table-wrap">
       <table id="table">
@@ -193,10 +193,10 @@
       <dt>注意力</dt><dd>按 config.json 里的层类型字段推断（layer_types、kda_layers、full_attention_interval 等），只数 token mixer 的种类和层数，细节以技术报告为准。</dd>
       <dt>结构特征</dt><dd>按 config.json 的字段识别，config 里没有写的部分（比如 Qwen3 的 QK-norm、gpt-oss 的 sink、各家的路由打分函数）对照 transformers 5.21 和厂家仓库里的建模代码核对，规则在 <code>scripts/hfconfig.py</code> 的 <code>ARCH</code> 里。config 未公开或看不出的记为"?"，不计入采用率。</dd>
       <dt>结构指纹</dt><dd>形状数值按全部配置的五分位上色，只表示在收录范围内的相对大小；格子里的值和全表一致。按厂家或档位汇总时，格子是用了该特征的配置数 / 该组配置数。</dd>
-      <dt>线性注意力</dt><dd>状态大小固定的 token mixer：Gated DeltaNet（GDN）、Kimi Delta Attention（KDA）、MiniMax 的 Lightning Attention、Mamba-2，以及 LFM2 的门控短卷积（表中记为“门控卷积”）。</dd>
-      <dt>稀疏注意力</dt><dd>每个 query 只看部分 KV：DeepSeek 的 DSA、LongCat 的 LSA（DSA 的 top-k 预算里固定留开头和最近的 token，并跨层复用索引）、Qwen3.8-Flash-Next 的 QSA、Step-5 的 CSA、MiniMax M3 的块稀疏、DeepSeek V4 的压缩注意力（CSA + HCA）。ERNIE 5.5 Flash 大部分层是 HCA，每 7 层一个 MLA+DSA 层，记为 DSA+HCA。</dd>
+      <dt>线性注意力</dt><dd>状态大小固定的 token mixer：Gated DeltaNet（GDN）、Kimi Delta Attention（KDA）、MiniMax 和百灵 Ring linear、Ling 2.5 / 2.6 的 Lightning Attention、Mamba-2，以及 LFM2 的门控短卷积（表中记为“门控卷积”）。</dd>
+      <dt>稀疏注意力</dt><dd>每个 query 只看部分 KV：DeepSeek 的 DSA、LongCat 的 LSA（DSA 的 top-k 预算里固定留开头和最近的 token，并跨层复用索引）、Qwen3.8-Flash-Next 的 QSA、Step-5 的 CSA、MiniMax M3 的块稀疏、Ring-mini-sparse 的 MoBA（KV 分块，每个 query 只读选中的几块）、DeepSeek V4 的压缩注意力（CSA + HCA）。ERNIE 5.5 Flash 大部分层是 HCA，每 7 层一个 MLA+DSA 层，记为 DSA+HCA。</dd>
       <dt>输出门</dt><dd>softmax 注意力层的输出乘一个由输入算出的门（Gated Attention，多数用 sigmoid，Laguna 用 softplus），每个头一个标量的记"逐头"，每个元素一个的记"逐元素"，config 没写明的记 ✓。线性注意力层自带的门不算。</dd>
-      <dt>Sink / QK-norm</dt><dd>Sink 是每个头一个可学习的 logit，让注意力可以"什么都不看"；QK-norm 是对每个头的 Q、K 做 RMSNorm（Llama 4 Scout 和 ZAYA1 用 L2 归一化，Scout 只在 RoPE 层用）。MLA 对低秩潜向量的归一化不算 QK-norm。</dd>
+      <dt>Sink / QK-norm</dt><dd>Sink 是每个头一个可学习的 logit，让注意力可以"什么都不看"；QK-norm 是对每个头的 Q、K 做 RMSNorm（Llama 4 Scout 和 ZAYA1 用 L2 归一化，Scout 只在 RoPE 层用；Ling 2.5 / 2.6 只在 Lightning 层用）。MLA 对低秩潜向量的归一化不算 QK-norm。</dd>
       <dt>K=V / 跨层 KV / 索引复用</dt><dd>K=V：K 和 V 用同一个投影，只缓存一份。跨层 KV：后面的层直接读前面源层的 KV，自己不再存。索引复用：稀疏注意力的 top-k 选择由几层共用（IndexShare、跨层索引），省掉索引器的计算。</dd>
       <dt>QKV 短卷积</dt><dd>softmax 注意力的 Q、K、V 先沿序列过一个因果深度卷积（Primer 提出）。Inkling 对 K、V 和两个子层的输出各加一个 4 抽头卷积；ZAYA1 的 CCA 在压缩的潜空间里对 Q、K 做卷积。线性注意力层里自带的短卷积不算。</dd>
       <dt>长度缩放（SSMax）</dt><dd>全局层把 query 按位置的 log 放大，长上下文里注意力不被摊平（Scalable-Softmax）。Llama 4 叫温度调节，Beam、Inkling 也只用在不加 RoPE 的全局层；Mistral Large 4 每层都用，系数按头学习（记为“逐头可学习”）。</dd>
@@ -214,10 +214,10 @@
       <dt>设计细节对照</dt><dd>每个位置（注意力输出门、路由权重、残差相加、norm 等）列出收录模型里出现过的写法，公式按建模代码写；config 和代码都看不出的记为“细节未公开”。“相关工作”是论文或训练配置里的写法，收录的模型还没用。名单和匹配规则在 <code>details.yaml</code>，构建时检查每个模型都归到了某种写法下。</dd>
       <dt>前沿技术追踪</dt><dd>名单在 <code>techniques.yaml</code>，每条有最早出处、独立实验的结果和链接。采用数由结构特征自动统计；config 看不出的技术（优化器、损失函数）只列技术报告里写明的，没有就留空，不靠猜。</dd>
       <dt>config 来源</dt><dd>仓库需申请访问时，config 取自 transformers 里对应的默认配置或公开副本，存档在本仓库的 <code>configs/</code> 下，并在表格详情里注明。</dd>
-      <dt>榜单分数</dt><dd>两个公开榜单的分数，用来给配置排序，每次构建时重新读取。ECI 是 Epoch AI 的能力指数（Epoch Capabilities Index），由 GPQA Diamond、SWE-bench Verified、HLE、FrontierMath 等几十项 benchmark 的成绩拟合成一个数，开源和闭源模型在同一把尺子上；Arena 是 arena.ai（原 LMArena）文本榜的分数，来自用户对匿名回答的两两投票，用的是默认的 style control 榜，更接近聊天体验而不是 benchmark。榜单上的名字和每个配置的型号、仓库名和同配置的各个版本对上（规则在 <code>scripts/bench.py</code>，对不上的写在 <code>bench.yaml</code>），同一配置取最高分，并注明取自哪个版本：后续版本只换了后训练，架构还是这一个。分数只反映收录时的版本，小模型和地区性模型覆盖得少。两个榜的数据都按 CC BY 4.0 使用。Artificial Analysis 的智能指数没有收录：它的条款不允许把分数做成表格或数据文件公开。</dd>
+      <dt>榜单分数</dt><dd>两个公开榜单的分数，用来给配置排序，每次构建时重新读取。ECI 是 Epoch AI 的能力指数（Epoch Capabilities Index），由 GPQA Diamond、SWE-bench Verified、HLE、FrontierMath 等几十项 benchmark 的成绩拟合成一个数，开源和闭源模型在同一把尺子上；Arena 是 arena.ai（原 LMArena）文本榜的分数，来自用户对匿名回答的两两投票，用的是默认的 style control 榜，更接近聊天体验而不是 benchmark。榜单上的名字和每个配置的型号、仓库名和同架构的各个版本对上（规则在 <code>scripts/bench.py</code>，对不上的写在 <code>bench.yaml</code>），同一架构取最高分，并注明取自哪个版本：这些版本只换了后训练，架构还是这一个。分数只反映收录时的版本，小模型和地区性模型覆盖得少。两个榜的数据都按 CC BY 4.0 使用。Artificial Analysis 的智能指数没有收录：它的条款不允许把分数做成表格或数据文件公开。</dd>
       <dt>归一均分</dt><dd>两个榜的尺度不同（ECI 大约 120–160，Arena 是 1300–1500 上下的 Elo 分），收录的配置也不一样，所以先把每个榜换成标准分：（分数 − 均值）÷ 标准差，均值和标准差都按两个榜都有分的那些配置来算，只上了一个榜的配置也就和同一组配置比。每个配置平均它有分数的榜，最后把站内最高记 100、最低记 0。只上了一个榜的配置会标出来（如“仅 Arena”），它的均分只代表那一个榜。哪个榜都没有的配置排在最后。</dd>
       <dt>档位</dt><dd>按总参数：小 ≤ 50B，中 50–500B，大 ≥ 500B。</dd>
-      <dt>收录范围</dt><dd>2025 年及以后首次上传的开源 MoE；只改了后训练、注意力或量化而 MoE 配置不变的版本合并为一行。</dd>
+      <dt>收录范围</dt><dd>2025 年及以后首次上传的开源 MoE。架构完全相同（注意力、MoE、层数和各维度、模态、词表都一样），只改了后训练、上下文长度、MTP 层或权重格式的版本合并为一行，型号显示其中最新的版本；架构有任何不同就单独成行。每次构建都会读取每个版本的 config.json 核对。</dd>
     </dl>
   </section>
 </main>

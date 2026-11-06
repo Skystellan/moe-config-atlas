@@ -52,7 +52,7 @@ function nameKey(s) {
   while (parts.length > 1 && /^(instruct|chat|it|bf16|fp8|nvfp4|base|pt|hf|\d{4,8})$/.test(parts[parts.length - 1])) parts.pop();
   return parts.join("");
 }
-// the version a score came from when it isn't the row's own model, e.g. GLM-5.3 on the GLM-5 row;
+// the version a score came from when it isn't the row's own model, e.g. DeepSeek-R1 on the DeepSeek-V3.1-Terminus row;
 // for the average, the boards it is missing, e.g. "仅 Arena"
 function benchFrom(m, k) {
   if (k === "avg") {
@@ -90,7 +90,7 @@ const benchSortTitle = (k) => (!BENCH[k] ? "" : k === "avg"
 // the legend line under a view sorted by a leaderboard
 const benchNote = (k) => (k === "avg"
   ? `归一均分：${boardList(BENCH.avg.sources)} 各自换成标准分后取平均，站内最高 100、最低 0；${BENCH.avg.n} 个配置有分数，小字是缺了哪个榜`
-  : `${BENCH[k].name}：${BENCH[k].n} 个配置有分数，同一配置的多个版本取最高分，小字是取分的版本`);
+  : `${BENCH[k].name}：${BENCH[k].n} 个配置有分数，同一架构的多个版本取最高分，小字是取分的版本`);
 function median(xs) {
   const v = xs.filter((x) => x != null).sort((a, b) => a - b);
   if (!v.length) return null;
@@ -103,7 +103,7 @@ const tierColor = (t) => css(`--tier-${t}`);
 function filtered() {
   const q = state.q.toLowerCase();
   return DATA.filter((m) =>
-    (!q || `${m.name} ${m.vendor} ${m.repo} ${(m.variants || []).join(" ")}`.toLowerCase().includes(q)) &&
+    (!q || `${m.name} ${m.vendor} ${m.repo} ${(m.variants || []).join(" ")} ${(m.derived || []).join(" ")}`.toLowerCase().includes(q)) &&
     (!state.tiers.size || state.tiers.has(m.tier)) &&
     (!state.years.size || state.years.has(m.year)) &&
     (!state.vendor || m.vendor === state.vendor));
@@ -195,15 +195,19 @@ function tipStyle() {
   };
 }
 
+// When the row's architecture first shipped, and as which version when that isn't the one the row is named after
+// (e.g. Kimi K2 Thinking: 首发 2025-07（Kimi-K2-Instruct）). Plain text: escape it where it goes into HTML.
+const firstShip = (m) => `首发 ${m.released}` + (m.first_name && m.first_name !== m.repo.split("/").pop() ? `（${m.first_name}）` : "");
+
 function tooltip() {
   return {
     ...tipStyle(),
     formatter: (p) => {
       const m = p.data.m;
       if (!m) return "";
-      return `<b>${esc(m.name)}</b> <span style="color:${css("--muted")}">${esc(m.vendor)} · ${m.released}</span><br>` +
+      return `<b>${esc(m.name)}</b> <span style="color:${css("--muted")}">${esc(m.vendor)} · ${esc(firstShip(m))}</span><br>` +
         `总 / 激活：${fmtParams(m.total)} / ${fmtParams(m.active)}（${num(m.param_activation)}%）<br>` +
-        (m.latest_name !== m.repo.split("/").pop() ? `最近版本：${esc(m.latest_name)}（${m.latest ?? "–"}）<br>` : "") +
+        (m.latest_name !== m.repo.split("/").pop() ? `最近上传：${esc(m.latest_name)}（${m.latest ?? "–"}）<br>` : "") +
         `配置：${fmtConfig(m)}，E/k = ${num(m.E_over_k)}，A = ${num(m.expert_activation)}%` +
         (m.granularity ? `，G = ${num(m.granularity)}` : "") +
         (m.aspect ? `<br>d/L = ${num(m.aspect)}，全局注意力 ${num(m.global_attn_frac)}%` +
@@ -629,7 +633,7 @@ function layerName(m, code) {
   const name = (LAYER_KIND[code] || [null, "?"])[1];
   if (code === "D") return `${m.mla ? "MLA + " : ""}${/LSA/.test(m.sparse_attn ?? "") ? "LSA" : "DSA"}（索引器给每个 query 选 top-k）`;
   if (code === "S") return typeof m.sparse_attn === "string" ? `${m.sparse_attn}（稀疏注意力）` : name;
-  if (code === "W") return `${name}${m.window ? `，窗口 ${m.window}` : ""}`;
+  if (code === "W") return `${name}${m.window ? `，窗口 ${m.window}` : ""}${m.window_sink ? `，另加开头 ${m.window_sink} 个 token` : ""}`;
   if (code === "U") return `${name}${m.window ? `，块大小 ${m.window}` : ""}`;
   if (code === "C" || code === "H") return `${name}${m.window ? `，另带窗口 ${m.window} 的滑窗` : ""}`;
   return name;
@@ -658,7 +662,7 @@ function renderLayers(rows) {
   const bk = BENCH_KEYS.includes(state.laySort) ? state.laySort : null;
   $("#lay-legend").innerHTML = LAYER_CATS.map((c) => `<span><i class="lk k-${c.id}"></i>${c.label}</span>`).join("") +
     `<span><i class="lk csa"></i><i class="lk hca"></i>压缩注意力（CSA / HCA）</span><span><i class="lk dense"></i>格子下的短线：dense FFN 层</span><span><i class="lk mtp"></i>MTP 层</span>` +
-    (bk ? `<span>左边的数是${bk === "avg" ? "归一均分，带 * 的缺了某个榜的分数" : ` ${esc(BENCH[bk].name)}，带 * 的取自同一配置的另一个版本`}（悬停看是哪个）；空出一行以下的没有分数</span>` : "");
+    (bk ? `<span>左边的数是${bk === "avg" ? "归一均分，带 * 的缺了某个榜的分数" : ` ${esc(BENCH[bk].name)}，带 * 的取自同一架构的另一个版本`}（悬停看是哪个）；空出一行以下的没有分数</span>` : "");
   const ms = layerOrder(rows.filter((m) => m.layout));
   const box = $("#lay");
   const hybrid = (m) => [...m.layout].some((c) => ["local", "linear"].includes(layerCat(c)));
@@ -672,7 +676,7 @@ function renderLayers(rows) {
   if (!ms.length) { box.innerHTML = `<p class="muted">当前筛选下没有配置。</p>`; return; }
 
   const narrow = box.clientWidth < 560;
-  const label = narrow ? (bk ? 44 + 92 + 12 : 104 + 6) : 76 + 164 + 16;
+  const label = narrow ? (bk ? 44 + 92 + 12 : 104 + 6) : 76 + 216 + 16; // grid columns of .lay-row in style.css
   const maxL = Math.max(...ms.map((m) => m.layout.length));
   const maxMtp = Math.max(0, ...ms.map((m) => m.mtp || 0));
   const avail = box.clientWidth - 22 - label - 26; // padding, labels, layer count
@@ -706,7 +710,7 @@ function renderLayers(rows) {
     const from = bk && benchFrom(m, bk);
     const left = bk ? `<span class="lv sc" title="${esc(benchTip(m, bk))}">${benchFmt(bk, m[bk])}${from ? "*" : ""}</span>` : `<span class="lv">${showVendor ? esc(m.vendor) : ""}</span>`;
     return `<div class="lay-row${grp ? " grp" : ""}${on ? " picked" : ""}" data-row="${esc(m.name)}">` + left +
-      `<button type="button" class="lay-name" data-name="${esc(m.name)}" title="${esc(m.vendor)} · ${m.released} · 点击加入或移出并排对比">${esc(m.name)}</button>` +
+      `<button type="button" class="lay-name" data-name="${esc(m.name)}" title="${esc(m.vendor)} · ${esc(firstShip(m))} · 点击加入或移出并排对比">${esc(m.name)}</button>` +
       `<svg class="lay-strip" width="${end + 22}" height="${H + 4}" data-name="${esc(m.name)}" role="img" aria-label="${esc(m.name)}：${esc(m.attention ?? "")}">` +
       `${svg}<rect class="cur" hidden/></svg></div>`;
   }).join("");
@@ -733,7 +737,7 @@ function hideTip() { if (vtip) vtip.hidden = true; }
 
 function layerTip(m, i) {
   const n = m.layout.length;
-  const head = `<b>${esc(m.name)}</b> <span class="muted">${esc(m.vendor)} · ${m.released}</span><br>`;
+  const head = `<b>${esc(m.name)}</b> <span class="muted">${esc(m.vendor)} · ${esc(firstShip(m))}</span><br>`;
   const foot = `<br><span class="muted">全部 ${n} 层：${esc(m.attention ?? "–")} · 全局层 ${num(m.global_attn_frac)}%</span>`;
   if (i >= n) return `${head}第 ${i - n} 个 MTP 层（多 token 预测，推理时可做投机解码）${foot}`;
   const where = m.layers && n === 2 * m.layers ? `第 ${Math.floor(i / 2) + 1} 层的第 ${i % 2 + 1} 个注意力子层` : `第 ${i + 1} / ${n} 层`;
@@ -1040,7 +1044,7 @@ function renderMatrix(rows) {
       const first = i > 0 && (grouped ? sorted[i - 1].vendor !== m.vendor : bench ? m[bench] == null && sorted[i - 1][bench] != null : false);
       const on = state.compare.includes(m.name);
       return `<tr class="${first ? "grp" : ""}${on ? " picked" : ""}">
-        <th class="l" scope="row"><div class="rh"><button type="button" class="pick" aria-pressed="${on}" data-name="${esc(m.name)}" title="${on ? "移出对比" : "加入下面的并排对比"}">${on ? "✓" : "+"}</button><span><span class="nm"><span class="tier-dot" style="background:${tierColor(m.tier)}"></span>${esc(m.name)}</span><small>${esc(m.vendor)} · ${m.released}</small></span></div></th>
+        <th class="l" scope="row"><div class="rh"><button type="button" class="pick" aria-pressed="${on}" data-name="${esc(m.name)}" title="${on ? "移出对比" : "加入下面的并排对比"}">${on ? "✓" : "+"}</button><span><span class="nm"><span class="tier-dot" style="background:${tierColor(m.tier)}"></span>${esc(m.name)}</span><small>${esc(m.vendor)} · 首发 ${m.released}</small></span></div></th>
         ${cols.map((c) => cell(c, m)).join("")}</tr>`;
     }).join("")}</tbody>`;
   // descending → ascending → back to the default order
@@ -1166,8 +1170,8 @@ const CMP_SECTIONS = [
   ] },
   { label: "榜单", rows: [
     { label: "归一均分", need: "avg", title: "下面几个榜各自换成标准分后的平均，站内最高 100、最低 0", f: (m) => benchCmp(m, "avg") },
-    { label: "ECI", need: "eci", title: "Epoch Capabilities Index，同一配置的多个版本取最高", f: (m) => benchCmp(m, "eci") },
-    { label: "Arena", need: "arena", title: "Arena 文本榜分数，同一配置的多个版本取最高", f: (m) => benchCmp(m, "arena") },
+    { label: "ECI", need: "eci", title: "Epoch Capabilities Index，同一架构的多个版本取最高", f: (m) => benchCmp(m, "eci") },
+    { label: "Arena", need: "arena", title: "Arena 文本榜分数，同一架构的多个版本取最高", f: (m) => benchCmp(m, "arena") },
   ] },
   { label: "稀疏度", rows: [
     { label: "E/k+s", f: fmtConfig },
@@ -1642,8 +1646,8 @@ function renderDetails(rows) {
 const BASE_COLS = [
   { key: "vendor", label: "厂家", l: true, f: (m) => `<span class="tier-dot" style="background:${tierColor(m.tier)}"></span>${esc(m.vendor)}` },
   { key: "name", label: "型号", l: true, f: nameCell },
-  { key: "released", label: "首发", title: "这个 MoE 配置第一次上传 HF 的年月" },
-  { key: "latest", label: "最近上传", title: "同配置各版本里最近一次上传 HF 的日期", f: (m) => m.latest ?? "–" },
+  { key: "released", label: "首发", title: "这个架构第一次上传 HF 的年月" },
+  { key: "latest", label: "最近上传", title: "同架构各版本里最近一次上传 HF 的日期", f: (m) => m.latest ?? "–" },
   { key: "total", label: "总参数", f: (m) => fmtParams(m.total) },
   { key: "active", label: "激活", f: (m) => fmtParams(m.active) },
 ];
@@ -1682,23 +1686,23 @@ const COL_GROUPS = {
 };
 COL_GROUPS.bench = { label: "榜单", cols: [
   { key: "avg", need: "avg", label: "归一均分", title: "各榜换成标准分后取平均，站内最高 100、最低 0", f: (m) => benchFmt("avg", m.avg) },
-  { key: "eci", need: "eci", label: "ECI", title: "Epoch Capabilities Index：几十项 benchmark 拟合出的综合能力分，同一配置的多个版本取最高", f: (m) => benchFmt("eci", m.eci) },
+  { key: "eci", need: "eci", label: "ECI", title: "Epoch Capabilities Index：几十项 benchmark 拟合出的综合能力分，同一架构的多个版本取最高", f: (m) => benchFmt("eci", m.eci) },
   { key: "eci_as", need: "eci", label: "ECI 取自", l: true, f: (m) => esc(m.eci_as ?? "–") },
-  { key: "arena", need: "arena", label: "Arena", title: "Arena 文本榜分数（默认的 style control 榜），同一配置的多个版本取最高", f: (m) => benchFmt("arena", m.arena) },
+  { key: "arena", need: "arena", label: "Arena", title: "Arena 文本榜分数（默认的 style control 榜），同一架构的多个版本取最高", f: (m) => benchFmt("arena", m.arena) },
   { key: "arena_as", need: "arena", label: "Arena 取自", l: true, f: (m) => esc(m.arena_as ?? "–") },
   { key: "arena_votes", need: "arena", label: "Arena 票数", title: "Arena 文本榜上取分那个版本的投票数", f: (m) => (m.arena_votes == null ? "–" : m.arena_votes.toLocaleString("en-US")) },
 ] };
 // a leaderboard column shows once its board has scores (a board never read yet has none)
 const cols = () => BASE_COLS.concat(COL_GROUPS[state.group].cols.filter((c) => !c.need || BENCH[c.need]));
 
-// Model name plus the newest same-config versions, so a fresh post-training
-// release (e.g. a -1017 checkpoint) is visible without expanding the row.
+// Model name (the latest mainline version) plus the newest other versions of the same architecture, so the
+// earlier releases and the models made from it are visible without expanding the row.
 function nameCell(m) {
   const others = m.versions.filter((v) => v.repo !== m.repo);
   if (!others.length) return esc(m.name);
   const shown = others.slice(0, 3).map((v) => esc(v.name)).join("、");
   const more = others.length > 3 ? ` 等 ${others.length} 个` : "";
-  return `${esc(m.name)}<div class="vers">同配置：${shown}${more}</div>`;
+  return `${esc(m.name)}<div class="vers">同架构：${shown}${more}</div>`;
 }
 
 function renderColGroups() {
@@ -1752,8 +1756,8 @@ function detail(m) {
   const items = [
     ["仓库", `${repoLink(m.repo)} · ${cfg}`],
     m.config_source && ["config 来源", esc(m.config_source)],
-    m.versions.length > 1 && ["各版本（新→旧）", m.versions.map((v) =>
-      `${v.repo ? repoLink(v.repo) : esc(v.name)} <span class="muted">${v.created ?? "未上 HF"}${v.note ? `，${esc(v.note)}` : ""}</span>`).join("<br>")],
+    m.versions.length > 1 && ["同架构各版本（新→旧）", m.versions.map((v) =>
+      `${v.repo ? repoLink(v.repo) : esc(v.name)} <span class="muted">${v.created ?? "未上 HF"}${v.derived ? "，衍生" : ""}${v.note ? `，${esc(v.note)}` : ""}</span>`).join("<br>")],
     ["model_type", esc(m.model_type ?? "–")],
     m.d_shared && ["共享专家宽度", m.d_shared],
     m.latent && ["LatentMoE 潜空间维度", m.latent],

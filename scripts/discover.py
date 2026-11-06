@@ -1,9 +1,10 @@
 """Scan vendor orgs on Hugging Face for MoE checkpoints not yet in models.yaml.
 
-New repos whose MoE shape matches a tracked entry are appended to that entry's
-`variants`; repos with a new shape are appended as new entries marked
-a guessed size. The weekly workflow opens a pull request with the result, so
-nothing is published until it is merged.
+New repos with the same architecture as a tracked entry (hfconfig.arch_signature, from the same vendor
+or naming that entry's repo as base_model) are appended to that entry's `derived`; the reviewer moves a
+new mainline version up to be the entry's repo and name. Repos with a new architecture are appended as
+new entries with a guessed size. The weekly workflow opens a pull request with the result, so nothing
+is published until it is merged.
 
 Repos already looked at (dense, MoE, or proposed) are remembered in
 discover_state.json, so deleting a proposed entry from the PR before merging
@@ -25,11 +26,11 @@ from build import HF, http_json  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 STATE = ROOT / "discover_state.json"
-FIELDS = ("E", "k", "s", "d_model", "layers", "d_expert")
-
-
-def fingerprint(p):
-    return tuple(p.get(f) for f in FIELDS)
+def signature(raw, override=None):
+    """The architecture as one hashable value; versions in one models.yaml entry all share it."""
+    p = hfconfig.parse(raw)
+    p.update(override or {})
+    return json.dumps(hfconfig.arch_signature(p), sort_keys=True, ensure_ascii=False, default=str)
 
 
 def list_org(org, since):
@@ -85,10 +86,12 @@ def main():
     variant_skip = compile_patterns(conf["variant_skip_patterns"])
 
     known = {}  # repo -> entry it belongs to
-    shapes = {}
+    shapes = {}  # (vendor, architecture) -> entry
+    sigs = {}  # id(entry) -> its architecture
     for m in models:
         known[m["repo"]] = m
         known.update({v: m for v in m.get("variants") or [] if isinstance(v, str) and "/" in v})
+        known.update({v: m for v in m.get("derived") or []})
         raw = None
         cache = ROOT / ".cache" / (m["repo"].replace("/", "__") + ".config.json")
         if cache.exists():
@@ -97,7 +100,8 @@ def main():
             got = get_config(m["repo"])
             raw = got if isinstance(got, dict) else None
         if raw:
-            shapes[(m["vendor"], fingerprint(hfconfig.parse(raw)))] = m
+            sigs[id(m)] = signature(raw, m.get("override"))
+            shapes[(m["vendor"], sigs[id(m)])] = m
 
     added, new = [], []
     for org, vendor in conf["orgs"].items():
@@ -129,16 +133,18 @@ def main():
                 state[repo] = "dense"
                 continue
             p = hfconfig.parse(raw)
+            sig = signature(raw)
             state[repo] = "proposed"
-            match = parent or shapes.get((vendor, fingerprint(p)))
+            # a fine-tune of a tracked repo joins that entry only if it kept the architecture
+            match = parent if parent is not None and sigs.get(id(parent)) == sig else shapes.get((vendor, sig))
             if match is not None:
                 known[repo] = match
                 if variant_skip.search(repo.split("/", 1)[1]):
                     state[repo] = "skipped"
                     continue
-                match.setdefault("variants", [])
-                match["variants"].append(repo)
-                added.append(f"{repo} → variant of {match['name']}")
+                match.setdefault("derived", [])
+                match["derived"].append(repo)
+                added.append(f"{repo} → 与 {match['name']} 同架构")
                 continue
             name = repo.split("/", 1)[1]
             total = ((info.get("safetensors") or {}).get("total") or 0) / 1e9 or None
@@ -151,7 +157,8 @@ def main():
                 "active": size_from_name(name, r"A(\d+(?:\.\d+)?)(B)"),
             }
             models.append(entry)
-            shapes[(vendor, fingerprint(p))] = entry
+            sigs[id(entry)] = sig
+            shapes[(vendor, sig)] = entry
             known[repo] = entry
             new.append(f"{repo}: {p['E']}/{p['k']}+{p['s']}, total≈{entry['total']}B, active={entry['active']}B")
 
@@ -172,7 +179,9 @@ def main():
     if new:
         lines += ["### 新的 MoE 配置", ""] + [f"- {x}" for x in new] + [""]
     if added:
-        lines += ["### 与已收录模型配置相同（加为同配置版本）", ""] + [f"- {x}" for x in added] + [""]
+        lines += ["### 与已收录模型架构相同（先加进 derived）", "",
+                  "如果是新的主线版本，把它改成这一行的 `repo` 和型号名，原来的 repo 挪进 `variants`；"
+                  "专用模型（代码、数学、领域）和换精度的副本留在 `derived`。", ""] + [f"- {x}" for x in added] + [""]
     report.write_text("\n".join(lines))
     print(report.read_text())
 

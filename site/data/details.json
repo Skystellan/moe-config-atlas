@@ -1023,6 +1023,20 @@
     "note": "只有路由专家是 4 位（每 32 个数一个缩放），注意力、共享专家和路由器保持高精度。Kimi K3.1 Pro 的模型卡写明是量化感知训练（权重 MXFP4、激活 MXFP8）。"
    },
    {
+    "label": "INT4 专家",
+    "match": {
+     "precision": "INT4 专家"
+    },
+    "note": "Kimi K2 Thinking 起：路由专家是量化感知训练的 INT4（每 32 个数一个缩放），注意力和共享专家保持 BF16。"
+   },
+   {
+    "label": "NVFP4 专家，其余 MXFP8",
+    "match": {
+     "precision": "NVFP4 专家 + MXFP8"
+    },
+    "note": "MiniMax-M3.1-Flash：路由专家 NVFP4（每 16 个数一个缩放），其余线性层 MXFP8（每 32 个数一个缩放）。"
+   },
+   {
     "label": "FP32",
     "match": {
      "precision": "FP32"
@@ -1035,7 +1049,7 @@
   "id": "modality",
   "sec": "io",
   "name": "模态",
-  "what": "这个 MoE 配置所在的检查点能处理哪些输入（语言模型部分是同一个 MoE）。",
+  "what": "这一行的检查点能处理哪些输入。同一个语言模型加上视觉或音频编码器的版本算另一个架构，单独成行。",
   "variants": [
    {
     "label": "纯文本",

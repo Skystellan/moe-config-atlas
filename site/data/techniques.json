@@ -441,7 +441,7 @@
   "match": [
    "LSA"
   ],
-  "note": "DSA 的三处改动：top-k 预算里固定留开头 16 个和最近 1024 个 token，读 KV 时更连续；相邻层复用一次索引；推理时先按块粗选再逐 token 细选。LongCat-Flash-Lite-Sparse 也用它，归在 LongCat-Flash-Lite 一行"
+  "note": "DSA 的三处改动：top-k 预算里固定留开头 16 个和最近 1024 个 token，读 KV 时更连续；相邻层复用一次索引；推理时先按块粗选再逐 token 细选。LongCat-Flash-Lite-Sparse 也用它"
  },
  {
   "name": "LSA（Latent Sparse Attention）",
@@ -983,11 +983,11 @@
     "cite": "https://arxiv.org/abs/2502.16982"
    },
    {
-    "name": "Kimi K2",
+    "name": "Kimi K2 Thinking",
     "cite": "https://arxiv.org/abs/2507.20534"
    },
    {
-    "name": "GLM-4.5",
+    "name": "GLM-4.7",
     "cite": "https://arxiv.org/abs/2508.06471"
    },
    {

@@ -11,9 +11,9 @@ Artificial Analysis is left out on purpose: its terms, the free API's included, 
 publishing its scores as a table or a data file, which is what this site does.
 
 A leaderboard entry belongs to a row when its name matches the row's name, its repo or any
-version uploaded with the same configuration (bench.yaml lists the names that don't match on
+version uploaded with the same architecture (bench.yaml lists the names that don't match on
 their own). A row takes the best score among its versions and records which one it came from,
-since a later post-training release on the same architecture is still that architecture.
+since another post-training release on the same architecture is still that architecture.
 
 The two use different scales, so `composite` also gives every scored row one normalized average.
 
@@ -118,7 +118,7 @@ def _matcher(board, aliases, src):
     names = {e["name"]: e for e in board["entries"]}
 
     def hits(row):
-        own = {key(n) for n in [row["name"], row["repo"], *row["variants"]]}
+        own = {key(n) for n in [row["name"], row["repo"], *row["variants"], *row.get("derived", [])]}
         return [e for k in own for e in by_key.get(k, [])] + [
             names[n] for n in (aliases.get(row["name"]) or {}).get(src, []) if n in names]
     return hits
@@ -192,7 +192,7 @@ def composite(rows, meta):
 def report(rows, boards, aliases):
     """Print the entry each row took, and the entries from model families on the site that match no row."""
     family = lambda k: re.match(r"[a-z]*", k).group(0) or k  # noqa: E731  "qwen", "glm", "gptoss", "deepseekv"
-    families = {family(key(n)) for r in rows for n in [r["name"], r["repo"], *r["variants"]]}
+    families = {family(key(n)) for r in rows for n in [r["name"], r["repo"], *r["variants"], *r.get("derived", [])]}
     for src, board in boards.items():
         hits = _matcher(board, aliases, src)
         matched = {e["name"] for r in rows for e in hits(r)}
