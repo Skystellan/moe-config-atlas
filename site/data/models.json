@@ -1,19 +1,19 @@
 {
- "generated": "2026-11-06 12:47 UTC",
+ "generated": "2026-11-09 09:48 UTC",
  "count": 166,
  "bench": {
   "eci": {
    "label": "ECI",
    "name": "Epoch Capabilities Index",
    "url": "https://epoch.ai/benchmarks",
-   "date": "2026-11-06",
+   "date": "2026-11-09",
    "n": 29
   },
   "arena": {
    "label": "Arena",
    "name": "Arena 文本榜",
    "url": "https://arena.ai/leaderboard/text",
-   "date": "2026-10-28",
+   "date": "2026-11-08",
    "n": 53
   },
   "avg": {
@@ -1089,11 +1089,11 @@
    "eci_as": null,
    "arena": 1379,
    "arena_ci": [
-    1374,
+    1375,
     1383
    ],
    "arena_as": "Trinity Large Preview",
-   "arena_votes": 31233,
+   "arena_votes": 31040,
    "avg_n": 1,
    "avg": 45.3
   },
@@ -1884,7 +1884,7 @@
     1427
    ],
    "arena_as": "DeepSeek-R1 (0528)",
-   "arena_votes": 18165,
+   "arena_votes": 18152,
    "avg_n": 2,
    "avg": 57.9
   },
@@ -2034,11 +2034,11 @@
    "eci_as": "DeepSeek-V3.2",
    "arena": 1425,
    "arena_ci": [
-    1419,
+    1418,
     1432
    ],
    "arena_as": "DeepSeek-V3.2-Exp (Thinking)",
-   "arena_votes": 8991,
+   "arena_votes": 8972,
    "avg_n": 2,
    "avg": 66.7
   },
@@ -2182,9 +2182,9 @@
     1440
    ],
    "arena_as": "DeepSeek-V4-Flash",
-   "arena_votes": 51944,
+   "arena_votes": 51369,
    "avg_n": 2,
-   "avg": 81.1
+   "avg": 81.2
   },
   {
    "vendor": "DeepSeek",
@@ -2320,15 +2320,15 @@
     157.9
    ],
    "eci_as": "DeepSeek V4 Pro 0813",
-   "arena": 1465,
+   "arena": 1464,
    "arena_ci": [
-    1458,
-    1472
+    1457,
+    1471
    ],
    "arena_as": "DeepSeek-V4-Pro (High, 20260813)",
-   "arena_votes": 9787,
+   "arena_votes": 9593,
    "avg_n": 2,
-   "avg": 90.6
+   "avg": 90.5
   },
   {
    "vendor": "DeepSeek",
@@ -2579,13 +2579,13 @@
     161.8
    ],
    "eci_as": "DeepSeek V4.1 Flash 1017",
-   "arena": 1476,
+   "arena": 1475,
    "arena_ci": [
-    1470,
-    1482
+    1469,
+    1481
    ],
    "arena_as": "DeepSeek-V4.1-Flash-20260910 (Max)",
-   "arena_votes": 13657,
+   "arena_votes": 13579,
    "avg_n": 2,
    "avg": 98.2
   },
@@ -3500,9 +3500,9 @@
     1377
    ],
    "arena_as": "GLM-4.5-Air",
-   "arena_votes": 30652,
+   "arena_votes": 30599,
    "avg_n": 1,
-   "avg": 42.4
+   "avg": 42.3
   },
   {
    "vendor": "GLM",
@@ -3646,9 +3646,9 @@
     1447
    ],
    "arena_as": "GLM-4.7",
-   "arena_votes": 12239,
+   "arena_votes": 12169,
    "avg_n": 2,
-   "avg": 66.3
+   "avg": 66.4
   },
   {
    "vendor": "GLM",
@@ -3778,10 +3778,10 @@
    "arena": 1378,
    "arena_ci": [
     1367,
-    1390
+    1389
    ],
    "arena_as": "GLM-4.6V",
-   "arena_votes": 2833,
+   "arena_votes": 2825,
    "avg_n": 1,
    "avg": 44.8
   },
@@ -3909,9 +3909,9 @@
     1370
    ],
    "arena_as": "GLM-4.7-Flash",
-   "arena_votes": 12008,
+   "arena_votes": 11939,
    "avg_n": 1,
-   "avg": 38.4
+   "avg": 38.3
   },
   {
    "vendor": "GLM",
@@ -4049,9 +4049,9 @@
     1469
    ],
    "arena_as": "GLM-5.1",
-   "arena_votes": 66771,
+   "arena_votes": 67089,
    "avg_n": 2,
-   "avg": 83.1
+   "avg": 83.2
   },
   {
    "vendor": "GLM",
@@ -4191,15 +4191,15 @@
     159.2
    ],
    "eci_as": "GLM-5.3",
-   "arena": 1481,
+   "arena": 1483,
    "arena_ci": [
-    1476,
-    1486
+    1478,
+    1487
    ],
    "arena_as": "GLM-5.3 (Max)",
-   "arena_votes": 26606,
+   "arena_votes": 30524,
    "avg_n": 2,
-   "avg": 96.0
+   "avg": 96.7
   },
   {
    "vendor": "GLM",
@@ -4332,15 +4332,15 @@
     155.5
    ],
    "eci_as": "GLM-5.3-Flash",
-   "arena": 1477,
+   "arena": 1475,
    "arena_ci": [
-    1472,
-    1481
+    1470,
+    1479
    ],
    "arena_as": "GLM-5.3-Flash",
-   "arena_votes": 41642,
+   "arena_votes": 49384,
    "avg_n": 2,
-   "avg": 90.2
+   "avg": 89.9
   },
   {
    "vendor": "GigaChat",
@@ -4879,15 +4879,15 @@
     144.1
    ],
    "eci_as": "Gemma 4 26B A4B",
-   "arena": 1438,
+   "arena": 1437,
    "arena_ci": [
     1430,
     1445
    ],
    "arena_as": "Gemma 4 26B A4B",
-   "arena_votes": 6090,
+   "arena_votes": 6075,
    "avg_n": 2,
-   "avg": 63.4
+   "avg": 63.2
   },
   {
    "vendor": "Hunyuan",
@@ -5139,13 +5139,13 @@
    "eci_as": null,
    "arena": 1454,
    "arena_ci": [
-    1449,
+    1448,
     1460
    ],
    "arena_as": "Hy3",
-   "arena_votes": 13840,
+   "arena_votes": 14995,
    "avg_n": 1,
-   "avg": 82.3
+   "avg": 82.7
   },
   {
    "vendor": "Hunyuan",
@@ -5648,13 +5648,13 @@
    "eci": null,
    "eci_ci": null,
    "eci_as": null,
-   "arena": 1287,
+   "arena": 1288,
    "arena_ci": [
     1279,
     1296
    ],
    "arena_as": "Granite-4.0-H-Small",
-   "arena_votes": 5630,
+   "arena_votes": 5614,
    "avg_n": 1,
    "avg": 0.0
   },
@@ -7616,15 +7616,15 @@
     147.3
    ],
    "eci_as": "Kimi K2 Thinking",
-   "arena": 1418,
+   "arena": 1419,
    "arena_ci": [
     1412,
     1425
    ],
    "arena_as": "Kimi K2 Preview (0905)",
-   "arena_votes": 11592,
+   "arena_votes": 11574,
    "avg_n": 2,
-   "avg": 64.0
+   "avg": 64.2
   },
   {
    "vendor": "Kimi",
@@ -7889,13 +7889,13 @@
    "eci_as": "Kimi K2.6",
    "arena": 1461,
    "arena_ci": [
-    1457,
+    1456,
     1465
    ],
    "arena_as": "Kimi K2.6",
-   "arena_votes": 39978,
+   "arena_votes": 39576,
    "avg_n": 2,
-   "avg": 83.4
+   "avg": 83.5
   },
   {
    "vendor": "Kimi",
@@ -8018,13 +8018,13 @@
     160.6
    ],
    "eci_as": "Kimi K3",
-   "arena": 1488,
+   "arena": 1487,
    "arena_ci": [
-    1484,
-    1493
+    1483,
+    1492
    ],
    "arena_as": "Kimi K3 (Max)",
-   "arena_votes": 36780,
+   "arena_votes": 40409,
    "avg_n": 2,
    "avg": 100.0
   },
@@ -9751,12 +9751,12 @@
    "arena": 1343,
    "arena_ci": [
     1336,
-    1351
+    1350
    ],
    "arena_as": "Ling-flash-2.0",
-   "arena_votes": 6952,
+   "arena_votes": 6932,
    "avg_n": 1,
-   "avg": 27.6
+   "avg": 27.4
   },
   {
    "vendor": "Ling",
@@ -11737,9 +11737,9 @@
     1407
    ],
    "arena_as": "LongCat-Flash-Chat",
-   "arena_votes": 11167,
+   "arena_votes": 11131,
    "avg_n": 1,
-   "avg": 56.2
+   "avg": 56.3
   },
   {
    "vendor": "LongCat",
@@ -12863,15 +12863,15 @@
     130.4
    ],
    "eci_as": "Llama 4 Scout",
-   "arena": 1321,
+   "arena": 1322,
    "arena_ci": [
     1317,
     1326
    ],
    "arena_as": "Llama 4 Scout 17B 16E Instruct",
-   "arena_votes": 29823,
+   "arena_votes": 29777,
    "avg_n": 2,
-   "avg": 14.5
+   "avg": 14.4
   },
   {
    "vendor": "Meta",
@@ -13030,9 +13030,9 @@
     1331
    ],
    "arena_as": "Llama 4 Maverick 17B 128E Instruct",
-   "arena_votes": 39439,
+   "arena_votes": 39396,
    "avg_n": 2,
-   "avg": 22.2
+   "avg": 21.9
   },
   {
    "vendor": "Meta",
@@ -13160,7 +13160,7 @@
    "arena_as": null,
    "arena_votes": null,
    "avg_n": 1,
-   "avg": 92.0
+   "avg": 91.9
   },
   {
    "vendor": "MiMo",
@@ -13288,9 +13288,9 @@
     1395
    ],
    "arena_as": "MiMo-V2-Flash (Non-Thinking)",
-   "arena_votes": 48060,
+   "arena_votes": 47783,
    "avg_n": 1,
-   "avg": 51.7
+   "avg": 51.8
   },
   {
    "vendor": "MiMo",
@@ -13427,13 +13427,13 @@
    "eci_as": null,
    "arena": 1448,
    "arena_ci": [
-    1442,
+    1443,
     1453
    ],
    "arena_as": "MiMo-V2.6-Flash",
-   "arena_votes": 15312,
+   "arena_votes": 21592,
    "avg_n": 1,
-   "avg": 79.3
+   "avg": 79.7
   },
   {
    "vendor": "MiMo",
@@ -13555,15 +13555,15 @@
    "eci": null,
    "eci_ci": null,
    "eci_as": null,
-   "arena": 1467,
+   "arena": 1466,
    "arena_ci": [
     1463,
     1470
    ],
    "arena_as": "MiMo-V2.5-Pro",
-   "arena_votes": 77728,
+   "arena_votes": 76826,
    "avg_n": 1,
-   "avg": 88.7
+   "avg": 88.6
   },
   {
    "vendor": "MiMo",
@@ -13694,13 +13694,13 @@
    "eci_as": null,
    "arena": 1480,
    "arena_ci": [
-    1470,
-    1489
+    1471,
+    1490
    ],
    "arena_as": "MiMo-V2.6-Pro",
-   "arena_votes": 4037,
+   "arena_votes": 4069,
    "avg_n": 1,
-   "avg": 95.1
+   "avg": 95.6
   },
   {
    "vendor": "Microsoft",
@@ -14101,13 +14101,13 @@
    "eci_as": null,
    "arena": 1364,
    "arena_ci": [
-    1360,
+    1359,
     1368
    ],
    "arena_as": "MiniMax-M1",
-   "arena_votes": 34293,
+   "arena_votes": 34239,
    "avg_n": 1,
-   "avg": 37.9
+   "avg": 37.8
   },
   {
    "vendor": "MiniMax",
@@ -14373,9 +14373,9 @@
     1418
    ],
    "arena_as": "MiniMax-M2.7",
-   "arena_votes": 89197,
+   "arena_votes": 89536,
    "avg_n": 1,
-   "avg": 63.1
+   "avg": 63.2
   },
   {
    "vendor": "MiniMax",
@@ -14500,15 +14500,15 @@
     149.8
    ],
    "eci_as": "MiniMax-M3",
-   "arena": 1439,
+   "arena": 1436,
    "arena_ci": [
-    1435,
-    1443
+    1432,
+    1440
    ],
    "arena_as": "MiniMax-M3",
-   "arena_votes": 68611,
+   "arena_votes": 72449,
    "avg_n": 2,
-   "avg": 72.2
+   "avg": 71.5
   },
   {
    "vendor": "MiniMax",
@@ -14765,15 +14765,15 @@
    "eci": null,
    "eci_ci": null,
    "eci_as": null,
-   "arena": 1414,
+   "arena": 1415,
    "arena_ci": [
     1412,
-    1417
+    1418
    ],
    "arena_as": "Mistral Large 3",
-   "arena_votes": 88325,
+   "arena_votes": 88677,
    "avg_n": 1,
-   "avg": 62.6
+   "avg": 63.2
   },
   {
    "vendor": "Mistral",
@@ -15034,15 +15034,15 @@
     157.3
    ],
    "eci_as": "Mistral Large 4",
-   "arena": 1432,
+   "arena": 1419,
    "arena_ci": [
-    1426,
-    1438
+    1409,
+    1428
    ],
    "arena_as": "Mistral Large 4",
-   "arena_votes": 12066,
+   "arena_votes": 5217,
    "avg_n": 2,
-   "avg": 80.7
+   "avg": 77.6
   },
   {
    "vendor": "NC AI",
@@ -15684,15 +15684,15 @@
    "eci": null,
    "eci_ci": null,
    "eci_as": null,
-   "arena": 1353,
+   "arena": 1352,
    "arena_ci": [
-    1348,
-    1359
+    1346,
+    1357
    ],
    "arena_as": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B (NVFP4)",
-   "arena_votes": 24230,
+   "arena_votes": 25141,
    "avg_n": 1,
-   "avg": 32.5
+   "avg": 31.9
   },
   {
    "vendor": "NVIDIA",
@@ -15824,9 +15824,9 @@
     1367
    ],
    "arena_as": "NVIDIA-Nemotron-3-Super-120B-A12B",
-   "arena_votes": 7870,
+   "arena_votes": 7843,
    "avg_n": 1,
-   "avg": 36.0
+   "avg": 35.9
   },
   {
    "vendor": "NVIDIA",
@@ -16135,15 +16135,15 @@
     149.2
    ],
    "eci_as": "Nemotron 3 Ultra",
-   "arena": 1427,
+   "arena": 1426,
    "arena_ci": [
-    1420,
+    1419,
     1433
    ],
    "arena_as": "NVIDIA-Nemotron-3-Ultra-550B-A55B (NVFP4)",
-   "arena_votes": 11563,
+   "arena_votes": 11409,
    "avg_n": 2,
-   "avg": 68.5
+   "avg": 68.3
   },
   {
    "vendor": "NVIDIA",
@@ -16392,15 +16392,15 @@
    "eci": null,
    "eci_ci": null,
    "eci_as": null,
-   "arena": 1412,
+   "arena": 1415,
    "arena_ci": [
-    1403,
-    1422
+    1405,
+    1424
    ],
    "arena_as": "NVIDIA-Nemotron-3.5-Super-VL-120B-A12B (NVFP4)",
-   "arena_votes": 4178,
+   "arena_votes": 4057,
    "avg_n": 1,
-   "avg": 61.6
+   "avg": 63.2
   },
   {
    "vendor": "OpenAI",
@@ -16521,13 +16521,13 @@
     137.5
    ],
    "eci_as": "gpt-oss-20b",
-   "arena": 1317,
+   "arena": 1318,
    "arena_ci": [
     1311,
     1324
    ],
    "arena_as": "gpt-oss-20b",
-   "arena_votes": 10416,
+   "arena_votes": 10396,
    "avg_n": 2,
    "avg": 23.9
   },
@@ -16656,9 +16656,9 @@
     1356
    ],
    "arena_as": "gpt-oss-120b",
-   "arena_votes": 30200,
+   "arena_votes": 30129,
    "avg_n": 2,
-   "avg": 40.0
+   "avg": 39.9
   },
   {
    "vendor": "Poolside",
@@ -17190,9 +17190,9 @@
     1387
    ],
    "arena_as": "Qwen3-30B-A3B-Instruct (2507)",
-   "arena_votes": 23312,
+   "arena_votes": 23280,
    "avg_n": 2,
-   "avg": 44.8
+   "avg": 44.7
   },
   {
    "vendor": "Qwen",
@@ -17332,7 +17332,7 @@
     1425
    ],
    "arena_as": "Qwen3-235B-A22B-Instruct (2507)",
-   "arena_votes": 98081,
+   "arena_votes": 97647,
    "avg_n": 2,
    "avg": 61.6
   },
@@ -17455,10 +17455,10 @@
    "arena": 1388,
    "arena_ci": [
     1383,
-    1393
+    1392
    ],
    "arena_as": "Qwen3-Coder-480B-A35B-Instruct",
-   "arena_votes": 25190,
+   "arena_votes": 25162,
    "avg_n": 1,
    "avg": 49.8
   },
@@ -17729,9 +17729,9 @@
     1403
    ],
    "arena_as": "Qwen3-Next-80B-A3B-Instruct",
-   "arena_votes": 22753,
+   "arena_votes": 22698,
    "avg_n": 1,
-   "avg": 55.2
+   "avg": 55.3
   },
   {
    "vendor": "Qwen",
@@ -17862,9 +17862,9 @@
     1420
    ],
    "arena_as": "Qwen3-VL-235B-A22B-Instruct",
-   "arena_votes": 11314,
+   "arena_votes": 11285,
    "avg_n": 1,
-   "avg": 62.1
+   "avg": 62.2
   },
   {
    "vendor": "Qwen",
@@ -17998,9 +17998,9 @@
     1398
    ],
    "arena_as": "Qwen3.5-35B-A3B",
-   "arena_votes": 30427,
+   "arena_votes": 30193,
    "avg_n": 2,
-   "avg": 55.9
+   "avg": 55.8
   },
   {
    "vendor": "Qwen",
@@ -18124,9 +18124,9 @@
     1421
    ],
    "arena_as": "Qwen3.5-122B-A10B",
-   "arena_votes": 29712,
+   "arena_votes": 29487,
    "avg_n": 1,
-   "avg": 63.6
+   "avg": 63.7
   },
   {
    "vendor": "Qwen",
@@ -18253,9 +18253,9 @@
     1444
    ],
    "arena_as": "Qwen3.5-397B-A17B",
-   "arena_votes": 97675,
+   "arena_votes": 97699,
    "avg_n": 2,
-   "avg": 73.1
+   "avg": 73.2
   },
   {
    "vendor": "Qwen",
@@ -18875,15 +18875,15 @@
     153.1
    ],
    "eci_as": "Beam 1.0",
-   "arena": 1436,
+   "arena": 1435,
    "arena_ci": [
-    1426,
-    1445
+    1425,
+    1444
    ],
    "arena_as": "Beam 1.0 501B A23B",
-   "arena_votes": 4233,
+   "arena_votes": 4004,
    "avg_n": 2,
-   "avg": 76.1
+   "avg": 75.9
   },
   {
    "vendor": "SKT",
@@ -19763,13 +19763,13 @@
    "eci_as": null,
    "arena": 1349,
    "arena_ci": [
-    1342,
-    1357
+    1341,
+    1356
    ],
    "arena_as": "Step-3",
-   "arena_votes": 6291,
+   "arena_votes": 6284,
    "avg_n": 1,
-   "avg": 30.6
+   "avg": 30.4
   },
   {
    "vendor": "Step",
@@ -19894,12 +19894,12 @@
    "arena": 1393,
    "arena_ci": [
     1389,
-    1397
+    1396
    ],
    "arena_as": "Step-3.5-Flash",
-   "arena_votes": 60305,
+   "arena_votes": 59798,
    "avg_n": 1,
-   "avg": 52.2
+   "avg": 52.3
   },
   {
    "vendor": "Step",
@@ -20163,9 +20163,9 @@
     1455
    ],
    "arena_as": "Step 5 Preview",
-   "arena_votes": 11355,
+   "arena_votes": 12369,
    "avg_n": 1,
-   "avg": 79.3
+   "avg": 79.7
   },
   {
    "vendor": "TeleAI",
@@ -20423,15 +20423,15 @@
     152.6
    ],
    "eci_as": "Inkling-Small",
-   "arena": 1406,
+   "arena": 1405,
    "arena_ci": [
     1401,
     1410
    ],
    "arena_as": "Inkling-Small",
-   "arena_votes": 36999,
+   "arena_votes": 37677,
    "avg_n": 2,
-   "avg": 68.7
+   "avg": 68.4
   },
   {
    "vendor": "Thinking Machines",
@@ -20555,15 +20555,15 @@
     150.0
    ],
    "eci_as": "Inkling",
-   "arena": 1442,
+   "arena": 1443,
    "arena_ci": [
-    1438,
-    1446
+    1439,
+    1447
    ],
    "arena_as": "Inkling",
-   "arena_votes": 45472,
+   "arena_votes": 49613,
    "avg_n": 2,
-   "avg": 74.1
+   "avg": 74.4
   },
   {
    "vendor": "Trillion Labs",
@@ -21967,7 +21967,7 @@
    "arena_as": "Grok 2 (2024-08-13)",
    "arena_votes": 63498,
    "avg_n": 2,
-   "avg": 21.1
+   "avg": 20.8
   }
  ]
 }
