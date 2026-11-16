@@ -1,20 +1,20 @@
 {
- "generated": "2026-11-09 09:48 UTC",
+ "generated": "2026-11-16 08:36 UTC",
  "count": 166,
  "bench": {
   "eci": {
    "label": "ECI",
    "name": "Epoch Capabilities Index",
    "url": "https://epoch.ai/benchmarks",
-   "date": "2026-11-09",
-   "n": 29
+   "date": "2026-11-16",
+   "n": 30
   },
   "arena": {
    "label": "Arena",
    "name": "Arena 文本榜",
    "url": "https://arena.ai/leaderboard/text",
-   "date": "2026-11-08",
-   "n": 53
+   "date": "2026-11-11",
+   "n": 54
   },
   "avg": {
    "label": "均分",
@@ -23,8 +23,8 @@
     "eci",
     "arena"
    ],
-   "common": 28,
-   "n": 54
+   "common": 29,
+   "n": 55
   }
  },
  "models": [
@@ -1089,13 +1089,13 @@
    "eci_as": null,
    "arena": 1379,
    "arena_ci": [
-    1375,
+    1374,
     1383
    ],
    "arena_as": "Trinity Large Preview",
-   "arena_votes": 31040,
+   "arena_votes": 30992,
    "avg_n": 1,
-   "avg": 45.3
+   "avg": 44.1
   },
   {
    "vendor": "BharatGen",
@@ -1875,18 +1875,18 @@
    "eci": 140.8,
    "eci_ci": [
     137.6,
-    144.0
+    143.9
    ],
    "eci_as": "DeepSeek-V3.1",
-   "arena": 1421,
+   "arena": 1422,
    "arena_ci": [
     1416,
     1427
    ],
    "arena_as": "DeepSeek-R1 (0528)",
-   "arena_votes": 18152,
+   "arena_votes": 18151,
    "avg_n": 2,
-   "avg": 57.9
+   "avg": 56.6
   },
   {
    "vendor": "DeepSeek",
@@ -2038,9 +2038,9 @@
     1432
    ],
    "arena_as": "DeepSeek-V3.2-Exp (Thinking)",
-   "arena_votes": 8972,
+   "arena_votes": 8963,
    "avg_n": 2,
-   "avg": 66.7
+   "avg": 64.7
   },
   {
    "vendor": "DeepSeek",
@@ -2170,10 +2170,10 @@
    "hf_params": 304.2,
    "license": "mit",
    "notes": null,
-   "eci": 154.3,
+   "eci": 154.4,
    "eci_ci": [
     152.6,
-    156.3
+    156.4
    ],
    "eci_as": "DeepSeek V4 Flash 0731",
    "arena": 1436,
@@ -2182,9 +2182,9 @@
     1440
    ],
    "arena_as": "DeepSeek-V4-Flash",
-   "arena_votes": 51369,
+   "arena_votes": 51336,
    "avg_n": 2,
-   "avg": 81.2
+   "avg": 78.6
   },
   {
    "vendor": "DeepSeek",
@@ -2316,8 +2316,8 @@
    "notes": null,
    "eci": 155.9,
    "eci_ci": [
-    154.0,
-    157.9
+    154.1,
+    158.0
    ],
    "eci_as": "DeepSeek V4 Pro 0813",
    "arena": 1464,
@@ -2326,9 +2326,9 @@
     1471
    ],
    "arena_as": "DeepSeek-V4-Pro (High, 20260813)",
-   "arena_votes": 9593,
+   "arena_votes": 9573,
    "avg_n": 2,
-   "avg": 90.5
+   "avg": 87.4
   },
   {
    "vendor": "DeepSeek",
@@ -2573,10 +2573,10 @@
    "hf_params": 763.2,
    "license": "mit",
    "notes": "另有 196B Engram；激活取 decode 的 16B（prefill 8B）。",
-   "eci": 159.3,
+   "eci": 159.4,
    "eci_ci": [
     157.0,
-    161.8
+    162.0
    ],
    "eci_as": "DeepSeek V4.1 Flash 1017",
    "arena": 1475,
@@ -2585,9 +2585,9 @@
     1481
    ],
    "arena_as": "DeepSeek-V4.1-Flash-20260910 (Max)",
-   "arena_votes": 13579,
+   "arena_votes": 13547,
    "avg_n": 2,
-   "avg": 98.2
+   "avg": 94.8
   },
   {
    "vendor": "ERNIE",
@@ -3500,9 +3500,9 @@
     1377
    ],
    "arena_as": "GLM-4.5-Air",
-   "arena_votes": 30599,
+   "arena_votes": 30591,
    "avg_n": 1,
-   "avg": 42.3
+   "avg": 41.1
   },
   {
    "vendor": "GLM",
@@ -3634,10 +3634,10 @@
    "hf_params": 358.3,
    "license": "mit",
    "notes": null,
-   "eci": 143.2,
+   "eci": 143.3,
    "eci_ci": [
     141.3,
-    145.2
+    145.3
    ],
    "eci_as": "GLM-4.7",
    "arena": 1441,
@@ -3646,9 +3646,9 @@
     1447
    ],
    "arena_as": "GLM-4.7",
-   "arena_votes": 12169,
+   "arena_votes": 12153,
    "avg_n": 2,
-   "avg": 66.4
+   "avg": 64.6
   },
   {
    "vendor": "GLM",
@@ -3778,12 +3778,12 @@
    "arena": 1378,
    "arena_ci": [
     1367,
-    1389
+    1390
    ],
    "arena_as": "GLM-4.6V",
-   "arena_votes": 2825,
+   "arena_votes": 2823,
    "avg_n": 1,
-   "avg": 44.8
+   "avg": 43.6
   },
   {
    "vendor": "GLM",
@@ -3909,9 +3909,9 @@
     1370
    ],
    "arena_as": "GLM-4.7-Flash",
-   "arena_votes": 11939,
+   "arena_votes": 11932,
    "avg_n": 1,
-   "avg": 38.3
+   "avg": 37.3
   },
   {
    "vendor": "GLM",
@@ -4039,19 +4039,19 @@
    "notes": null,
    "eci": 150.7,
    "eci_ci": [
-    148.7,
-    152.7
+    148.6,
+    152.9
    ],
    "eci_as": "GLM-5.1",
    "arena": 1465,
    "arena_ci": [
-    1462,
-    1469
+    1461,
+    1468
    ],
    "arena_as": "GLM-5.1",
-   "arena_votes": 67089,
+   "arena_votes": 67009,
    "avg_n": 2,
-   "avg": 83.2
+   "avg": 80.5
   },
   {
    "vendor": "GLM",
@@ -4185,21 +4185,21 @@
    "hf_params": 753.3,
    "license": "other",
    "notes": "比 GLM-5.1 多了索引复用（IndexShare）：78 层里有 57 层沿用前面层的 DSA top-k 选择。",
-   "eci": 156.9,
+   "eci": 157.1,
    "eci_ci": [
-    154.8,
-    159.2
+    154.9,
+    159.5
    ],
    "eci_as": "GLM-5.3",
-   "arena": 1483,
+   "arena": 1482,
    "arena_ci": [
-    1478,
-    1487
+    1477,
+    1486
    ],
    "arena_as": "GLM-5.3 (Max)",
-   "arena_votes": 30524,
+   "arena_votes": 31604,
    "avg_n": 2,
-   "avg": 96.7
+   "avg": 93.4
   },
   {
    "vendor": "GLM",
@@ -4326,21 +4326,21 @@
    "hf_params": 321.3,
    "license": "mit",
    "notes": null,
-   "eci": 153.6,
+   "eci": 153.8,
    "eci_ci": [
-    151.8,
-    155.5
+    152.0,
+    155.8
    ],
    "eci_as": "GLM-5.3-Flash",
    "arena": 1475,
    "arena_ci": [
-    1470,
-    1479
+    1471,
+    1480
    ],
    "arena_as": "GLM-5.3-Flash",
-   "arena_votes": 49384,
+   "arena_votes": 51019,
    "avg_n": 2,
-   "avg": 89.9
+   "avg": 87.2
   },
   {
    "vendor": "GigaChat",
@@ -4873,9 +4873,9 @@
    "hf_params": 25.8,
    "license": "apache-2.0",
    "notes": null,
-   "eci": 141.7,
+   "eci": 141.6,
    "eci_ci": [
-    139.2,
+    139.1,
     144.1
    ],
    "eci_as": "Gemma 4 26B A4B",
@@ -4885,9 +4885,9 @@
     1445
    ],
    "arena_as": "Gemma 4 26B A4B",
-   "arena_votes": 6075,
+   "arena_votes": 6069,
    "avg_n": 2,
-   "avg": 63.2
+   "avg": 61.3
   },
   {
    "vendor": "Hunyuan",
@@ -5143,9 +5143,9 @@
     1460
    ],
    "arena_as": "Hy3",
-   "arena_votes": 14995,
+   "arena_votes": 15178,
    "avg_n": 1,
-   "avg": 82.7
+   "avg": 80.4
   },
   {
    "vendor": "Hunyuan",
@@ -5654,7 +5654,7 @@
     1296
    ],
    "arena_as": "Granite-4.0-H-Small",
-   "arena_votes": 5614,
+   "arena_votes": 5612,
    "avg_n": 1,
    "avg": 0.0
   },
@@ -7610,21 +7610,21 @@
    "hf_params": 1026.4,
    "license": "other",
    "notes": null,
-   "eci": 145.5,
+   "eci": 145.4,
    "eci_ci": [
-    143.7,
-    147.3
+    143.6,
+    147.2
    ],
    "eci_as": "Kimi K2 Thinking",
-   "arena": 1419,
+   "arena": 1418,
    "arena_ci": [
     1412,
     1425
    ],
    "arena_as": "Kimi K2 Preview (0905)",
-   "arena_votes": 11574,
+   "arena_votes": 11572,
    "avg_n": 2,
-   "avg": 64.2
+   "avg": 61.9
   },
   {
    "vendor": "Kimi",
@@ -7884,7 +7884,7 @@
    "eci": 151.6,
    "eci_ci": [
     149.8,
-    153.4
+    153.5
    ],
    "eci_as": "Kimi K2.6",
    "arena": 1461,
@@ -7893,9 +7893,9 @@
     1465
    ],
    "arena_as": "Kimi K2.6",
-   "arena_votes": 39576,
+   "arena_votes": 39551,
    "avg_n": 2,
-   "avg": 83.5
+   "avg": 80.8
   },
   {
    "vendor": "Kimi",
@@ -8012,10 +8012,10 @@
    "hf_params": 2779.9,
    "license": "other",
    "notes": null,
-   "eci": 158.5,
+   "eci": 158.6,
    "eci_ci": [
-    156.5,
-    160.6
+    156.6,
+    160.8
    ],
    "eci_as": "Kimi K3",
    "arena": 1487,
@@ -8024,9 +8024,9 @@
     1492
    ],
    "arena_as": "Kimi K3 (Max)",
-   "arena_votes": 40409,
+   "arena_votes": 41402,
    "avg_n": 2,
-   "avg": 100.0
+   "avg": 96.7
   },
   {
    "vendor": "Kimi",
@@ -8143,15 +8143,21 @@
    "hf_params": 2780.1,
    "license": "other",
    "notes": "在 K3 上继续后训练，并把 24 个门控 MLA 全局层换成门控 DSA（加 top-2048 索引器），MoE 配置不变。",
-   "eci": null,
-   "eci_ci": null,
-   "eci_as": null,
-   "arena": null,
-   "arena_ci": null,
-   "arena_as": null,
-   "arena_votes": null,
-   "avg_n": null,
-   "avg": null
+   "eci": 161.4,
+   "eci_ci": [
+    159.0,
+    164.0
+   ],
+   "eci_as": "Kimi K3.1 Pro",
+   "arena": 1485,
+   "arena_ci": [
+    1475,
+    1495
+   ],
+   "arena_as": "Kimi K3.1 Pro (Max)",
+   "arena_votes": 3995,
+   "avg_n": 2,
+   "avg": 100.0
   },
   {
    "vendor": "Klear",
@@ -9754,9 +9760,9 @@
     1350
    ],
    "arena_as": "Ling-flash-2.0",
-   "arena_votes": 6932,
+   "arena_votes": 6936,
    "avg_n": 1,
-   "avg": 27.4
+   "avg": 26.6
   },
   {
    "vendor": "Ling",
@@ -11737,9 +11743,9 @@
     1407
    ],
    "arena_as": "LongCat-Flash-Chat",
-   "arena_votes": 11131,
+   "arena_votes": 11130,
    "avg_n": 1,
-   "avg": 56.3
+   "avg": 54.7
   },
   {
    "vendor": "LongCat",
@@ -12857,10 +12863,10 @@
    "hf_params": 108.6,
    "license": "other",
    "notes": null,
-   "eci": 127.8,
+   "eci": 127.7,
    "eci_ci": [
-    124.9,
-    130.4
+    124.7,
+    130.3
    ],
    "eci_as": "Llama 4 Scout",
    "arena": 1322,
@@ -12869,9 +12875,9 @@
     1326
    ],
    "arena_as": "Llama 4 Scout 17B 16E Instruct",
-   "arena_votes": 29777,
+   "arena_votes": 29775,
    "avg_n": 2,
-   "avg": 14.4
+   "avg": 14.5
   },
   {
    "vendor": "Meta",
@@ -13020,7 +13026,7 @@
    "notes": null,
    "eci": 132.1,
    "eci_ci": [
-    129.8,
+    129.6,
     134.3
    ],
    "eci_as": "Llama 4 Maverick",
@@ -13030,9 +13036,9 @@
     1331
    ],
    "arena_as": "Llama 4 Maverick 17B 128E Instruct",
-   "arena_votes": 39396,
+   "arena_votes": 39386,
    "avg_n": 2,
-   "avg": 21.9
+   "avg": 21.7
   },
   {
    "vendor": "Meta",
@@ -13151,8 +13157,8 @@
    "notes": null,
    "eci": 155.4,
    "eci_ci": [
-    153.5,
-    157.6
+    153.4,
+    157.7
    ],
    "eci_as": "Muse Spark Open",
    "arena": null,
@@ -13160,7 +13166,7 @@
    "arena_as": null,
    "arena_votes": null,
    "avg_n": 1,
-   "avg": 91.9
+   "avg": 88.2
   },
   {
    "vendor": "MiMo",
@@ -13288,9 +13294,9 @@
     1395
    ],
    "arena_as": "MiMo-V2-Flash (Non-Thinking)",
-   "arena_votes": 47783,
+   "arena_votes": 47750,
    "avg_n": 1,
-   "avg": 51.8
+   "avg": 50.3
   },
   {
    "vendor": "MiMo",
@@ -13428,12 +13434,12 @@
    "arena": 1448,
    "arena_ci": [
     1443,
-    1453
+    1454
    ],
    "arena_as": "MiMo-V2.6-Flash",
-   "arena_votes": 21592,
+   "arena_votes": 23252,
    "avg_n": 1,
-   "avg": 79.7
+   "avg": 77.5
   },
   {
    "vendor": "MiMo",
@@ -13561,9 +13567,9 @@
     1470
    ],
    "arena_as": "MiMo-V2.5-Pro",
-   "arena_votes": 76826,
+   "arena_votes": 76747,
    "avg_n": 1,
-   "avg": 88.6
+   "avg": 86.2
   },
   {
    "vendor": "MiMo",
@@ -13694,13 +13700,13 @@
    "eci_as": null,
    "arena": 1480,
    "arena_ci": [
-    1471,
-    1490
+    1470,
+    1489
    ],
    "arena_as": "MiMo-V2.6-Pro",
-   "arena_votes": 4069,
+   "arena_votes": 4064,
    "avg_n": 1,
-   "avg": 95.6
+   "avg": 92.9
   },
   {
    "vendor": "Microsoft",
@@ -14105,9 +14111,9 @@
     1368
    ],
    "arena_as": "MiniMax-M1",
-   "arena_votes": 34239,
+   "arena_votes": 34230,
    "avg_n": 1,
-   "avg": 37.8
+   "avg": 36.8
   },
   {
    "vendor": "MiniMax",
@@ -14369,13 +14375,13 @@
    "eci_as": null,
    "arena": 1415,
    "arena_ci": [
-    1412,
+    1411,
     1418
    ],
    "arena_as": "MiniMax-M2.7",
-   "arena_votes": 89536,
+   "arena_votes": 89429,
    "avg_n": 1,
-   "avg": 63.2
+   "avg": 61.5
   },
   {
    "vendor": "MiniMax",
@@ -14494,21 +14500,21 @@
    "hf_params": 427.0,
    "license": "other",
    "notes": null,
-   "eci": 147.6,
+   "eci": 147.7,
    "eci_ci": [
-    145.4,
-    149.8
+    145.6,
+    150.0
    ],
    "eci_as": "MiniMax-M3",
    "arena": 1436,
    "arena_ci": [
     1432,
-    1440
+    1439
    ],
    "arena_as": "MiniMax-M3",
-   "arena_votes": 72449,
+   "arena_votes": 73579,
    "avg_n": 2,
-   "avg": 71.5
+   "avg": 69.4
   },
   {
    "vendor": "MiniMax",
@@ -14771,9 +14777,9 @@
     1418
    ],
    "arena_as": "Mistral Large 3",
-   "arena_votes": 88677,
+   "arena_votes": 88567,
    "avg_n": 1,
-   "avg": 63.2
+   "avg": 61.5
   },
   {
    "vendor": "Mistral",
@@ -15028,21 +15034,21 @@
    "hf_params": null,
    "license": "other",
    "notes": "图文多模态，激活 52B 含嵌入（不含为 49B）。72 层都是带 DSA 索引器的 MLA；每 4 层有一层不加 RoPE，第 39 层起的 9 个这种层直接读第 35 层的 KV。RoPE 频率可学习（LeRoPE）；权重里带一个 DSpark 投机解码草稿头。",
-   "eci": 154.7,
+   "eci": 154.6,
    "eci_ci": [
-    151.9,
-    157.3
+    151.8,
+    157.5
    ],
    "eci_as": "Mistral Large 4",
-   "arena": 1419,
+   "arena": 1420,
    "arena_ci": [
-    1409,
-    1428
+    1412,
+    1429
    ],
    "arena_as": "Mistral Large 4",
-   "arena_votes": 5217,
+   "arena_votes": 6423,
    "avg_n": 2,
-   "avg": 77.6
+   "avg": 75.0
   },
   {
    "vendor": "NC AI",
@@ -15684,15 +15690,15 @@
    "eci": null,
    "eci_ci": null,
    "eci_as": null,
-   "arena": 1352,
+   "arena": 1351,
    "arena_ci": [
     1346,
     1357
    ],
    "arena_as": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B (NVFP4)",
-   "arena_votes": 25141,
+   "arena_votes": 25104,
    "avg_n": 1,
-   "avg": 31.9
+   "avg": 30.5
   },
   {
    "vendor": "NVIDIA",
@@ -15824,9 +15830,9 @@
     1367
    ],
    "arena_as": "NVIDIA-Nemotron-3-Super-120B-A12B",
-   "arena_votes": 7843,
+   "arena_votes": 7842,
    "avg_n": 1,
-   "avg": 35.9
+   "avg": 34.9
   },
   {
    "vendor": "NVIDIA",
@@ -16129,9 +16135,9 @@
    "hf_params": 560.5,
    "license": "other",
    "notes": "LatentMoE，G 不适用。",
-   "eci": 147.1,
+   "eci": 146.9,
    "eci_ci": [
-    144.9,
+    144.8,
     149.2
    ],
    "eci_as": "Nemotron 3 Ultra",
@@ -16141,9 +16147,9 @@
     1433
    ],
    "arena_as": "NVIDIA-Nemotron-3-Ultra-550B-A55B (NVFP4)",
-   "arena_votes": 11409,
+   "arena_votes": 11392,
    "avg_n": 2,
-   "avg": 68.3
+   "avg": 65.9
   },
   {
    "vendor": "NVIDIA",
@@ -16392,15 +16398,15 @@
    "eci": null,
    "eci_ci": null,
    "eci_as": null,
-   "arena": 1415,
+   "arena": 1414,
    "arena_ci": [
     1405,
     1424
    ],
    "arena_as": "NVIDIA-Nemotron-3.5-Super-VL-120B-A12B (NVFP4)",
-   "arena_votes": 4057,
+   "arena_votes": 4053,
    "avg_n": 1,
-   "avg": 63.2
+   "avg": 61.0
   },
   {
    "vendor": "OpenAI",
@@ -16517,7 +16523,7 @@
    "notes": null,
    "eci": 135.0,
    "eci_ci": [
-    132.4,
+    132.3,
     137.5
    ],
    "eci_as": "gpt-oss-20b",
@@ -16529,7 +16535,7 @@
    "arena_as": "gpt-oss-20b",
    "arena_votes": 10396,
    "avg_n": 2,
-   "avg": 23.9
+   "avg": 23.5
   },
   {
    "vendor": "OpenAI",
@@ -16646,8 +16652,8 @@
    "notes": null,
    "eci": 140.2,
    "eci_ci": [
-    138.3,
-    142.0
+    138.2,
+    142.1
    ],
    "eci_as": "gpt-oss-120b",
    "arena": 1352,
@@ -16656,9 +16662,9 @@
     1356
    ],
    "arena_as": "gpt-oss-120b",
-   "arena_votes": 30129,
+   "arena_votes": 30115,
    "avg_n": 2,
-   "avg": 39.9
+   "avg": 38.8
   },
   {
    "vendor": "Poolside",
@@ -17178,10 +17184,10 @@
    "hf_params": 30.5,
    "license": "apache-2.0",
    "notes": null,
-   "eci": 138.4,
+   "eci": 138.3,
    "eci_ci": [
-    135.7,
-    140.9
+    135.6,
+    141.0
    ],
    "eci_as": "Qwen3-30B-A3B-Thinking (Jul 2025)",
    "arena": 1382,
@@ -17190,9 +17196,9 @@
     1387
    ],
    "arena_as": "Qwen3-30B-A3B-Instruct (2507)",
-   "arena_votes": 23280,
+   "arena_votes": 23286,
    "avg_n": 2,
-   "avg": 44.7
+   "avg": 43.5
   },
   {
    "vendor": "Qwen",
@@ -17323,7 +17329,7 @@
    "eci": 143.2,
    "eci_ci": [
     141.3,
-    145.0
+    145.1
    ],
    "eci_as": "Qwen3-235B-A22B-Thinking (Jul 2025)",
    "arena": 1422,
@@ -17332,9 +17338,9 @@
     1425
    ],
    "arena_as": "Qwen3-235B-A22B-Instruct (2507)",
-   "arena_votes": 97647,
+   "arena_votes": 97593,
    "avg_n": 2,
-   "avg": 61.6
+   "avg": 59.9
   },
   {
    "vendor": "Qwen",
@@ -17452,15 +17458,15 @@
    "eci": null,
    "eci_ci": null,
    "eci_as": null,
-   "arena": 1388,
+   "arena": 1387,
    "arena_ci": [
-    1383,
+    1382,
     1392
    ],
    "arena_as": "Qwen3-Coder-480B-A35B-Instruct",
-   "arena_votes": 25162,
+   "arena_votes": 25152,
    "avg_n": 1,
-   "avg": 49.8
+   "avg": 47.9
   },
   {
    "vendor": "Qwen",
@@ -17729,9 +17735,9 @@
     1403
    ],
    "arena_as": "Qwen3-Next-80B-A3B-Instruct",
-   "arena_votes": 22698,
+   "arena_votes": 22689,
    "avg_n": 1,
-   "avg": 55.3
+   "avg": 53.7
   },
   {
    "vendor": "Qwen",
@@ -17862,9 +17868,9 @@
     1420
    ],
    "arena_as": "Qwen3-VL-235B-A22B-Instruct",
-   "arena_votes": 11285,
+   "arena_votes": 11286,
    "avg_n": 1,
-   "avg": 62.2
+   "avg": 60.5
   },
   {
    "vendor": "Qwen",
@@ -17988,7 +17994,7 @@
    "notes": null,
    "eci": 144.0,
    "eci_ci": [
-    142.0,
+    142.1,
     145.9
    ],
    "eci_as": "Qwen 3.6 35B-A3B",
@@ -17998,9 +18004,9 @@
     1398
    ],
    "arena_as": "Qwen3.5-35B-A3B",
-   "arena_votes": 30193,
+   "arena_votes": 30163,
    "avg_n": 2,
-   "avg": 55.8
+   "avg": 54.2
   },
   {
    "vendor": "Qwen",
@@ -18124,9 +18130,9 @@
     1421
    ],
    "arena_as": "Qwen3.5-122B-A10B",
-   "arena_votes": 29487,
+   "arena_votes": 29469,
    "avg_n": 1,
-   "avg": 63.7
+   "avg": 62.0
   },
   {
    "vendor": "Qwen",
@@ -18243,8 +18249,8 @@
    "notes": null,
    "eci": 147.9,
    "eci_ci": [
-    145.7,
-    150.0
+    145.8,
+    150.1
    ],
    "eci_as": "Qwen3.5 397B-A17B",
    "arena": 1441,
@@ -18253,9 +18259,9 @@
     1444
    ],
    "arena_as": "Qwen3.5-397B-A17B",
-   "arena_votes": 97699,
+   "arena_votes": 97583,
    "avg_n": 2,
-   "avg": 73.2
+   "avg": 70.9
   },
   {
    "vendor": "Qwen",
@@ -18869,13 +18875,13 @@
    "hf_params": 501.3,
    "license": "apache-2.0",
    "notes": "残差相加按层深缩放：子层输出乘 1/√i，残差乘 √((i−1)/i)。",
-   "eci": 150.8,
+   "eci": 150.9,
    "eci_ci": [
-    148.6,
-    153.1
+    148.7,
+    153.2
    ],
    "eci_as": "Beam 1.0",
-   "arena": 1435,
+   "arena": 1434,
    "arena_ci": [
     1425,
     1444
@@ -18883,7 +18889,7 @@
    "arena_as": "Beam 1.0 501B A23B",
    "arena_votes": 4004,
    "avg_n": 2,
-   "avg": 75.9
+   "avg": 73.3
   },
   {
    "vendor": "SKT",
@@ -19767,9 +19773,9 @@
     1356
    ],
    "arena_as": "Step-3",
-   "arena_votes": 6284,
+   "arena_votes": 6279,
    "avg_n": 1,
-   "avg": 30.4
+   "avg": 29.5
   },
   {
    "vendor": "Step",
@@ -19897,9 +19903,9 @@
     1396
    ],
    "arena_as": "Step-3.5-Flash",
-   "arena_votes": 59798,
+   "arena_votes": 59749,
    "avg_n": 1,
-   "avg": 52.3
+   "avg": 50.8
   },
   {
    "vendor": "Step",
@@ -20157,15 +20163,15 @@
    "eci": null,
    "eci_ci": null,
    "eci_as": null,
-   "arena": 1448,
+   "arena": 1449,
    "arena_ci": [
     1442,
     1455
    ],
    "arena_as": "Step 5 Preview",
-   "arena_votes": 12369,
+   "arena_votes": 12345,
    "avg_n": 1,
-   "avg": 79.7
+   "avg": 77.9
   },
   {
    "vendor": "TeleAI",
@@ -20429,9 +20435,9 @@
     1410
    ],
    "arena_as": "Inkling-Small",
-   "arena_votes": 37677,
+   "arena_votes": 37610,
    "avg_n": 2,
-   "avg": 68.4
+   "avg": 66.1
   },
   {
    "vendor": "Thinking Machines",
@@ -20555,15 +20561,15 @@
     150.0
    ],
    "eci_as": "Inkling",
-   "arena": 1443,
+   "arena": 1442,
    "arena_ci": [
-    1439,
+    1438,
     1447
    ],
    "arena_as": "Inkling",
-   "arena_votes": 49613,
+   "arena_votes": 50718,
    "avg_n": 2,
-   "avg": 74.4
+   "avg": 71.8
   },
   {
    "vendor": "Trillion Labs",
@@ -21953,9 +21959,9 @@
    "hf_params": null,
    "license": null,
    "notes": "xAI 2024 年训练和使用的模型，2025 年 8 月开放权重；没有公布参数量，这里按 config 算（激活含嵌入）。每层有一个 32768 宽的稠密 FFN 和 8 选 2 的专家并行。注意力 logit 先过上限 30 的 tanh 软截断，位置超过 1024 后再乘 log n / log 1024；路由 logit 也截在 30。",
-   "eci": 129.8,
+   "eci": 129.7,
    "eci_ci": [
-    127.0,
+    126.8,
     132.3
    ],
    "eci_as": "Grok-2 (Dec 2024)",
@@ -21967,7 +21973,7 @@
    "arena_as": "Grok 2 (2024-08-13)",
    "arena_votes": 63498,
    "avg_n": 2,
-   "avg": 20.8
+   "avg": 20.6
   }
  ]
 }
